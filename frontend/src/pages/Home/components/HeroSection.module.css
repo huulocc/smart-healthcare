@@ -1,0 +1,105 @@
+.hero {
+  padding: 4rem 0 6rem;
+  background-color: var(--bg-surface);
+  overflow: hidden;
+}
+
+.heroContainer {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 3rem;
+  align-items: center;
+}
+
+@media (min-width: 992px) {
+  .heroContainer {
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+  }
+}
+
+.heroContent {
+  max-width: 600px;
+}
+
+.title {
+  font-size: 2.5rem;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+  color: var(--text-main);
+}
+
+.titleAccent {
+  color: var(--primary);
+}
+
+@media (min-width: 768px) {
+  .title {
+    font-size: 3.5rem;
+  }
+}
+
+.subtitle {
+  font-size: 1.125rem;
+  color: var(--text-muted);
+  margin-bottom: 2.5rem;
+  line-height: 1.6;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 3rem;
+}
+
+.stats {
+  display: flex;
+  gap: 2rem;
+  border-top: 1px solid var(--border);
+  padding-top: 2rem;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.statValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.statLabel {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.heroImageWrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4/3;
+  display: none;
+}
+
+@media (min-width: 992px) {
+  .heroImageWrapper {
+    display: block;
+  }
+}
+
+.imageContainer {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+
+.heroImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
