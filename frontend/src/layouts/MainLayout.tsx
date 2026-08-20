@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import AIChatWidget from '../components/AIChatWidget';
 import styles from './MainLayout.module.css';
 
 interface MainLayoutProps {
@@ -13,6 +14,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
       <Navbar />
       <main className={styles.main}>{children}</main>
       <Footer />
+      <AIChatWidget />
     </div>
   );
 };
