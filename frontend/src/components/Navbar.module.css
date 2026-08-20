@@ -1,0 +1,105 @@
+.header {
+  background-color: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow-sm);
+}
+
+.navContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 72px;
+}
+
+.logo a {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-main);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.logoAccent {
+  color: var(--primary);
+}
+
+.nav {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .nav {
+    display: block;
+  }
+}
+
+.navList {
+  display: flex;
+  list-style: none;
+  gap: 2rem;
+  margin: 0;
+  padding: 0;
+}
+
+.navList a {
+  color: var(--text-muted);
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.navList a:hover {
+  color: var(--primary);
+}
+
+.chatLink {
+  position: relative;
+}
+
+.chatLink::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -8px;
+  width: 6px;
+  height: 6px;
+  background-color: var(--secondary);
+  border-radius: 50%;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.loginBtn {
+  color: var(--primary);
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius-md);
+  transition: background-color 0.2s;
+}
+
+.loginBtn:hover {
+  background-color: var(--bg-muted);
+}
+
+.registerBtn {
+  background-color: var(--primary);
+  color: white !important;
+  font-weight: 500;
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--border-radius-md);
+  transition: background-color 0.2s;
+  box-shadow: var(--shadow-sm);
+}
+
+.registerBtn:hover {
+  background-color: var(--primary-hover);
+}
