@@ -1,12 +1,7 @@
 import { Link } from 'react-router-dom';
 import styles from './DepartmentsSection.module.css';
 
-const DEPARTMENTS = [
-  { id: 1, name: 'Cardiology', icon: '❤️', description: 'Heart and cardiovascular care' },
-  { id: 2, name: 'Neurology', icon: '🧠', description: 'Brain and nervous system' },
-  { id: 3, name: 'Pediatrics', icon: '👶', description: 'Child and infant healthcare' },
-  { id: 4, name: 'General Medicine', icon: '🩺', description: 'Primary care and general health' },
-];
+import { DEPARTMENTS } from '../../../data/mockData';
 
 const DepartmentsSection = () => {
   return (
@@ -23,9 +18,8 @@ const DepartmentsSection = () => {
         </div>
 
         <div className={styles.grid}>
-          {DEPARTMENTS.map((dept) => (
+          {DEPARTMENTS.slice(0, 4).map((dept) => (
             <Link key={dept.id} to={`/departments/${dept.id}`} className={styles.card}>
-              <div className={styles.icon}>{dept.icon}</div>
               <h3 className={styles.cardTitle}>{dept.name}</h3>
               <p className={styles.cardDesc}>{dept.description}</p>
             </Link>

@@ -2,35 +2,7 @@ import { Link } from 'react-router-dom';
 import Button from '../../../components/Button';
 import styles from './DoctorsSection.module.css';
 
-const DOCTORS = [
-  {
-    id: 1,
-    name: 'Dr. Sarah Jenkins',
-    specialty: 'Cardiologist',
-    department: 'Cardiology',
-    rating: '4.9',
-    reviews: 124,
-    image: '/images/doctor_1.jpg'
-  },
-  {
-    id: 2,
-    name: 'Dr. Michael Chen',
-    specialty: 'Neurologist',
-    department: 'Neurology',
-    rating: '4.8',
-    reviews: 89,
-    image: '/images/doctor_2.jpg'
-  },
-  {
-    id: 3,
-    name: 'Dr. Emily Rodriguez',
-    specialty: 'Pediatrician',
-    department: 'Pediatrics',
-    rating: '5.0',
-    reviews: 201,
-    image: '/images/doctor_3.jpg'
-  },
-];
+import { DOCTORS } from '../../../data/mockData';
 
 const DoctorsSection = () => {
   return (
@@ -42,7 +14,7 @@ const DoctorsSection = () => {
         </div>
 
         <div className={styles.grid}>
-          {DOCTORS.map((doctor) => (
+          {DOCTORS.slice(0, 3).map((doctor) => (
             <div key={doctor.id} className={styles.card}>
               <div className={styles.imageContainer}>
                 <img src={doctor.image} alt={doctor.name} className={styles.doctorImage} />

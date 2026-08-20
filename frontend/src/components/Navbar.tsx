@@ -16,7 +16,6 @@ const Navbar = () => {
             <li><Link to="/">Home</Link></li>
             <li><Link to="/departments">Departments</Link></li>
             <li><Link to="/doctors">Doctors</Link></li>
-            <li><Link to="/ai-chat" className={styles.chatLink}>AI Chat</Link></li>
           </ul>
         </nav>
 
