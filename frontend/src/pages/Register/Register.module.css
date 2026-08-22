@@ -1,0 +1,36 @@
+.wrapper {
+  text-align: center;
+}
+
+.title {
+  font-size: 1.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.subtitle {
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  text-align: left;
+}
+
+.formError {
+  font-size: 0.875rem;
+  color: var(--error);
+  background-color: var(--bg-muted);
+  border-radius: var(--border-radius-md);
+  padding: 0.625rem 0.875rem;
+  margin: 0;
+}
+
+.footerText {
+  margin-top: 2rem;
+  margin-bottom: 0;
+  font-size: 0.9375rem;
+  color: var(--text-muted);
+}
