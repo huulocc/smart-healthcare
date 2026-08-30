@@ -1,9 +1,16 @@
 import type { ReactNode } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
+import AuthLayout from './layouts/AuthLayout';
 import Home from './pages/Home/Home';
 import Departments from './pages/Departments/Departments';
 import Doctors from './pages/Doctors/Doctors';
+import Login from './pages/Login/Login';
+import Register from './pages/Register/Register';
+import Profile from './pages/Profile/Profile';
+import ChangePassword from './pages/ChangePassword/ChangePassword';
+import ForgotPassword from './pages/ForgotPassword/ForgotPassword';
+import ResetPassword from './pages/ResetPassword/ResetPassword';
 import AdminLayout from './components/admin/AdminLayout';
 import AdminDashboard from './components/admin/AdminDashboard';
 import AdminManagementPage from './components/admin/AdminManagementPage';
@@ -20,8 +27,12 @@ function App() {
     <Route path="/" element={<PublicPage><Home /></PublicPage>} />
     <Route path="/departments" element={<PublicPage><Departments /></PublicPage>} />
     <Route path="/doctors" element={<PublicPage><Doctors /></PublicPage>} />
-    <Route path="/login" element={<PublicPage><div className="container mt-4">Login Page (Coming Soon)</div></PublicPage>} />
-    <Route path="/register" element={<PublicPage><div className="container mt-4">Sign Up Page (Coming Soon)</div></PublicPage>} />
+    <Route path="/login" element={<AuthLayout><Login /></AuthLayout>} />
+    <Route path="/register" element={<AuthLayout><Register /></AuthLayout>} />
+    <Route path="/forgot-password" element={<AuthLayout><ForgotPassword /></AuthLayout>} />
+    <Route path="/reset-password" element={<AuthLayout><ResetPassword /></AuthLayout>} />
+    <Route path="/profile" element={<PublicPage><Profile /></PublicPage>} />
+    <Route path="/profile/change-password" element={<PublicPage><ChangePassword /></PublicPage>} />
     <Route path="/admin" element={<AdminLayout />}>
       <Route index element={<AdminDashboard />} />
       <Route path="patients" element={<AdminManagementPage type="patients" />} />

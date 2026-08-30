@@ -1,3 +1,6 @@
 # Project context and rules
 context.md
 .cursorrules
+
+# Local Claude Code tool config
+.claude/
