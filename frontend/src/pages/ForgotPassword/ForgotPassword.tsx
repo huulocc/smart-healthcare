@@ -17,7 +17,7 @@ const ForgotPassword = () => {
   } = useForm<ForgotPasswordFormValues>({ resolver: zodResolver(forgotPasswordSchema) });
 
   const onSubmit = async (values: ForgotPasswordFormValues) => {
-    // TODO: nối API gửi email đặt lại mật khẩu thật ở bước sau; hiện chỉ giả lập request.
+    // TODO: connect the real forgot-password API in a later step; this only simulates a request for now.
     await new Promise((resolve) => setTimeout(resolve, 800));
     console.log('Forgot password submit', values);
     setSentTo(values.email);
@@ -29,18 +29,18 @@ const ForgotPassword = () => {
         <div className={styles.sentIcon}>
           <MailCheck size={32} />
         </div>
-        <h1 className={styles.title}>Kiểm tra email của bạn</h1>
+        <h1 className={styles.title}>Check your email</h1>
         <p className={styles.subtitle}>
-          Nếu <strong>{sentTo}</strong> tồn tại trong hệ thống, chúng tôi đã gửi hướng dẫn đặt lại mật khẩu đến email
-          này.
+          If <strong>{sentTo}</strong> exists in our system, we&apos;ve sent password reset instructions to that
+          address.
         </p>
 
         <Link to="/reset-password" className={styles.demoLink}>
-          Demo: mở liên kết đặt lại mật khẩu
+          Demo: open the reset password link
         </Link>
 
         <p className={styles.footerText}>
-          Nhớ ra mật khẩu rồi? <Link to="/login">Đăng nhập</Link>
+          Remembered your password? <Link to="/login">Log In</Link>
         </p>
       </div>
     );
@@ -48,26 +48,26 @@ const ForgotPassword = () => {
 
   return (
     <div className={styles.wrapper}>
-      <h1 className={styles.title}>Quên mật khẩu?</h1>
-      <p className={styles.subtitle}>Nhập email đã đăng ký, chúng tôi sẽ gửi hướng dẫn đặt lại mật khẩu.</p>
+      <h1 className={styles.title}>Forgot Password?</h1>
+      <p className={styles.subtitle}>Enter your registered email and we&apos;ll send you reset instructions.</p>
 
       <form className={styles.form} onSubmit={handleSubmit(onSubmit)} noValidate>
         <FormInput
           label="Email"
           type="email"
-          placeholder="ban@example.com"
+          placeholder="you@example.com"
           icon={Mail}
           error={errors.email?.message}
           registration={register('email')}
         />
 
         <Button type="submit" fullWidth disabled={isSubmitting}>
-          {isSubmitting ? 'Đang gửi...' : 'Gửi hướng dẫn'}
+          {isSubmitting ? 'Sending...' : 'Send Instructions'}
         </Button>
       </form>
 
       <p className={styles.footerText}>
-        Nhớ ra mật khẩu rồi? <Link to="/login">Đăng nhập</Link>
+        Remembered your password? <Link to="/login">Log In</Link>
       </p>
     </div>
   );

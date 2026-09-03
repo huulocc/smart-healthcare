@@ -18,7 +18,7 @@ const Profile = () => {
   const handleSave = (values: ProfileFormValues) => {
     setUser((prev) => ({ ...prev, ...values }));
     setIsEditing(false);
-    setSavedMessage('Cập nhật hồ sơ thành công.');
+    setSavedMessage('Profile updated successfully.');
   };
 
   return (

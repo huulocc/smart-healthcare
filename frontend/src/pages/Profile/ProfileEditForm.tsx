@@ -30,19 +30,19 @@ const ProfileEditForm = ({ user, onSave, onCancel }: ProfileEditFormProps) => {
   });
 
   const onSubmit = async (values: ProfileFormValues) => {
-    // TODO: nối API cập nhật hồ sơ thật ở bước sau; hiện chỉ giả lập request.
+    // TODO: connect the real update-profile API in a later step; this only simulates a request for now.
     await new Promise((resolve) => setTimeout(resolve, 500));
     onSave(values);
   };
 
   return (
     <div className={styles.card}>
-      <h1 className={styles.name}>Chỉnh sửa hồ sơ</h1>
-      <p className={styles.subtitle}>Cập nhật thông tin cá nhân của bạn</p>
+      <h1 className={styles.name}>Edit Profile</h1>
+      <p className={styles.subtitle}>Update your personal information</p>
 
       <form className={styles.form} onSubmit={handleSubmit(onSubmit)} noValidate>
         <FormInput
-          label="Họ và tên"
+          label="Full Name"
           type="text"
           icon={UserIcon}
           error={errors.fullName?.message}
@@ -56,21 +56,21 @@ const ProfileEditForm = ({ user, onSave, onCancel }: ProfileEditFormProps) => {
           registration={register('email')}
         />
         <FormInput
-          label="Số điện thoại"
+          label="Phone Number"
           type="tel"
           icon={Phone}
           error={errors.phone?.message}
           registration={register('phone')}
         />
         <FormInput
-          label="Ngày sinh"
+          label="Date of Birth"
           type="date"
           icon={Calendar}
           error={errors.dob?.message}
           registration={register('dob')}
         />
         <FormInput
-          label="Địa chỉ"
+          label="Address"
           type="text"
           icon={MapPin}
           error={errors.address?.message}
@@ -79,10 +79,10 @@ const ProfileEditForm = ({ user, onSave, onCancel }: ProfileEditFormProps) => {
 
         <div className={styles.formActions}>
           <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
-            Hủy
+            Cancel
           </Button>
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
+            {isSubmitting ? 'Saving...' : 'Save Changes'}
           </Button>
         </div>
       </form>

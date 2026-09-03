@@ -18,22 +18,22 @@ const Register = () => {
 
   const onSubmit = async (values: RegisterFormValues) => {
     setSubmitError(null);
-    // TODO: nối API đăng ký thật ở bước sau; hiện chỉ giả lập request.
+    // TODO: connect the real register API in a later step; this only simulates a request for now.
     await new Promise((resolve) => setTimeout(resolve, 800));
     console.log('Register submit', values);
-    setSubmitError('Chức năng đăng ký sẽ được kết nối ở bước tiếp theo.');
+    setSubmitError('Sign up will be connected to the backend in a later step.');
   };
 
   return (
     <div className={styles.wrapper}>
-      <h1 className={styles.title}>Đăng ký</h1>
-      <p className={styles.subtitle}>Tạo tài khoản để bắt đầu sử dụng Smart Healthcare</p>
+      <h1 className={styles.title}>Sign Up</h1>
+      <p className={styles.subtitle}>Create an account to start using Smart Healthcare</p>
 
       <form className={styles.form} onSubmit={handleSubmit(onSubmit)} noValidate>
         <FormInput
-          label="Họ và tên"
+          label="Full Name"
           type="text"
-          placeholder="Nguyễn Văn A"
+          placeholder="John Doe"
           icon={User}
           error={errors.fullName?.message}
           registration={register('fullName')}
@@ -41,13 +41,13 @@ const Register = () => {
         <FormInput
           label="Email"
           type="email"
-          placeholder="ban@example.com"
+          placeholder="you@example.com"
           icon={Mail}
           error={errors.email?.message}
           registration={register('email')}
         />
         <FormInput
-          label="Số điện thoại"
+          label="Phone Number"
           type="tel"
           placeholder="0901234567"
           icon={Phone}
@@ -55,7 +55,7 @@ const Register = () => {
           registration={register('phone')}
         />
         <FormInput
-          label="Mật khẩu"
+          label="Password"
           type="password"
           placeholder="••••••••"
           icon={Lock}
@@ -63,7 +63,7 @@ const Register = () => {
           registration={register('password')}
         />
         <FormInput
-          label="Xác nhận mật khẩu"
+          label="Confirm Password"
           type="password"
           placeholder="••••••••"
           icon={Lock}
@@ -74,12 +74,12 @@ const Register = () => {
         {submitError && <p className={styles.formError}>{submitError}</p>}
 
         <Button type="submit" fullWidth disabled={isSubmitting}>
-          {isSubmitting ? 'Đang đăng ký...' : 'Đăng ký'}
+          {isSubmitting ? 'Signing up...' : 'Sign Up'}
         </Button>
       </form>
 
       <p className={styles.footerText}>
-        Đã có tài khoản? <Link to="/login">Đăng nhập</Link>
+        Already have an account? <Link to="/login">Log In</Link>
       </p>
     </div>
   );

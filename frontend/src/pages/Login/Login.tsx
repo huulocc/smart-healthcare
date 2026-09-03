@@ -18,28 +18,28 @@ const Login = () => {
 
   const onSubmit = async (values: LoginFormValues) => {
     setSubmitError(null);
-    // TODO: nối API đăng nhập thật ở bước sau; hiện chỉ giả lập request.
+    // TODO: connect the real login API in a later step; this only simulates a request for now.
     await new Promise((resolve) => setTimeout(resolve, 800));
     console.log('Login submit', values);
-    setSubmitError('Chức năng đăng nhập sẽ được kết nối ở bước tiếp theo.');
+    setSubmitError('Login will be connected to the backend in a later step.');
   };
 
   return (
     <div className={styles.wrapper}>
-      <h1 className={styles.title}>Đăng nhập</h1>
-      <p className={styles.subtitle}>Chào mừng bạn quay lại Smart Healthcare</p>
+      <h1 className={styles.title}>Log In</h1>
+      <p className={styles.subtitle}>Welcome back to Smart Healthcare</p>
 
       <form className={styles.form} onSubmit={handleSubmit(onSubmit)} noValidate>
         <FormInput
           label="Email"
           type="email"
-          placeholder="ban@example.com"
+          placeholder="you@example.com"
           icon={Mail}
           error={errors.email?.message}
           registration={register('email')}
         />
         <FormInput
-          label="Mật khẩu"
+          label="Password"
           type="password"
           placeholder="••••••••"
           icon={Lock}
@@ -49,19 +49,19 @@ const Login = () => {
 
         <div className={styles.forgotRow}>
           <Link to="/forgot-password" className={styles.forgotLink}>
-            Quên mật khẩu?
+            Forgot password?
           </Link>
         </div>
 
         {submitError && <p className={styles.formError}>{submitError}</p>}
 
         <Button type="submit" fullWidth disabled={isSubmitting}>
-          {isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
+          {isSubmitting ? 'Logging in...' : 'Log In'}
         </Button>
       </form>
 
       <p className={styles.footerText}>
-        Chưa có tài khoản? <Link to="/register">Đăng ký</Link>
+        Don&apos;t have an account? <Link to="/register">Sign Up</Link>
       </p>
     </div>
   );
