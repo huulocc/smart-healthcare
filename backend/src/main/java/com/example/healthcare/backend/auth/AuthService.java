@@ -1,7 +1,5 @@
 package com.example.healthcare.backend.auth;
 
-import java.util.Locale;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -12,6 +10,7 @@ import com.example.healthcare.backend.auth.dto.LoginResponse;
 import com.example.healthcare.backend.auth.dto.RegisterRequest;
 import com.example.healthcare.backend.auth.jwt.JwtService;
 import com.example.healthcare.backend.common.ApiException;
+import com.example.healthcare.backend.common.Emails;
 import com.example.healthcare.backend.user.Role;
 import com.example.healthcare.backend.user.User;
 import com.example.healthcare.backend.user.UserRepository;
@@ -29,7 +28,7 @@ public class AuthService {
 
 	@Transactional
 	public UserResponse register(RegisterRequest request) {
-		String email = normalizeEmail(request.email());
+		String email = Emails.normalize(request.email());
 		if (userRepository.existsByEmail(email)) {
 			throw new ApiException(HttpStatus.CONFLICT, "This email is already registered", "email");
 		}
@@ -47,7 +46,7 @@ public class AuthService {
 	@Transactional(readOnly = true)
 	public LoginResponse login(LoginRequest request) {
 		// Same message for "unknown email" and "wrong password" so attackers cannot tell which emails exist.
-		User user = userRepository.findByEmail(normalizeEmail(request.email()))
+		User user = userRepository.findByEmail(Emails.normalize(request.email()))
 				.filter(found -> passwordEncoder.matches(request.password(), found.getPasswordHash()))
 				.orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Invalid email or password."));
 
@@ -56,9 +55,5 @@ public class AuthService {
 				"Bearer",
 				jwtService.getExpirationSeconds(),
 				UserResponse.from(user));
-	}
-
-	static String normalizeEmail(String email) {
-		return email.trim().toLowerCase(Locale.ROOT);
 	}
 }
