@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.healthcare.backend.auth.dto.LoginRequest;
+import com.example.healthcare.backend.auth.dto.LoginResponse;
 import com.example.healthcare.backend.auth.dto.RegisterRequest;
 import com.example.healthcare.backend.user.dto.UserResponse;
 
@@ -24,5 +26,10 @@ public class AuthController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public UserResponse register(@Valid @RequestBody RegisterRequest request) {
 		return authService.register(request);
+	}
+
+	@PostMapping("/login")
+	public LoginResponse login(@Valid @RequestBody LoginRequest request) {
+		return authService.login(request);
 	}
 }

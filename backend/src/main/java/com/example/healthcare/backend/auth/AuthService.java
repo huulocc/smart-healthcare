@@ -7,7 +7,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.healthcare.backend.auth.dto.LoginRequest;
+import com.example.healthcare.backend.auth.dto.LoginResponse;
 import com.example.healthcare.backend.auth.dto.RegisterRequest;
+import com.example.healthcare.backend.auth.jwt.JwtService;
 import com.example.healthcare.backend.common.ApiException;
 import com.example.healthcare.backend.user.Role;
 import com.example.healthcare.backend.user.User;
@@ -22,6 +25,7 @@ public class AuthService {
 
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
+	private final JwtService jwtService;
 
 	@Transactional
 	public UserResponse register(RegisterRequest request) {
@@ -38,6 +42,20 @@ public class AuthService {
 		user.setRole(Role.PATIENT);
 
 		return UserResponse.from(userRepository.save(user));
+	}
+
+	@Transactional(readOnly = true)
+	public LoginResponse login(LoginRequest request) {
+		// Same message for "unknown email" and "wrong password" so attackers cannot tell which emails exist.
+		User user = userRepository.findByEmail(normalizeEmail(request.email()))
+				.filter(found -> passwordEncoder.matches(request.password(), found.getPasswordHash()))
+				.orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Invalid email or password."));
+
+		return new LoginResponse(
+				jwtService.generateToken(user),
+				"Bearer",
+				jwtService.getExpirationSeconds(),
+				UserResponse.from(user));
 	}
 
 	static String normalizeEmail(String email) {
