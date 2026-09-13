@@ -31,16 +31,34 @@
 }
 
 .formError {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
   font-size: 0.875rem;
   color: var(--error);
+  background-color: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--border-radius-md);
+  padding: 0.75rem 0.875rem;
+}
+
+.formErrorIcon {
+  flex-shrink: 0;
+  margin-top: 0.0625rem;
+}
+
+.demoHint {
+  margin-top: 1.5rem;
+  margin-bottom: 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
   background-color: var(--bg-muted);
   border-radius: var(--border-radius-md);
   padding: 0.625rem 0.875rem;
-  margin: 0;
 }
 
 .footerText {
-  margin-top: 2rem;
+  margin-top: 1.5rem;
   margin-bottom: 0;
   font-size: 0.9375rem;
   color: var(--text-muted);
