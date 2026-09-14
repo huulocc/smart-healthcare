@@ -1,38 +1,45 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Mail, Lock, AlertCircle } from 'lucide-react';
+import { Mail, Lock, AlertCircle, CheckCircle2 } from 'lucide-react';
 import Button from '../../components/Button';
 import FormInput from '../../components/FormInput';
-import { DEMO_CREDENTIALS } from '../../data/mockUser';
+import { applyFieldErrors, toApiError } from '../../api/errors';
+import { useAuth } from '../../context/useAuth';
 import { loginSchema, type LoginFormValues } from '../../schemas/authSchemas';
 import styles from './Login.module.css';
 
+// Set by ProtectedRoute (from) or by pages that send the user here after a success (notice).
+interface LoginLocationState {
+  from?: string;
+  notice?: string;
+}
+
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
+  const { from = '/profile', notice } = (location.state as LoginLocationState | null) ?? {};
   const [submitError, setSubmitError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({ resolver: zodResolver(loginSchema) });
 
   const onSubmit = async (values: LoginFormValues) => {
     setSubmitError(null);
-    // TODO: replace this mock credential check with the real login API.
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    const isValidAccount =
-      values.email.trim().toLowerCase() === DEMO_CREDENTIALS.email &&
-      values.password === DEMO_CREDENTIALS.password;
-
-    if (!isValidAccount) {
-      setSubmitError('Invalid email or password. Please try again.');
-      return;
+    try {
+      await login(values.email, values.password);
+      navigate(from, { replace: true });
+    } catch (error) {
+      const apiError = toApiError(error);
+      if (!applyFieldErrors(apiError.fieldErrors, ['email', 'password'], setError)) {
+        setSubmitError(apiError.message);
+      }
     }
-
-    navigate('/profile');
   };
 
   return (
@@ -41,9 +48,16 @@ const Login = () => {
       <p className={styles.subtitle}>Welcome back to Smart Healthcare</p>
 
       <form className={styles.form} onSubmit={handleSubmit(onSubmit)} noValidate>
+        {notice && !submitError && (
+          <div className={styles.formNotice} role="status">
+            <CheckCircle2 size={18} className={styles.bannerIcon} />
+            <span>{notice}</span>
+          </div>
+        )}
+
         {submitError && (
           <div className={styles.formError} role="alert">
-            <AlertCircle size={18} className={styles.formErrorIcon} />
+            <AlertCircle size={18} className={styles.bannerIcon} />
             <span>{submitError}</span>
           </div>
         )}
@@ -75,10 +89,6 @@ const Login = () => {
           {isSubmitting ? 'Logging in...' : 'Log In'}
         </Button>
       </form>
-
-      <p className={styles.demoHint}>
-        Demo account: <strong>{DEMO_CREDENTIALS.email}</strong> / <strong>{DEMO_CREDENTIALS.password}</strong>
-      </p>
 
       <p className={styles.footerText}>
         Don&apos;t have an account? <Link to="/register">Sign Up</Link>

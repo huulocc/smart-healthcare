@@ -1,27 +1,36 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { User, Mail, Phone, Lock } from 'lucide-react';
 import Button from '../../components/Button';
 import FormInput from '../../components/FormInput';
+import { registerAccount } from '../../api/authApi';
+import { applyFieldErrors, toApiError } from '../../api/errors';
 import { registerSchema, type RegisterFormValues } from '../../schemas/authSchemas';
 import styles from './Register.module.css';
 
 const Register = () => {
+  const navigate = useNavigate();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormValues>({ resolver: zodResolver(registerSchema) });
 
-  const onSubmit = async (values: RegisterFormValues) => {
+  const onSubmit = async ({ fullName, email, phone, password }: RegisterFormValues) => {
     setSubmitError(null);
-    // TODO: connect the real register API in a later step; this only simulates a request for now.
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    console.log('Register submit', values);
-    setSubmitError('Sign up will be connected to the backend in a later step.');
+    try {
+      await registerAccount({ fullName, email, phone, password });
+      navigate('/login', { state: { notice: 'Your account has been created. Please log in.' } });
+    } catch (error) {
+      const apiError = toApiError(error);
+      if (!applyFieldErrors(apiError.fieldErrors, ['fullName', 'email', 'phone', 'password'], setError)) {
+        setSubmitError(apiError.message);
+      }
+    }
   };
 
   return (
@@ -71,7 +80,11 @@ const Register = () => {
           registration={register('confirmPassword')}
         />
 
-        {submitError && <p className={styles.formError}>{submitError}</p>}
+        {submitError && (
+          <p className={styles.formError} role="alert">
+            {submitError}
+          </p>
+        )}
 
         <Button type="submit" fullWidth disabled={isSubmitting}>
           {isSubmitting ? 'Signing up...' : 'Sign Up'}

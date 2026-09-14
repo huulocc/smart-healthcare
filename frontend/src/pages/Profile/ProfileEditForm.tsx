@@ -1,22 +1,27 @@
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { User as UserIcon, Mail, Phone, Calendar, MapPin } from 'lucide-react';
 import Button from '../../components/Button';
 import FormInput from '../../components/FormInput';
+import { updateMyProfile } from '../../api/userApi';
+import { applyFieldErrors, toApiError } from '../../api/errors';
+import type { User } from '../../api/types';
 import { profileSchema, type ProfileFormValues } from '../../schemas/authSchemas';
-import type { User } from '../../data/mockUser';
 import styles from './Profile.module.css';
 
 interface ProfileEditFormProps {
   user: User;
-  onSave: (values: ProfileFormValues) => void;
+  onSaved: (user: User) => void;
   onCancel: () => void;
 }
 
-const ProfileEditForm = ({ user, onSave, onCancel }: ProfileEditFormProps) => {
+const ProfileEditForm = ({ user, onSaved, onCancel }: ProfileEditFormProps) => {
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -24,15 +29,21 @@ const ProfileEditForm = ({ user, onSave, onCancel }: ProfileEditFormProps) => {
       fullName: user.fullName,
       email: user.email,
       phone: user.phone,
-      dob: user.dob,
-      address: user.address,
+      dob: user.dob ?? '',
+      address: user.address ?? '',
     },
   });
 
   const onSubmit = async (values: ProfileFormValues) => {
-    // TODO: connect the real update-profile API in a later step; this only simulates a request for now.
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    onSave(values);
+    setSubmitError(null);
+    try {
+      onSaved(await updateMyProfile(values));
+    } catch (error) {
+      const apiError = toApiError(error);
+      if (!applyFieldErrors(apiError.fieldErrors, ['fullName', 'email', 'phone', 'dob', 'address'], setError)) {
+        setSubmitError(apiError.message);
+      }
+    }
   };
 
   return (
@@ -76,6 +87,12 @@ const ProfileEditForm = ({ user, onSave, onCancel }: ProfileEditFormProps) => {
           error={errors.address?.message}
           registration={register('address')}
         />
+
+        {submitError && (
+          <p className={styles.formError} role="alert">
+            {submitError}
+          </p>
+        )}
 
         <div className={styles.formActions}>
           <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>

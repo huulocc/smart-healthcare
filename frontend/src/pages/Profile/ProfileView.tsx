@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Mail, Phone, Calendar, MapPin, User as UserIcon } from 'lucide-react';
 import Button from '../../components/Button';
-import type { User } from '../../data/mockUser';
+import type { User } from '../../api/types';
 import styles from './Profile.module.css';
 
 interface ProfileViewProps {
@@ -42,14 +42,14 @@ const ProfileView = ({ user, onEdit }: ProfileViewProps) => {
           <Calendar size={18} className={styles.infoIcon} />
           <div>
             <span className={styles.infoLabel}>Date of Birth</span>
-            <p className={styles.infoValue}>{format(new Date(user.dob), 'dd/MM/yyyy')}</p>
+            <p className={styles.infoValue}>{user.dob ? format(new Date(user.dob), 'dd/MM/yyyy') : 'Not provided'}</p>
           </div>
         </div>
         <div className={styles.infoRow}>
           <MapPin size={18} className={styles.infoIcon} />
           <div>
             <span className={styles.infoLabel}>Address</span>
-            <p className={styles.infoValue}>{user.address}</p>
+            <p className={styles.infoValue}>{user.address ?? 'Not provided'}</p>
           </div>
         </div>
       </div>

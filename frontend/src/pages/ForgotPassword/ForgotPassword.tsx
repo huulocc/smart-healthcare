@@ -5,22 +5,32 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Mail, MailCheck } from 'lucide-react';
 import Button from '../../components/Button';
 import FormInput from '../../components/FormInput';
+import { requestPasswordReset } from '../../api/authApi';
+import { applyFieldErrors, toApiError } from '../../api/errors';
 import { forgotPasswordSchema, type ForgotPasswordFormValues } from '../../schemas/authSchemas';
 import styles from './ForgotPassword.module.css';
 
 const ForgotPassword = () => {
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<ForgotPasswordFormValues>({ resolver: zodResolver(forgotPasswordSchema) });
 
   const onSubmit = async (values: ForgotPasswordFormValues) => {
-    // TODO: connect the real forgot-password API in a later step; this only simulates a request for now.
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    console.log('Forgot password submit', values);
-    setSentTo(values.email);
+    setSubmitError(null);
+    try {
+      await requestPasswordReset(values.email);
+      setSentTo(values.email);
+    } catch (error) {
+      const apiError = toApiError(error);
+      if (!applyFieldErrors(apiError.fieldErrors, ['email'], setError)) {
+        setSubmitError(apiError.message);
+      }
+    }
   };
 
   if (sentTo) {
@@ -34,10 +44,7 @@ const ForgotPassword = () => {
           If <strong>{sentTo}</strong> exists in our system, we&apos;ve sent password reset instructions to that
           address.
         </p>
-
-        <Link to="/reset-password" className={styles.demoLink}>
-          Demo: open the reset password link
-        </Link>
+        <p className={styles.hint}>The link expires in 15 minutes. If you can&apos;t find the email, check your spam folder.</p>
 
         <p className={styles.footerText}>
           Remembered your password? <Link to="/login">Log In</Link>
@@ -60,6 +67,12 @@ const ForgotPassword = () => {
           error={errors.email?.message}
           registration={register('email')}
         />
+
+        {submitError && (
+          <p className={styles.formError} role="alert">
+            {submitError}
+          </p>
+        )}
 
         <Button type="submit" fullWidth disabled={isSubmitting}>
           {isSubmitting ? 'Sending...' : 'Send Instructions'}
