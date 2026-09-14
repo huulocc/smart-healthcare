@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Mail, Lock } from 'lucide-react';
+import { Mail, Lock, AlertCircle } from 'lucide-react';
 import Button from '../../components/Button';
 import FormInput from '../../components/FormInput';
+import { DEMO_CREDENTIALS } from '../../data/mockUser';
 import { loginSchema, type LoginFormValues } from '../../schemas/authSchemas';
 import styles from './Login.module.css';
 
 const Login = () => {
+  const navigate = useNavigate();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const {
     register,
@@ -18,28 +20,44 @@ const Login = () => {
 
   const onSubmit = async (values: LoginFormValues) => {
     setSubmitError(null);
-    // TODO: nối API đăng nhập thật ở bước sau; hiện chỉ giả lập request.
+    // TODO: replace this mock credential check with the real login API.
     await new Promise((resolve) => setTimeout(resolve, 800));
-    console.log('Login submit', values);
-    setSubmitError('Chức năng đăng nhập sẽ được kết nối ở bước tiếp theo.');
+
+    const isValidAccount =
+      values.email.trim().toLowerCase() === DEMO_CREDENTIALS.email &&
+      values.password === DEMO_CREDENTIALS.password;
+
+    if (!isValidAccount) {
+      setSubmitError('Invalid email or password. Please try again.');
+      return;
+    }
+
+    navigate('/profile');
   };
 
   return (
     <div className={styles.wrapper}>
-      <h1 className={styles.title}>Đăng nhập</h1>
-      <p className={styles.subtitle}>Chào mừng bạn quay lại Smart Healthcare</p>
+      <h1 className={styles.title}>Log In</h1>
+      <p className={styles.subtitle}>Welcome back to Smart Healthcare</p>
 
       <form className={styles.form} onSubmit={handleSubmit(onSubmit)} noValidate>
+        {submitError && (
+          <div className={styles.formError} role="alert">
+            <AlertCircle size={18} className={styles.formErrorIcon} />
+            <span>{submitError}</span>
+          </div>
+        )}
+
         <FormInput
           label="Email"
           type="email"
-          placeholder="ban@example.com"
+          placeholder="you@example.com"
           icon={Mail}
           error={errors.email?.message}
           registration={register('email')}
         />
         <FormInput
-          label="Mật khẩu"
+          label="Password"
           type="password"
           placeholder="••••••••"
           icon={Lock}
@@ -49,19 +67,21 @@ const Login = () => {
 
         <div className={styles.forgotRow}>
           <Link to="/forgot-password" className={styles.forgotLink}>
-            Quên mật khẩu?
+            Forgot password?
           </Link>
         </div>
 
-        {submitError && <p className={styles.formError}>{submitError}</p>}
-
         <Button type="submit" fullWidth disabled={isSubmitting}>
-          {isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
+          {isSubmitting ? 'Logging in...' : 'Log In'}
         </Button>
       </form>
 
+      <p className={styles.demoHint}>
+        Demo account: <strong>{DEMO_CREDENTIALS.email}</strong> / <strong>{DEMO_CREDENTIALS.password}</strong>
+      </p>
+
       <p className={styles.footerText}>
-        Chưa có tài khoản? <Link to="/register">Đăng ký</Link>
+        Don&apos;t have an account? <Link to="/register">Sign Up</Link>
       </p>
     </div>
   );

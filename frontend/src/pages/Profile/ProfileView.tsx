@@ -19,7 +19,7 @@ const ProfileView = ({ user, onEdit }: ProfileViewProps) => {
         </div>
         <div>
           <h1 className={styles.name}>{user.fullName}</h1>
-          <p className={styles.subtitle}>Hồ sơ bệnh nhân</p>
+          <p className={styles.subtitle}>Patient Profile</p>
         </div>
       </div>
 
@@ -34,21 +34,21 @@ const ProfileView = ({ user, onEdit }: ProfileViewProps) => {
         <div className={styles.infoRow}>
           <Phone size={18} className={styles.infoIcon} />
           <div>
-            <span className={styles.infoLabel}>Số điện thoại</span>
+            <span className={styles.infoLabel}>Phone Number</span>
             <p className={styles.infoValue}>{user.phone}</p>
           </div>
         </div>
         <div className={styles.infoRow}>
           <Calendar size={18} className={styles.infoIcon} />
           <div>
-            <span className={styles.infoLabel}>Ngày sinh</span>
+            <span className={styles.infoLabel}>Date of Birth</span>
             <p className={styles.infoValue}>{format(new Date(user.dob), 'dd/MM/yyyy')}</p>
           </div>
         </div>
         <div className={styles.infoRow}>
           <MapPin size={18} className={styles.infoIcon} />
           <div>
-            <span className={styles.infoLabel}>Địa chỉ</span>
+            <span className={styles.infoLabel}>Address</span>
             <p className={styles.infoValue}>{user.address}</p>
           </div>
         </div>
@@ -56,10 +56,10 @@ const ProfileView = ({ user, onEdit }: ProfileViewProps) => {
 
       <div className={styles.actions}>
         <Button variant="outline" onClick={onEdit}>
-          Chỉnh sửa hồ sơ
+          Edit Profile
         </Button>
         <Link to="/profile/change-password" className={styles.changePasswordLink}>
-          Đổi mật khẩu
+          Change Password
         </Link>
       </div>
     </div>

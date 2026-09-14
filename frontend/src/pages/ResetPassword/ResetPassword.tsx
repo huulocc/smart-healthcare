@@ -18,7 +18,7 @@ const ResetPassword = () => {
   } = useForm<ResetPasswordFormValues>({ resolver: zodResolver(resetPasswordSchema) });
 
   const onSubmit = async (values: ResetPasswordFormValues) => {
-    // TODO: nối API đặt lại mật khẩu thật ở bước sau; hiện chỉ giả lập request.
+    // TODO: connect the real reset-password API in a later step; this only simulates a request for now.
     await new Promise((resolve) => setTimeout(resolve, 800));
     console.log('Reset password submit', values);
     setIsDone(true);
@@ -30,10 +30,10 @@ const ResetPassword = () => {
         <div className={styles.doneIcon}>
           <CheckCircle2 size={32} />
         </div>
-        <h1 className={styles.title}>Đặt lại mật khẩu thành công</h1>
-        <p className={styles.subtitle}>Bạn có thể đăng nhập bằng mật khẩu mới ngay bây giờ.</p>
+        <h1 className={styles.title}>Password Reset Successful</h1>
+        <p className={styles.subtitle}>You can now log in with your new password.</p>
         <Button fullWidth onClick={() => navigate('/login')}>
-          Đến trang đăng nhập
+          Go to Login
         </Button>
       </div>
     );
@@ -41,12 +41,12 @@ const ResetPassword = () => {
 
   return (
     <div className={styles.wrapper}>
-      <h1 className={styles.title}>Đặt lại mật khẩu</h1>
-      <p className={styles.subtitle}>Nhập mật khẩu mới cho tài khoản của bạn.</p>
+      <h1 className={styles.title}>Reset Password</h1>
+      <p className={styles.subtitle}>Enter a new password for your account.</p>
 
       <form className={styles.form} onSubmit={handleSubmit(onSubmit)} noValidate>
         <FormInput
-          label="Mật khẩu mới"
+          label="New Password"
           type="password"
           placeholder="••••••••"
           icon={Lock}
@@ -54,7 +54,7 @@ const ResetPassword = () => {
           registration={register('newPassword')}
         />
         <FormInput
-          label="Xác nhận mật khẩu mới"
+          label="Confirm New Password"
           type="password"
           placeholder="••••••••"
           icon={Lock}
@@ -63,12 +63,12 @@ const ResetPassword = () => {
         />
 
         <Button type="submit" fullWidth disabled={isSubmitting}>
-          {isSubmitting ? 'Đang lưu...' : 'Đặt lại mật khẩu'}
+          {isSubmitting ? 'Saving...' : 'Reset Password'}
         </Button>
       </form>
 
       <p className={styles.footerText}>
-        Nhớ ra mật khẩu rồi? <Link to="/login">Đăng nhập</Link>
+        Remembered your password? <Link to="/login">Log In</Link>
       </p>
     </div>
   );

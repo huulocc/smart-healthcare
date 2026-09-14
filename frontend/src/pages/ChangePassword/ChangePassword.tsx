@@ -16,7 +16,7 @@ const ChangePassword = () => {
   } = useForm<ChangePasswordFormValues>({ resolver: zodResolver(changePasswordSchema) });
 
   const onSubmit = async (values: ChangePasswordFormValues) => {
-    // TODO: nối API đổi mật khẩu thật ở bước sau; hiện chỉ giả lập request.
+    // TODO: connect the real change-password API in a later step; this only simulates a request for now.
     await new Promise((resolve) => setTimeout(resolve, 800));
     console.log('Change password submit', values);
     navigate('/profile');
@@ -26,12 +26,12 @@ const ChangePassword = () => {
     <div className={styles.page}>
       <div className="container">
         <div className={styles.card}>
-          <h1 className={styles.title}>Đổi mật khẩu</h1>
-          <p className={styles.subtitle}>Cập nhật mật khẩu đăng nhập cho tài khoản của bạn</p>
+          <h1 className={styles.title}>Change Password</h1>
+          <p className={styles.subtitle}>Update the password for your account</p>
 
           <form className={styles.form} onSubmit={handleSubmit(onSubmit)} noValidate>
             <FormInput
-              label="Mật khẩu hiện tại"
+              label="Current Password"
               type="password"
               placeholder="••••••••"
               icon={Lock}
@@ -39,7 +39,7 @@ const ChangePassword = () => {
               registration={register('currentPassword')}
             />
             <FormInput
-              label="Mật khẩu mới"
+              label="New Password"
               type="password"
               placeholder="••••••••"
               icon={Lock}
@@ -47,7 +47,7 @@ const ChangePassword = () => {
               registration={register('newPassword')}
             />
             <FormInput
-              label="Xác nhận mật khẩu mới"
+              label="Confirm New Password"
               type="password"
               placeholder="••••••••"
               icon={Lock}
@@ -57,10 +57,10 @@ const ChangePassword = () => {
 
             <div className={styles.formActions}>
               <Link to="/profile" className={styles.cancelLink}>
-                Hủy
+                Cancel
               </Link>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Đang lưu...' : 'Lưu mật khẩu mới'}
+                {isSubmitting ? 'Saving...' : 'Save New Password'}
               </Button>
             </div>
           </form>
