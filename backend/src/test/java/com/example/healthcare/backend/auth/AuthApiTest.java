@@ -44,6 +44,25 @@ class AuthApiTest extends ApiTestSupport {
 	}
 
 	@Test
+	void signingUpAsADoctorOnlyStoresTheRequest() throws Exception {
+		postJson("/api/auth/register", """
+				{"fullName":"Doctor Tester","email":"%s","phone":"0901234567","password":"%s","role":"DOCTOR"}
+				""".formatted(uniqueEmail(), PASSWORD))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.role").value("PATIENT"))
+				.andExpect(jsonPath("$.requestedRole").value("DOCTOR"));
+	}
+
+	@Test
+	void adminAccountsCannotBeRequestedAtSignUp() throws Exception {
+		postJson("/api/auth/register", """
+				{"fullName":"Sneaky Tester","email":"%s","phone":"0901234567","password":"%s","role":"ADMIN"}
+				""".formatted(uniqueEmail(), PASSWORD))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors.role").value("You cannot request an admin account"));
+	}
+
+	@Test
 	void loginReturnsATokenThatOpensTheCurrentUserEndpoint() throws Exception {
 		String email = uniqueEmail();
 		String token = registerAndLogin(email);
@@ -64,6 +83,30 @@ class AuthApiTest extends ApiTestSupport {
 		login(uniqueEmail(), PASSWORD)
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.detail").value("Invalid email or password."));
+	}
+
+	@Test
+	void rememberMeMakesTheTokenLastThirtyDaysInsteadOfOneHour() throws Exception {
+		String email = uniqueEmail();
+		registerAndLogin(email);
+
+		login(email, PASSWORD)
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.expiresIn").value(3600));
+
+		postJson("/api/auth/login", """
+				{"email":"%s","password":"%s","rememberMe":true}
+				""".formatted(email, PASSWORD))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.expiresIn").value(2592000));
+	}
+
+	@Test
+	void googleSignInStaysOffUntilAClientIdIsConfigured() throws Exception {
+		postJson("/api/auth/google", """
+				{"credential":"not-a-real-google-token"}
+				""")
+				.andExpect(status().isServiceUnavailable());
 	}
 
 	@Test

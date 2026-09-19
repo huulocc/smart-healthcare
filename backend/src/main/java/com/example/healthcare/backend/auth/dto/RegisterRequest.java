@@ -1,5 +1,7 @@
 package com.example.healthcare.backend.auth.dto;
 
+import com.example.healthcare.backend.user.Role;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -21,5 +23,8 @@ public record RegisterRequest(
 		// BCrypt only uses the first 72 bytes of a password.
 		@NotBlank(message = "Please enter a password")
 		@Size(min = 6, max = 72, message = "Password must be between 6 and 72 characters")
-		String password) {
+		String password,
+
+		// PATIENT or DOCTOR; null means PATIENT. A DOCTOR request still needs admin approval.
+		Role role) {
 }

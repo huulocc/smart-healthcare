@@ -12,7 +12,9 @@ public record UserResponse(
 		String phone,
 		LocalDate dob,
 		String address,
-		Role role) {
+		Role role,
+		Role requestedRole,
+		boolean emailVerified) {
 
 	public static UserResponse from(User user) {
 		return new UserResponse(
@@ -22,6 +24,8 @@ public record UserResponse(
 				user.getPhone(),
 				user.getDob(),
 				user.getAddress(),
-				user.getRole());
+				user.getRole(),
+				user.getRequestedRole(),
+				user.isEmailVerified());
 	}
 }

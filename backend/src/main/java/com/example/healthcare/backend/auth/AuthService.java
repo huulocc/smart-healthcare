@@ -9,6 +9,7 @@ import com.example.healthcare.backend.auth.dto.LoginRequest;
 import com.example.healthcare.backend.auth.dto.LoginResponse;
 import com.example.healthcare.backend.auth.dto.RegisterRequest;
 import com.example.healthcare.backend.auth.jwt.JwtService;
+import com.example.healthcare.backend.auth.verify.EmailVerificationService;
 import com.example.healthcare.backend.common.ApiException;
 import com.example.healthcare.backend.common.Emails;
 import com.example.healthcare.backend.user.Role;
@@ -22,9 +23,13 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuthService {
 
+	public static final String NOT_VERIFIED_MESSAGE =
+			"Please activate your account first. We sent an activation link to your email.";
+
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtService jwtService;
+	private final EmailVerificationService emailVerificationService;
 
 	@Transactional
 	public UserResponse register(RegisterRequest request) {
@@ -33,14 +38,26 @@ public class AuthService {
 			throw new ApiException(HttpStatus.CONFLICT, "This email is already registered", "email");
 		}
 
+		Role requestedRole = request.role() == null ? Role.PATIENT : request.role();
+		if (requestedRole == Role.ADMIN) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "You cannot request an admin account", "role");
+		}
+
 		User user = new User();
 		user.setFullName(request.fullName().trim());
 		user.setEmail(email);
 		user.setPhone(request.phone());
 		user.setPasswordHash(passwordEncoder.encode(request.password()));
+		// Everyone starts as a patient. A doctor request is only a request until an admin approves it.
 		user.setRole(Role.PATIENT);
+		user.setRequestedRole(requestedRole);
+		// The account exists but cannot log in until the link in the email is opened.
+		user.setEmailVerified(false);
 
-		return UserResponse.from(userRepository.save(user));
+		User saved = userRepository.save(user);
+		emailVerificationService.sendVerificationLink(saved);
+
+		return UserResponse.from(saved);
 	}
 
 	@Transactional(readOnly = true)
@@ -50,10 +67,20 @@ public class AuthService {
 				.filter(found -> passwordEncoder.matches(request.password(), found.getPasswordHash()))
 				.orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Invalid email or password."));
 
+		if (!user.isEmailVerified()) {
+			// 403, not 401: the password was right, the account is simply not active yet.
+			throw new ApiException(HttpStatus.FORBIDDEN, NOT_VERIFIED_MESSAGE);
+		}
+
+		return issueLogin(user, request.isRememberMe());
+	}
+
+	/** Builds the answer the frontend expects after any successful login, including Google. */
+	public LoginResponse issueLogin(User user, boolean rememberMe) {
 		return new LoginResponse(
-				jwtService.generateToken(user),
+				jwtService.generateToken(user, rememberMe),
 				"Bearer",
-				jwtService.getExpirationSeconds(),
+				jwtService.getExpirationSeconds(rememberMe),
 				UserResponse.from(user));
 	}
 }

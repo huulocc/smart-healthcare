@@ -1,13 +1,7 @@
 package com.example.healthcare.backend.auth.reset;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Base64;
-import java.util.HexFormat;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.healthcare.backend.common.ApiException;
 import com.example.healthcare.backend.common.Emails;
+import com.example.healthcare.backend.common.Tokens;
 import com.example.healthcare.backend.user.User;
 import com.example.healthcare.backend.user.UserRepository;
 
@@ -25,8 +20,6 @@ import com.example.healthcare.backend.user.UserRepository;
 public class PasswordResetService {
 
 	public static final Duration TOKEN_LIFETIME = Duration.ofMinutes(15);
-
-	private static final SecureRandom RANDOM = new SecureRandom();
 
 	private final UserRepository userRepository;
 	private final PasswordResetTokenRepository tokenRepository;
@@ -59,10 +52,10 @@ public class PasswordResetService {
 		Instant now = Instant.now();
 		tokenRepository.invalidateUnusedTokens(user, now);
 
-		String rawToken = generateRawToken();
+		String rawToken = Tokens.newRawToken();
 		PasswordResetToken token = new PasswordResetToken();
 		token.setUser(user);
-		token.setTokenHash(hash(rawToken));
+		token.setTokenHash(Tokens.hash(rawToken));
 		token.setExpiresAt(now.plus(TOKEN_LIFETIME));
 		tokenRepository.save(token);
 
@@ -72,27 +65,15 @@ public class PasswordResetService {
 	@Transactional
 	public void resetPassword(String rawToken, String newPassword) {
 		Instant now = Instant.now();
-		PasswordResetToken token = tokenRepository.findByTokenHash(hash(rawToken))
+		PasswordResetToken token = tokenRepository.findByTokenHash(Tokens.hash(rawToken))
 				.filter(found -> found.isUsable(now))
 				.orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST,
 						"This reset link is invalid or has expired. Please request a new one."));
 
-		token.getUser().setPasswordHash(passwordEncoder.encode(newPassword));
+		User user = token.getUser();
+		user.setPasswordHash(passwordEncoder.encode(newPassword));
+		// Opening this link proves the address belongs to them, so the account counts as activated.
+		user.setEmailVerified(true);
 		token.setUsedAt(now);
-	}
-
-	private static String generateRawToken() {
-		byte[] bytes = new byte[32];
-		RANDOM.nextBytes(bytes);
-		return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-	}
-
-	private static String hash(String rawToken) {
-		try {
-			byte[] digest = MessageDigest.getInstance("SHA-256").digest(rawToken.getBytes(StandardCharsets.UTF_8));
-			return HexFormat.of().formatHex(digest);
-		} catch (NoSuchAlgorithmException ex) {
-			throw new IllegalStateException("SHA-256 is always available in the JDK", ex);
-		}
 	}
 }

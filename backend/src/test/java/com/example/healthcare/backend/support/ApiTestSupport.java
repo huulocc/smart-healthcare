@@ -15,6 +15,8 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import com.example.healthcare.backend.user.User;
+import com.example.healthcare.backend.user.UserRepository;
 import com.jayway.jsonpath.JsonPath;
 
 /** Starts the whole app on an in-memory H2 database and calls the REST API like the React app does. */
@@ -27,6 +29,9 @@ public abstract class ApiTestSupport {
 
 	@Autowired
 	protected MockMvc mockMvc;
+
+	@Autowired
+	protected UserRepository userRepository;
 
 	/** Tests share one database, so every test needs its own email address. */
 	protected static String uniqueEmail() {
@@ -45,9 +50,17 @@ public abstract class ApiTestSupport {
 				""".formatted(email, password));
 	}
 
-	/** Registers a new account and returns a valid access token for it. */
+	/** Does what opening the activation link does, so a test account can log in. */
+	protected void activate(String email) {
+		User user = userRepository.findByEmail(email).orElseThrow();
+		user.setEmailVerified(true);
+		userRepository.save(user);
+	}
+
+	/** Registers a new account, activates it and returns a valid access token for it. */
 	protected String registerAndLogin(String email) throws Exception {
 		register(email, PASSWORD).andExpect(status().isCreated());
+		activate(email);
 		String body = login(email, PASSWORD).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 		return JsonPath.read(body, "$.accessToken");
 	}

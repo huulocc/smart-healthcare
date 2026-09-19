@@ -46,6 +46,7 @@ class PasswordResetFlowTest {
 		String token = requestResetAndCaptureToken("once@example.com");
 
 		resetPassword(token, "brandNew123").andExpect(status().isNoContent());
+		// The reset link also activates the account, so the new password logs in straight away.
 		login("once@example.com", "brandNew123").andExpect(status().isOk());
 		login("once@example.com", "password123").andExpect(status().isUnauthorized());
 		resetPassword(token, "another123").andExpect(status().isBadRequest());

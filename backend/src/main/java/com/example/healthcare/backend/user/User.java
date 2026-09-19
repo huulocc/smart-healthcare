@@ -49,6 +49,15 @@ public class User {
 	@Column(nullable = false, length = 20)
 	private Role role;
 
+	// What the user asked to be at sign-up. Only an admin may turn it into the real role.
+	@Enumerated(EnumType.STRING)
+	@Column(length = 20)
+	private Role requestedRole;
+
+	// Nullable so accounts created before this feature existed are not locked out;
+	// EmailVerificationBackfill turns those nulls into true on the next start-up.
+	private Boolean emailVerified;
+
 	@CreationTimestamp
 	@Column(nullable = false, updatable = false)
 	private Instant createdAt;
@@ -56,4 +65,8 @@ public class User {
 	@UpdateTimestamp
 	@Column(nullable = false)
 	private Instant updatedAt;
+
+	public boolean isEmailVerified() {
+		return Boolean.TRUE.equals(emailVerified);
+	}
 }

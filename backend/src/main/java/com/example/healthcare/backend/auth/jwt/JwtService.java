@@ -23,22 +23,30 @@ public class JwtService {
 
 	private final SecretKey key;
 	private final long expirationSeconds;
+	private final long rememberMeExpirationSeconds;
 
 	public JwtService(
 			@Value("${app.jwt.secret}") String secret,
-			@Value("${app.jwt.expiration-seconds}") long expirationSeconds) {
+			@Value("${app.jwt.expiration-seconds}") long expirationSeconds,
+			@Value("${app.jwt.remember-me-expiration-seconds}") long rememberMeExpirationSeconds) {
 		this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
 		this.expirationSeconds = expirationSeconds;
+		this.rememberMeExpirationSeconds = rememberMeExpirationSeconds;
 	}
 
 	public String generateToken(User user) {
+		return generateToken(user, false);
+	}
+
+	/** A token from "remember me" lives for 30 days instead of one hour. */
+	public String generateToken(User user, boolean rememberMe) {
 		Instant now = Instant.now();
 		return Jwts.builder()
 				.subject(user.getId().toString())
 				.claim("email", user.getEmail())
 				.claim("role", user.getRole().name())
 				.issuedAt(Date.from(now))
-				.expiration(Date.from(now.plusSeconds(expirationSeconds)))
+				.expiration(Date.from(now.plusSeconds(getExpirationSeconds(rememberMe))))
 				.signWith(key, Jwts.SIG.HS256)
 				.compact();
 	}
@@ -63,5 +71,9 @@ public class JwtService {
 
 	public long getExpirationSeconds() {
 		return expirationSeconds;
+	}
+
+	public long getExpirationSeconds(boolean rememberMe) {
+		return rememberMe ? rememberMeExpirationSeconds : expirationSeconds;
 	}
 }
