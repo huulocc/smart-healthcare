@@ -36,27 +36,31 @@ const ForgotPassword = () => {
   if (sentTo) {
     return (
       <div className={styles.wrapper}>
-        <div className={styles.sentIcon}>
-          <MailCheck size={32} />
+        <div className={styles.icon}>
+          <MailCheck size={20} />
         </div>
-        <h1 className={styles.title}>Check your email</h1>
-        <p className={styles.subtitle}>
-          If <strong>{sentTo}</strong> exists in our system, we&apos;ve sent password reset instructions to that
-          address.
-        </p>
-        <p className={styles.hint}>The link expires in 15 minutes. If you can&apos;t find the email, check your spam folder.</p>
-
-        <p className={styles.footerText}>
-          Remembered your password? <Link to="/login">Log In</Link>
-        </p>
+        <header className={styles.intro}>
+          <h2 className={styles.title}>Check your email</h2>
+          <p className={styles.subtitle}>
+            If <strong>{sentTo}</strong> exists in our system, we&apos;ve sent password reset instructions to that
+            address. The link expires in 15 minutes.
+          </p>
+        </header>
+        <Button variant="outline" to="/login">
+          Back to log in
+        </Button>
       </div>
     );
   }
 
   return (
     <div className={styles.wrapper}>
-      <h1 className={styles.title}>Forgot Password?</h1>
-      <p className={styles.subtitle}>Enter your registered email and we&apos;ll send you reset instructions.</p>
+      <header className={styles.intro}>
+        <h2 className={styles.title}>Reset your password</h2>
+        <p className={styles.subtitle}>
+          Enter the email you signed up with and we&apos;ll send you a link to reset your password.
+        </p>
+      </header>
 
       <form className={styles.form} onSubmit={handleSubmit(onSubmit)} noValidate>
         <FormInput
@@ -74,9 +78,14 @@ const ForgotPassword = () => {
           </p>
         )}
 
-        <Button type="submit" fullWidth disabled={isSubmitting}>
-          {isSubmitting ? 'Sending...' : 'Send Instructions'}
-        </Button>
+        <div className={styles.actions}>
+          <Button type="submit" fullWidth loading={isSubmitting}>
+            {isSubmitting ? 'Sending...' : 'Send link'}
+          </Button>
+          <Button variant="outline" fullWidth to="/login">
+            Back to log in
+          </Button>
+        </div>
       </form>
 
       <p className={styles.footerText}>

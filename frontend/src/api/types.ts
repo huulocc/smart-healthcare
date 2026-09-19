@@ -8,6 +8,10 @@ export interface User {
   dob: string | null;
   address: string | null;
   role: Role;
+  /** What the user asked to be at sign-up; becomes the real role only after an admin approves. */
+  requestedRole: Role | null;
+  /** False until the activation link sent by email has been opened. */
+  emailVerified: boolean;
 }
 
 export interface LoginResponse {

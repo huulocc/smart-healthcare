@@ -1,0 +1,32 @@
+.track {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--auth-tab-track);
+  border-radius: 12px;
+}
+
+.tab {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 9px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-family: inherit;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.tab:hover {
+  color: var(--text-main);
+}
+
+.active {
+  background: var(--bg-surface);
+  color: var(--text-main);
+  box-shadow: 0 1px 3px rgba(60, 45, 20, 0.12);
+}

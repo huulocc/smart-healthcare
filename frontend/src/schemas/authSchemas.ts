@@ -3,6 +3,7 @@ import { z } from 'zod';
 export const loginSchema = z.object({
   email: z.string().min(1, 'Please enter your email').email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
+  rememberMe: z.boolean().optional(),
 });
 
 export type LoginFormValues = z.infer<typeof loginSchema>;
@@ -17,6 +18,9 @@ export const registerSchema = z
       .regex(/^(0|\+84)[0-9]{9,10}$/, 'Invalid phone number'),
     password: z.string().min(6, 'Password must be at least 6 characters'),
     confirmPassword: z.string().min(1, 'Please confirm your password'),
+    agreeTerms: z.boolean().refine((accepted) => accepted, {
+      message: 'You must accept the terms to continue',
+    }),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',

@@ -2,9 +2,21 @@ import axios, { isAxiosError } from 'axios';
 
 const TOKEN_KEY = 'smart-healthcare.accessToken';
 
-export const getStoredToken = () => localStorage.getItem(TOKEN_KEY);
-export const storeToken = (token: string) => localStorage.setItem(TOKEN_KEY, token);
-export const clearStoredToken = () => localStorage.removeItem(TOKEN_KEY);
+/**
+ * With "remember me" the token goes to localStorage, so it survives closing the browser.
+ * Without it the token goes to sessionStorage and disappears when the tab is closed.
+ */
+export const getStoredToken = () => localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(TOKEN_KEY);
+
+export const storeToken = (token: string, rememberMe: boolean) => {
+  clearStoredToken();
+  (rememberMe ? localStorage : sessionStorage).setItem(TOKEN_KEY, token);
+};
+
+export const clearStoredToken = () => {
+  localStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
+};
 
 // '/api' is forwarded to the Spring Boot backend by the Vite dev server (see vite.config.ts).
 export const apiClient = axios.create({ baseURL: '/api' });

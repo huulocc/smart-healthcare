@@ -7,12 +7,12 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home/Home';
 import Departments from './pages/Departments/Departments';
 import Doctors from './pages/Doctors/Doctors';
-import Login from './pages/Login/Login';
-import Register from './pages/Register/Register';
+import AuthPage from './pages/Auth/AuthPage';
 import Profile from './pages/Profile/Profile';
 import ChangePassword from './pages/ChangePassword/ChangePassword';
 import ForgotPassword from './pages/ForgotPassword/ForgotPassword';
 import ResetPassword from './pages/ResetPassword/ResetPassword';
+import VerifyEmail from './pages/VerifyEmail/VerifyEmail';
 import AdminLayout from './components/admin/AdminLayout';
 import AdminDashboard from './components/admin/AdminDashboard';
 import AdminManagementPage from './components/admin/AdminManagementPage';
@@ -29,10 +29,11 @@ function App() {
     <Route path="/" element={<PublicPage><Home /></PublicPage>} />
     <Route path="/departments" element={<PublicPage><Departments /></PublicPage>} />
     <Route path="/doctors" element={<PublicPage><Doctors /></PublicPage>} />
-    <Route path="/login" element={<AuthLayout><Login /></AuthLayout>} />
-    <Route path="/register" element={<AuthLayout><Register /></AuthLayout>} />
+    <Route path="/login" element={<AuthLayout><AuthPage /></AuthLayout>} />
+    <Route path="/register" element={<AuthLayout><AuthPage /></AuthLayout>} />
     <Route path="/forgot-password" element={<AuthLayout><ForgotPassword /></AuthLayout>} />
     <Route path="/reset-password" element={<AuthLayout><ResetPassword /></AuthLayout>} />
+    <Route path="/verify-email" element={<AuthLayout><VerifyEmail /></AuthLayout>} />
     <Route path="/profile" element={<ProtectedRoute><PublicPage><Profile /></PublicPage></ProtectedRoute>} />
     <Route path="/profile/change-password" element={<ProtectedRoute><PublicPage><ChangePassword /></PublicPage></ProtectedRoute>} />
     <Route path="/admin" element={<AdminLayout />}>

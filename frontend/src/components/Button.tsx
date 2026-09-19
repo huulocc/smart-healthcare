@@ -7,6 +7,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   fullWidth?: boolean;
+  /** Shows a spinner and blocks clicks while a request is running. */
+  loading?: boolean;
   to?: string;
 }
 
@@ -15,6 +17,7 @@ const Button = ({
   variant = 'primary',
   size = 'md',
   fullWidth = false,
+  loading = false,
   className = '',
   to,
   ...props
@@ -32,7 +35,8 @@ const Button = ({
   }
 
   return (
-    <button className={btnClass} {...props}>
+    <button className={btnClass} disabled={loading || props.disabled} {...props}>
+      {loading && <span className={styles.spinner} aria-hidden="true" />}
       {children}
     </button>
   );
