@@ -4,7 +4,7 @@
 **Author:** Tran Quoc Huy (GitHub: `LotusTranQuocHuy`)
 **Branches / PRs:**
 - `feature/UI-auth-and-profile` → PR #3 (merged into `main` by `huulocc`), then English translation, login error state, this document
-- `feature/backend-auth` → backend + connecting the pages to the real API (includes the branch above)
+- `feature/backend-auth` → backend + connecting the pages to the real API (includes the branch above) + phase 3
 
 ---
 
@@ -15,6 +15,7 @@ I built the **account part** of the app with help from an AI coding assistant:
 
 - **Phase 1 – UI:** React screens with mock data and form validation (`react-hook-form` + `zod`).
 - **Phase 2 – Backend:** Spring Boot REST API with MySQL, BCrypt passwords, JWT login and password reset by email. The React pages now call this API. The mock data is gone.
+- **Phase 3 – Redesign + 3 extra features:** new look for the sign-in screens (from a Claude Design handoff), plus **remember me for 30 days**, **email verification at sign-up** and **Continue with Google**. See section 11.
 - The rest of the app (Home, Departments, Doctors, Footer, AI chat widget, Admin) was built by teammates and is **not** part of this AI record. I only made a small change to the teammates' `Navbar.tsx` (Profile / Log Out when logged in).
 
 ---
@@ -252,7 +253,54 @@ useEffect(() => {
 ## 10. Known limitations
 - The JWT is stored in `localStorage`: simple, but a script injected into the page (XSS) could read it. An httpOnly cookie would be safer.
 - After a password change, an old token still works until it expires (max 1 hour).
-- The reset email is sent inside the request, so it takes 1–3 s longer for a registered email.
+- The reset and activation emails are sent inside the request, so sign-up and "forgot password" take 1–3 s longer (up to ~6 s if the address is not deliverable). Sending them in the background (`@Async`) would fix this.
 - Tables are created by Hibernate (`ddl-auto=update`), not by migration scripts.
-- `/admin` pages are not protected yet (teammates' part).
+- `/admin` pages are not protected yet (teammates' part), and nothing in the app lets an admin approve a doctor request yet — `requestedRole` is only stored.
 - `npm run build` stops at old TypeScript errors in teammates' files (`Button.tsx`, `MainLayout.tsx`, `DoctorsSection.tsx`); `npx vite build` works.
+
+---
+
+## 11. Phase 3 — redesign and three extra sign-in features
+
+**Input:** a design handoff I generated with Claude Design (`Auth.dc.html` + `README.md`), which proposed a new look and a few new features. I chose what to keep.
+
+### 11.1 My decisions
+- The new palette (`#3b4cc0`) and the Plus Jakarta Sans font apply to **Log In / Sign Up / Forgot password only**. The rest of the site keeps the teal-blue theme my teammates use.
+- All text stays **English**, even though the handoff was written in Vietnamese, because of the review comment on PR #3.
+- Log In and Sign Up became **one page with two tabs** instead of two separate pages.
+- The password minimum stays **6 characters**.
+- The show/hide password control stays an **eye icon**.
+- Choosing "Doctor" at sign-up is only a **request**: an admin has to approve it.
+- Build all three extra features for real (frontend *and* backend), not just the UI.
+
+### 11.2 AI-generated code (reviewed by me)
+
+| File | Purpose |
+|---|---|
+| `frontend/src/pages/Auth/AuthPage.tsx` | One page holding both forms; the tabs swap the form in place while `/login` and `/register` keep working |
+| `frontend/src/components/AuthTabs.tsx` | The Log In / Sign Up pill switcher |
+| `frontend/src/components/GoogleSignInButton.tsx` | Loads Google Identity Services once and renders Google's button |
+| `frontend/src/components/ResendVerification.tsx` | "Send a new activation link", reused on Log In and after signing up |
+| `frontend/src/pages/VerifyEmail/VerifyEmail.tsx` | The page the activation link opens |
+| `backend/.../common/Tokens.java` | Random token + SHA-256 hash, shared by password reset and email verification |
+| `backend/.../common/Mailer.java` | One place that sends email, or logs the link when Gmail is not configured |
+| `backend/.../auth/verify/` | Activation token entity, repository, service and mailer |
+| `backend/.../auth/google/` | Verifies the Google ID token and creates or finds the account |
+| `backend/.../user/EmailVerificationBackfill.java` | Marks accounts created before this feature as already verified |
+
+### 11.3 How each feature works
+
+- **Remember me (30 days).** The checkbox is sent to `POST /api/auth/login`. With it the JWT lasts 30 days and the token is kept in `localStorage`; without it the JWT lasts 1 hour and the token goes to `sessionStorage`, so closing the tab logs the user out.
+- **Email verification.** Sign-up saves the account with `emailVerified = false` and emails a link that lives 24 hours and works once. Logging in before that returns **403** with a banner and a "Send a new activation link" button. Opening a password reset link also activates the account, because it proves the address belongs to the user.
+- **Continue with Google.** The browser gets an ID token from Google and posts it to `POST /api/auth/google`. The server asks Google to decode it (which proves the signature) and then checks that the `aud` claim is our own client ID — without that check a token issued for another app would be accepted. Known email → log in; new email → create a patient account. The button is hidden until `VITE_GOOGLE_CLIENT_ID` is set.
+
+### 11.4 Security points I checked
+- A `role: "ADMIN"` sent by hand at sign-up is rejected with 400; a "Doctor" request is stored in `requestedRole` while the real `role` stays `PATIENT`.
+- Only the SHA-256 of an activation token is stored, never the token itself.
+- "Resend activation link" answers **202** for an unknown or already-active address, so it cannot be used to find out who has an account.
+- Accounts created through Google get a random password hash that matches nothing; the user must use "Forgot password" to set a real one.
+- The OAuth client ID lives in `backend/.env` and `frontend/.env.local`, both ignored by git.
+
+### 11.5 Tests
+- `mvnw.cmd test`: **25 tests, all passing** (6 new ones: doctor request, admin request rejected, remember-me lifetime, Google turned off, and four for the activation flow).
+- Checked by hand in the browser: the tabs, the sign-up "Check your email" panel, the 403 banner with resend, the three states of the activation page, where the token is stored with and without "remember me", the Google button appearing and disappearing with the client ID, and 375 px width.
