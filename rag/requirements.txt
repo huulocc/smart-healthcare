@@ -5,6 +5,10 @@ pypdf>=6.0
 chromadb>=1.5
 PyYAML>=6.0
 
+# rag/server.py only - the CLI and evaluate.py do not need these.
+fastapi>=0.115
+uvicorn>=0.30
+
 # Also required, outside pip:
 #   ollama            https://ollama.com
 #   ollama pull nomic-embed-text

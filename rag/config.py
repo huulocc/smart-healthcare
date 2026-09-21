@@ -31,8 +31,14 @@ PASSAGE_PREFIX = "search_document: "
 QUERY_PREFIX = "search_query: "
 
 LLM_MODEL = "qwen3"
-LLM_THINK = True       # see README "Hillclimb": think=False truncated Q23's safety
-                       # steps; enabling thinking restored all four. Costs ~5x time.
+# KNOWN TRADEOFF - see README "Serving the chat" before changing this.
+#   think=True : 29/30 answers correct, but 82-237s per question. Unusable in a
+#                chat widget, and slow enough that the Vite proxy times out.
+#   think=False: ~5s, but 27/30 - Q23 drops "call for an ambulance" and "repeat
+#                after 15 minutes" from the attack instructions.
+# False is what makes the widget usable today. The Q23 gap is an open issue and
+# a blocker for making the chat public, not an accepted cost.
+LLM_THINK = False
 LLM_TEMPERATURE = 0.0  # must stay 0 - a baseline that cannot be reproduced is not a baseline
 
 # --- retrieval -----------------------------------------------------------
