@@ -12,6 +12,7 @@ import argparse
 import collections
 import datetime as dt
 import json
+import time
 
 import yaml
 
@@ -28,6 +29,7 @@ REFUSAL_MARKERS = [
     "do not have", "don't have", "not mentioned", "not provided",
     "not included", "cannot find", "can't find", "not specify",
     "not provide",  # covers both "does not provide" and "do not provide"
+    "not mention",  # likewise "does not mention" / "do not mention"
 ]
 
 
@@ -97,6 +99,7 @@ def main():
     print(f"chunking  : heading-based, top_k={config.TOP_K}")
     print(f"questions : {len(questions)}  (generation: {'on' if args.generate else 'off'})\n")
 
+    started = time.time()
     records = []
     for question in questions:
         record = evaluate_question(question, args.k, args.generate)
@@ -105,8 +108,10 @@ def main():
         if not record["expected"]:
             mark = "-"
         print(f"  {mark} {record['id']}", end="", flush=True)
+    elapsed = time.time() - started
     print("\n")
-    print("  legend: . hit@1   o hit@3 only   X miss   - not scored (refusal group)\n")
+    print("  legend: . hit@1   o hit@3 only   X miss   - not scored (refusal group)")
+    print(f"  elapsed: {elapsed/60:.1f} min ({elapsed/len(questions):.1f}s per question)\n")
 
     headline = [r for r in records if not r["optional"]]
     optional = [r for r in records if r["optional"]]
@@ -160,6 +165,7 @@ def main():
         json.dump(
             {
                 "timestamp": stamp,
+                "elapsed_seconds": round(elapsed, 1),
                 "config": {
                     "embedding_model": config.EMBED_MODEL,
                     "llm": config.LLM_MODEL,

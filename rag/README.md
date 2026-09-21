@@ -110,10 +110,11 @@ strings (invented doses, prices, higher puff counts): **0**.
 
 One change at a time, re-scored against the same 34 questions. Result files:
 
-| Run | Config | Retrieval recall@1 | Notes |
-|---|---|---|---|
-| `20260921-213530-full` | v1-baseline, think=false | 76.9% | the baseline above (canonical) |
-| `20260921-214648-full` | v2-completeness, think=false | 76.9% | prompt change; see below |
+| Run | Config | recall@1 | Answers OK (hand) | Wall clock |
+|---|---|---|---|---|
+| `20260921-213530-full` | v1-baseline, think=false | 76.9% | 27/30 | ~4 min |
+| `20260921-214648-full` | v2-completeness, think=false | 76.9% | 27/30 | ~4 min |
+| `20260921-221934-full` | v2-completeness, **think=true** | 76.9% | **29/30** | ~30 min |
 
 `20260921-212657-full` is an earlier run of the same config as `213530` and is
 kept only for provenance - its refusal check had a bug (the marker list missed
@@ -139,6 +140,37 @@ This also invalidates how `think=false` was chosen in the first place: it was
 picked from a 2-question probe where the answers looked identical and it ran
 ~5x faster. Two questions were not enough to see the difference. The 30-question
 set was.
+
+**think=false -> think=true, prompt held at v2.** Answers graded by hand went
+from 27/30 to **29/30**, and all three outstanding problems closed at once:
+
+- **Q23** now returns all four attack steps including "call for an ambulance"
+  and "repeat after 15 minutes" - the safety failure is gone.
+- **Q17** stopped over-refusing. It now answers from the document ("preventer
+  inhalers need to be taken every day even if you are symptom-free") instead of
+  claiming the guidance is absent.
+- **Q11** recovered from the v2 regression, back to a written sentence rather
+  than a verbatim bullet.
+
+One small regression: **Q06** dropped the actionable half of its answer. It says
+exercise can bring on symptoms but no longer mentions that taking a reliever
+beforehand often prevents them, which `think=false` did include.
+
+The cost is time: about 30 minutes per full run against about 4, roughly 7x.
+That is tolerable for a nightly scoring run and painful for an interactive loop,
+so the sensible split is `think=false` while iterating and `think=true` for any
+number that gets recorded or shipped.
+
+**Not tested:** whether the v1 prompt would also fix Q07 once thinking is on.
+v2's gains were measured with thinking off, so part of what it bought may now be
+redundant. That cell of the grid costs another 30-minute run to fill.
+
+**Retrieval has not moved in any round - 76.9% in all three.** That is not a
+disappointing result, it is the correct one: nothing changed so far touches
+retrieval. Moving recall@1 requires acting on the retrieval side - a different
+embedding model, a different chunking strategy, or adding reranking or hybrid
+search - and each of those belongs to a later phase, measured one at a time
+against this same table.
 
 ## Known limitations
 
