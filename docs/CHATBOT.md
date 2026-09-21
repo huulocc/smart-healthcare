@@ -1,5 +1,7 @@
 # The Chatbot: how it works
 
+*Bản tiếng Việt: [CHATBOT.vi.md](CHATBOT.vi.md)*
+
 This explains the AI chat assistant end to end - the idea, the moving parts, and
 how to change it safely. It assumes no prior knowledge of RAG.
 
