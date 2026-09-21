@@ -172,6 +172,75 @@ embedding model, a different chunking strategy, or adding reranking or hybrid
 search - and each of those belongs to a later phase, measured one at a time
 against this same table.
 
+## Serving the chat
+
+`rag/server.py` exposes the pipeline over HTTP for the React chat widget. It
+calls the same `retrieve` / `answer` functions that `evaluate.py` scores, so
+what is served is what was measured.
+
+```bash
+python rag/server.py                 # terminal 1 - port 8000
+npm run dev --prefix frontend        # terminal 2 - port 5173
+```
+
+Both processes must be running for the widget to answer. (They are also defined
+in `.claude/launch.json`, but that directory is gitignored, so it is a local
+convenience rather than something the repo carries.)
+
+| Route | Purpose |
+|---|---|
+| `POST /api/chat` | `{question}` -> `{answer, sources[], elapsed_seconds}` |
+| `GET /api/chat/health` | `{index, ollama, chunks, ready}` - the widget greys itself out when not ready |
+
+The routes are mounted under `/api/chat` because that is the path Spring Boot
+will expose when it fronts this service. The React code calls that relative path
+and the Vite proxy points at port 8000; moving behind the backend later is a
+change of `target` in `vite.config.ts` and nothing else. Going through the proxy
+also keeps the browser on one origin, which is why no CORS setup is needed for
+the app.
+
+### Speed forced the model config back to think=false
+
+Measured on this machine, `think=true` through the full stack:
+
+| Path | Time |
+|---|---|
+| Direct to the service, warm | 82s |
+| Direct to the service, with other requests queued | 237s |
+| Through the Vite proxy | dies at the 180s proxy timeout |
+| `think=false`, through the proxy | **8.7s** |
+
+Two things make this worse than the 30-50s seen when probing single questions.
+Ollama serialises generation, and an abandoned HTTP request keeps being
+processed after the client gives up - so one impatient reload puts the next
+question behind a minute of work nobody is waiting for any more.
+
+`config.py` is therefore back to `LLM_THINK = False`. **This re-opens the Q23
+gap**: asked to list the attack steps, the answer drops "call for an ambulance"
+and "repeat after 15 minutes". That is recorded as an open issue below, not an
+accepted cost - it needs closing before the chat is exposed to real visitors,
+since the endpoint is meant to be public.
+
+### Verified end to end in the browser
+
+Happy path with source chips, Enter-to-send, the elapsed counter while waiting,
+the offline state when the service is stopped, recovery when it comes back, and
+the refusal behaviour surviving the HTTP layer ("The information is not in the
+available documents").
+
+### Open issues from this round
+
+1. **Q23 safety gap is live again** under `think=false`. Fix by streaming with
+   thinking on, or by finding a faster model that keeps the list intact. Blocker
+   for making the chat public.
+2. **Abandoned requests keep running.** The service should notice a disconnected
+   client and stop, or queue with a cap.
+3. **No rate limiting.** Anyone can hold the single generation slot. Belongs with
+   the Spring Boot layer in phase 3.
+4. **One document in the corpus.** Visitors will ask about appointments and
+   opening hours and get a refusal, which is correct but looks broken. The
+   greeting now states the scope; more documents are the real answer.
+
 ## Known limitations
 
 - **Corpus too small to draw conclusions from.** One document, 9 chunks,
