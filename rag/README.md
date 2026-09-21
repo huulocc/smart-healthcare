@@ -4,6 +4,10 @@ A minimal, fully local retrieval-augmented generation pipeline over patient
 information leaflets. Its job is **not** to be good. Its job is to run end to
 end and produce a number that every later change has to beat.
 
+> **New here?** Read [`docs/CHATBOT.md`](../docs/CHATBOT.md) first - it explains
+> how the whole thing works and assumes no prior knowledge of RAG. This file is
+> the working log: measurements, what was tried, and what is still broken.
+
 ## Run it
 
 ```bash
