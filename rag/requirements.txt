@@ -1,0 +1,11 @@
+# Baseline RAG - deliberately minimal.
+# Embedding and generation both run through Ollama over plain HTTP, so there is
+# no sentence-transformers / torch / SDK dependency at runtime.
+pypdf>=6.0
+chromadb>=1.5
+PyYAML>=6.0
+
+# Also required, outside pip:
+#   ollama            https://ollama.com
+#   ollama pull nomic-embed-text
+#   ollama pull qwen3
