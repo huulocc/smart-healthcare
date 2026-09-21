@@ -199,7 +199,46 @@ change of `target` in `vite.config.ts` and nothing else. Going through the proxy
 also keeps the browser on one origin, which is why no CORS setup is needed for
 the app.
 
-### Speed forced the model config back to think=false
+### Streaming, and why thinking is back on
+
+`POST /api/chat/stream` returns newline-delimited JSON as the answer is
+produced - `sources`, `thinking`, `token`, `done`, `error`. NDJSON rather than
+SSE because `EventSource` cannot send a POST body, and the client reads it with
+`fetch` anyway. The widget uses this route; `POST /api/chat` stays for the CLI
+and for anything that wants one JSON object.
+
+At temperature 0 the streamed text is identical to the non-streamed text, so
+this changes delivery only - what is served is still the configuration scored at
+29/30 in run `20260921-221934`.
+
+That is what let `LLM_THINK` go back to `True` and **closed the Q23 gap**.
+Verified in the browser, not just by curl: asked to list the attack steps, the
+widget now shows all four including "call 999 for an ambulance" and "repeat
+after 15 minutes".
+
+Measured through the full stack for that question:
+
+| Event | When |
+|---|---|
+| Sources delivered, chips appear | 4-6s |
+| Reasoning starts, label switches to "Thinking" | ~13s |
+| First answer token, text starts streaming | ~40s |
+| Complete | ~51s |
+
+The total is no faster. What changed is that the wait is now populated: the
+reader sees which sections were found within a few seconds, then a phase label
+and a counter, then the answer being written.
+
+**The raw reasoning is deliberately not displayed.** It arrives first and would
+fill the pause nicely, but it is unedited working-out that can contain
+half-formed medical claims, and this is a patient-facing widget. Its arrival is
+used only to drive the phase label.
+
+Remaining cost: `POST /api/chat` (non-streaming) and `python rag/ask.py` now
+take 45-80s again, since they wait for the whole answer. `evaluate.py --generate`
+is back to roughly 30 minutes.
+
+### Historical: speed had forced the model config back to think=false
 
 Measured on this machine, `think=true` through the full stack:
 
@@ -215,11 +254,9 @@ Ollama serialises generation, and an abandoned HTTP request keeps being
 processed after the client gives up - so one impatient reload puts the next
 question behind a minute of work nobody is waiting for any more.
 
-`config.py` is therefore back to `LLM_THINK = False`. **This re-opens the Q23
-gap**: asked to list the attack steps, the answer drops "call for an ambulance"
-and "repeat after 15 minutes". That is recorded as an open issue below, not an
-accepted cost - it needs closing before the chat is exposed to real visitors,
-since the endpoint is meant to be public.
+`config.py` went to `LLM_THINK = False` at that point, which re-opened the Q23
+gap. Streaming removed the constraint and it is back on - see above. The section
+is kept because the measurements explain why the streaming endpoint exists.
 
 ### Verified end to end in the browser
 
@@ -230,9 +267,9 @@ available documents").
 
 ### Open issues from this round
 
-1. **Q23 safety gap is live again** under `think=false`. Fix by streaming with
-   thinking on, or by finding a faster model that keeps the list intact. Blocker
-   for making the chat public.
+1. ~~**Q23 safety gap.**~~ Closed by streaming with thinking on; verified in the
+   browser. What remains is that the first answer token is ~40s away - worth
+   revisiting with a faster model, but no longer a correctness problem.
 2. **Abandoned requests keep running.** The service should notice a disconnected
    client and stop, or queue with a cap.
 3. **No rate limiting.** Anyone can hold the single generation slot. Belongs with

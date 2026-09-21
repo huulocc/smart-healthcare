@@ -60,6 +60,93 @@ export async function sendChatMessage(
   return (await response.json()) as ChatReply;
 }
 
+export interface StreamHandlers {
+  onSources?: (sources: ChatSource[]) => void;
+  /** Fires when the model starts reasoning. The reasoning text itself is
+   *  deliberately not passed on - see the note in AIChatWidget. */
+  onThinking?: () => void;
+  onToken?: (delta: string) => void;
+}
+
+/**
+ * Streaming variant. The answer is identical to sendChatMessage at
+ * temperature 0; only the delivery differs, which matters because with
+ * reasoning enabled the first answer token can be 40 seconds away.
+ *
+ * The transport is newline-delimited JSON over fetch, not SSE: EventSource
+ * cannot send a POST body.
+ */
+export async function streamChatMessage(
+  question: string,
+  handlers: StreamHandlers,
+  signal?: AbortSignal
+): Promise<string> {
+  let response: Response;
+  try {
+    response = await fetch('/api/chat/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question }),
+      signal,
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') throw error;
+    throw new ChatError('Could not reach the assistant. Is the chat service running?');
+  }
+
+  if ([502, 503, 504].includes(response.status)) {
+    throw new ChatError('The assistant is offline right now. Please try again shortly.');
+  }
+  if (!response.ok || !response.body) {
+    throw new ChatError('Something went wrong while answering. Please try again.');
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let answer = '';
+  let sawThinking = false;
+
+  // A chunk can split a JSON line anywhere, so only whole lines are parsed and
+  // the remainder is carried over.
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    const lines = buffer.split('\n');
+    buffer = lines.pop() ?? '';
+
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      const event = JSON.parse(line) as {
+        type: string;
+        delta?: string;
+        sources?: ChatSource[];
+        message?: string;
+      };
+
+      if (event.type === 'sources') {
+        handlers.onSources?.(event.sources ?? []);
+      } else if (event.type === 'thinking') {
+        if (!sawThinking) {
+          sawThinking = true;
+          handlers.onThinking?.();
+        }
+      } else if (event.type === 'token' && event.delta) {
+        answer += event.delta;
+        handlers.onToken?.(event.delta);
+      } else if (event.type === 'error') {
+        // The stream opened with a 200 before this went wrong, so the failure
+        // arrives in the body rather than as a status code.
+        throw new ChatError('The assistant is offline right now. Please try again shortly.');
+      }
+    }
+  }
+
+  return answer;
+}
+
 export async function checkChatHealth(): Promise<HealthStatus | null> {
   try {
     const response = await fetch('/api/chat/health');

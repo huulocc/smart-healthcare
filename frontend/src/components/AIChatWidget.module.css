@@ -407,3 +407,22 @@
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+/* Blinking caret while the answer streams in. */
+.caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background-color: currentColor;
+  animation: caretBlink 1s step-end infinite;
+}
+
+@keyframes caretBlink {
+  50% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .caret { animation: none; }
+}

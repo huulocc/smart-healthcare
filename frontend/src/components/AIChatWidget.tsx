@@ -3,9 +3,18 @@ import styles from './AIChatWidget.module.css';
 import {
   ChatError,
   checkChatHealth,
-  sendChatMessage,
+  streamChatMessage,
   type ChatSource,
 } from '../services/chatApi';
+
+/** What the assistant is doing, driven by real stream events rather than a timer. */
+type Phase = 'searching' | 'reading' | 'thinking' | 'writing';
+
+interface Pending {
+  phase: Phase;
+  text: string;
+  sources: ChatSource[];
+}
 
 interface Message {
   id: string;
@@ -28,6 +37,7 @@ const AIChatWidget = () => {
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [pending, setPending] = useState<Pending | null>(null);
   const [waitedSeconds, setWaitedSeconds] = useState(0);
   const [isOffline, setIsOffline] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -43,10 +53,10 @@ const AIChatWidget = () => {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isSending]);
+  }, [messages, pending]);
 
-  // Answers can take over a minute. A counter is the honest way to show that
-  // something is still happening rather than a spinner that says nothing.
+  // Reasoning runs for tens of seconds before the first answer token, so the
+  // wait needs a counter alongside the phase label.
   useEffect(() => {
     if (!isSending) return;
     setWaitedSeconds(0);
@@ -69,15 +79,28 @@ const AIChatWidget = () => {
     setMessages(prev => [...prev, newUserMsg]);
     setInputValue('');
     setIsSending(true);
+    setPending({ phase: 'searching', text: '', sources: [] });
+
+    // Held outside state as well, because the final message is built when the
+    // stream ends and the state value captured in this closure would be stale.
+    let capturedSources: ChatSource[] = [];
 
     try {
-      const reply = await sendChatMessage(question);
+      const full = await streamChatMessage(question, {
+        onSources: sources => {
+          capturedSources = sources;
+          setPending(p => (p ? { ...p, sources, phase: 'reading' } : p));
+        },
+        onThinking: () => setPending(p => (p ? { ...p, phase: 'thinking' } : p)),
+        onToken: delta =>
+          setPending(p => (p ? { ...p, phase: 'writing', text: p.text + delta } : p)),
+      });
       setMessages(prev => [...prev, {
         id: `${Date.now()}-bot`,
-        text: reply.answer,
+        text: full,
         sender: 'bot',
         timestamp: new Date(),
-        sources: reply.sources
+        sources: capturedSources
       }]);
       setIsOffline(false);
     } catch (error) {
@@ -95,6 +118,7 @@ const AIChatWidget = () => {
       setIsOffline(true);
     } finally {
       setIsSending(false);
+      setPending(null);
     }
   };
 
@@ -105,6 +129,28 @@ const AIChatWidget = () => {
   // The same section can back more than one retrieved chunk; show each once.
   const uniqueSections = (sources: ChatSource[]) =>
     Array.from(new Map(sources.map(s => [s.section, s])).values());
+
+  const phaseLabel = (p: Pending) => {
+    if (p.phase === 'searching') return 'Searching the leaflets';
+    if (p.phase === 'reading') {
+      return `Reading ${p.sources.length} section${p.sources.length === 1 ? '' : 's'}`;
+    }
+    return 'Thinking';
+  };
+
+  const renderSources = (sources: ChatSource[]) => (
+    <div className={styles.sources}>
+      {uniqueSections(sources).map(source => (
+        <span
+          key={source.section}
+          className={styles.sourceChip}
+          title={`${source.document} - page ${source.pages}`}
+        >
+          {source.heading}
+        </span>
+      ))}
+    </div>
+  );
 
   return (
     <div className={styles.widgetContainer}>
@@ -143,35 +189,36 @@ const AIChatWidget = () => {
                   <div className={`${styles.bubble} ${msg.isError ? styles.errorBubble : ''}`}>
                     {msg.text}
                   </div>
-                  {msg.sources && msg.sources.length > 0 && (
-                    <div className={styles.sources}>
-                      {uniqueSections(msg.sources).map(source => (
-                        <span
-                          key={source.section}
-                          className={styles.sourceChip}
-                          title={`${source.document} - page ${source.pages}`}
-                        >
-                          {source.heading}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                  {msg.sources && msg.sources.length > 0 && renderSources(msg.sources)}
                   <div className={styles.time}>{msg.sender === 'bot' ? 'Virtual Agent' : 'You'} - {formatTime(msg.timestamp)}</div>
                 </div>
               </div>
             ))}
-            {isSending && (
+            {pending && (
               <div className={`${styles.messageWrapper} ${styles.bot}`}>
                 <div className={styles.msgAvatar}>AI</div>
                 <div className={styles.messageContent}>
-                  <div className={`${styles.bubble} ${styles.typing}`}>
-                    <span className={styles.dots}><span>.</span><span>.</span><span>.</span></span>
-                    <span className={styles.elapsed}>
-                      {waitedSeconds < 10
-                        ? 'Looking through the leaflets'
-                        : `Still working - ${waitedSeconds}s`}
-                    </span>
-                  </div>
+                  {pending.phase === 'writing' ? (
+                    <div className={styles.bubble}>
+                      {pending.text}
+                      <span className={styles.caret} />
+                    </div>
+                  ) : (
+                    // The model's raw reasoning is NOT shown. It arrives first
+                    // and would fill this wait nicely, but it is unedited
+                    // working-out that can contain half-formed medical claims -
+                    // not something to put in front of a patient. The phase
+                    // label and the sources below are real progress signals
+                    // without that risk.
+                    <div className={`${styles.bubble} ${styles.typing}`}>
+                      <span className={styles.dots}><span>.</span><span>.</span><span>.</span></span>
+                      <span className={styles.elapsed}>
+                        {phaseLabel(pending)}
+                        {waitedSeconds >= 10 ? ` - ${waitedSeconds}s` : ''}
+                      </span>
+                    </div>
+                  )}
+                  {pending.sources.length > 0 && renderSources(pending.sources)}
                 </div>
               </div>
             )}

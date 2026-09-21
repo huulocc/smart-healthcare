@@ -6,7 +6,7 @@ file's logic.
 """
 
 import config
-from ollama_api import chat
+from ollama_api import chat, chat_stream
 
 
 def build_context(hits):
@@ -23,3 +23,14 @@ def answer(question, hits):
         context=build_context(hits), question=question
     )
     return chat(config.SYSTEM_PROMPT, user)
+
+
+def answer_stream(question, hits):
+    """Streaming form of `answer`, yielding ("thinking" | "content", text)."""
+    if not hits:
+        yield "content", "I do not have any documents to answer that from."
+        return
+    user = config.USER_PROMPT.format(
+        context=build_context(hits), question=question
+    )
+    yield from chat_stream(config.SYSTEM_PROMPT, user)

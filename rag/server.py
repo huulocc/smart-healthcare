@@ -12,14 +12,17 @@ it fronts this service - so moving behind the backend later is a change of proxy
 target only, with no edit to the React code.
 """
 
+import json
 import time
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 import config
 from generate import answer as generate_answer
+from generate import answer_stream
 from ollama_api import OllamaError, embed
 from retrieve import retrieve
 
@@ -110,10 +113,67 @@ def chat(request: ChatRequest):
     )
 
 
+def _source_payload(hits):
+    return [
+        {
+            "section": hit["section_id"],
+            "heading": hit["heading"],
+            "pages": hit["pages"],
+            "document": hit["source"],
+            "score": round(hit["score"], 3),
+        }
+        for hit in hits
+    ]
+
+
+@app.post("/api/chat/stream")
+def chat_stream_endpoint(request: ChatRequest):
+    """Same answer as POST /api/chat, delivered as it is produced.
+
+    Newline-delimited JSON rather than SSE, because the browser cannot send a
+    POST body with EventSource and the client reads this with fetch anyway.
+
+    Event types: sources, thinking, token, done, error. Reasoning is sent as
+    `thinking` so the widget can show progress during the long pause before the
+    first answer token - it is a progress signal, not something to present as
+    the answer.
+    """
+    question = request.question.strip()
+    if not question:
+        raise HTTPException(status_code=400, detail="Question is empty.")
+
+    def events():
+        started = time.time()
+        try:
+            hits = retrieve(question, k=config.TOP_K)
+            # Sources go out before generation starts, so the reader can see
+            # what was found during the wait.
+            yield json.dumps({"type": "sources", "sources": _source_payload(hits)}) + "\n"
+            for kind, text in answer_stream(question, hits):
+                event = "thinking" if kind == "thinking" else "token"
+                yield json.dumps({"type": event, "delta": text}) + "\n"
+        except OllamaError as exc:
+            # The stream has already started with a 200, so an error has to be
+            # delivered in-band rather than as a status code.
+            yield json.dumps({"type": "error", "message": str(exc)}) + "\n"
+            return
+        yield json.dumps(
+            {"type": "done", "elapsed_seconds": round(time.time() - started, 1)}
+        ) + "\n"
+
+    return StreamingResponse(events(), media_type="application/x-ndjson")
+
+
 if __name__ == "__main__":
+    import argparse
+
     import uvicorn
+
+    parser = argparse.ArgumentParser(description="Serve the RAG baseline.")
+    parser.add_argument("--port", type=int, default=8000)
+    args = parser.parse_args()
 
     print(f"model={config.LLM_MODEL} think={config.LLM_THINK} top_k={config.TOP_K}")
     if config.LLM_THINK:
-        print("note: think=True answers take ~30-50s each. See README 'Hillclimb log'.")
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+        print("note: think=True is slow on /api/chat; the widget uses /api/chat/stream.")
+    uvicorn.run(app, host="127.0.0.1", port=args.port)
