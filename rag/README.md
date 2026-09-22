@@ -282,6 +282,24 @@ available documents").
 4. **One document in the corpus.** Visitors will ask about appointments and
    opening hours and get a refusal, which is correct but looks broken. The
    greeting now states the scope; more documents are the real answer.
+5. **The Vite proxy will conflict with the backend branches.** This branch sets
+   `'/api/chat'` -> port 8000 with long timeouts. `feature/backend-admin-doctor`
+   (and the other backend branches) set a single `'/api'` -> port 8080 rule,
+   which swallows `/api/chat` and would send chat requests to Spring Boot, where
+   the route does not exist. Merging either way round silently breaks the
+   chatbot. The resolution is to keep both, with the more specific key first,
+   since Vite matches proxy keys in insertion order:
+
+   ```ts
+   proxy: {
+     '/api/chat': { target: 'http://localhost:8000', changeOrigin: true,
+                    timeout: 180000, proxyTimeout: 180000 },
+     '/api': env.API_PROXY_TARGET || 'http://localhost:8080',
+   }
+   ```
+
+   The long timeouts matter: answers take ~50s, past Node's default socket
+   timeout, so dropping them makes slow answers die in the proxy.
 
 ## Known limitations
 
