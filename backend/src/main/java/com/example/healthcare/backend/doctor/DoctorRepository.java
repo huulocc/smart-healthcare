@@ -1,0 +1,58 @@
+package com.example.healthcare.backend.doctor;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+public interface DoctorRepository extends JpaRepository<Doctor, Long> {
+
+	Optional<Doctor> findByUserId(Long userId);
+
+	/** Belt to the unique key's braces: stops a second profile being created for one account. */
+	boolean existsByUserId(Long userId);
+
+	Optional<Doctor> findByDoctorCode(String doctorCode);
+
+	/**
+	 * One query with nullable parameters rather than sixteen findByDepartmentIdAndSpecialtyAnd...
+	 * methods; that combinatorial explosion is the thing to avoid. The entity graph joins
+	 * users and departments in one go, otherwise every row fires two extra selects for the
+	 * doctor's name and their department's name.
+	 */
+	@EntityGraph(attributePaths = { "user", "department" })
+	@Query("""
+			select d from Doctor d
+			where (:departmentId is null or d.department.id = :departmentId)
+			  and (:specialty    is null or d.specialty = :specialty)
+			  and (:availability is null or d.availability = :availability)
+			  and (:status       is null or d.status = :status)
+			  and (:search       is null or lower(d.user.fullName) like lower(concat('%', :search, '%'))
+			                             or lower(d.user.email)    like lower(concat('%', :search, '%')))
+			""")
+	Page<Doctor> search(
+			@Param("departmentId") Long departmentId,
+			@Param("specialty") String specialty,
+			@Param("availability") Availability availability,
+			@Param("status") DoctorStatus status,
+			@Param("search") String search,
+			Pageable pageable);
+
+	// The four stat tiles above the doctor list: Total / Active / Available / On Leave.
+	long countByStatus(DoctorStatus status);
+
+	long countByAvailability(Availability availability);
+
+	/** The "Doctors" count on the departments screen. A mapped collection on Department
+	 *  would load every doctor just to call size(). */
+	long countByDepartmentId(Long departmentId);
+
+	/** Fills the Specialty filter dropdown. */
+	@Query("select distinct d.specialty from Doctor d where d.specialty is not null order by d.specialty")
+	List<String> findDistinctSpecialties();
+}
