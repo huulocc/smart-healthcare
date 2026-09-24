@@ -18,5 +18,8 @@ public interface DoctorScheduleRepository extends JpaRepository<DoctorSchedule, 
 	@EntityGraph(attributePaths = { "doctor" })
 	List<DoctorSchedule> findByDoctorIdInOrderByDayOfWeekAscStartTimeAsc(Collection<Long> doctorIds);
 
+	/** One day of one doctor's week: what AdminScheduleService checks a change against. */
+	List<DoctorSchedule> findByDoctorIdAndDayOfWeek(Long doctorId, DayOfWeek dayOfWeek);
+
 	boolean existsByDoctorIdAndDayOfWeekAndStartTime(Long doctorId, DayOfWeek dayOfWeek, LocalTime startTime);
 }

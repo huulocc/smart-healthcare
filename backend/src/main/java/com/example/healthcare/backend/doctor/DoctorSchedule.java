@@ -18,6 +18,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -30,7 +31,10 @@ import lombok.Setter;
  * this template over the month, which needs no extra rows.
  */
 @Entity
-@Table(name = "doctor_schedules")
+// Declared here as well as in V2 so the H2 test schema has the same key as MySQL.
+// AdminScheduleService rejects a clash before it gets this far.
+@Table(name = "doctor_schedules", uniqueConstraints = @UniqueConstraint(
+		name = "uk_doctor_schedules_slot", columnNames = { "doctor_id", "day_of_week", "start_time" }))
 @Getter
 @Setter
 @NoArgsConstructor
