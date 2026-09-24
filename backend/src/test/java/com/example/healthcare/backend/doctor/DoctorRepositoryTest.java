@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
 
 import com.example.healthcare.backend.department.Department;
@@ -41,6 +42,10 @@ class DoctorRepositoryTest {
 
 	@Autowired
 	private UserRepository userRepository;
+
+	// Newest first: the database is shared with every other test class, so the doctor this
+	// test just created is only guaranteed to be on page one if the page starts with it.
+	private static final PageRequest NEWEST_FIRST = PageRequest.of(0, 20, Sort.by("id").descending());
 
 	private Department cardiology;
 	private Doctor doctor;
@@ -94,14 +99,14 @@ class DoctorRepositoryTest {
 
 	@Test
 	void searchesWithEveryFilterLeftOut() {
-		Page<Doctor> all = doctorRepository.search(null, null, null, null, null, PageRequest.of(0, 20));
+		Page<Doctor> all = doctorRepository.search(null, null, null, null, null, NEWEST_FIRST);
 
 		assertThat(all.getContent()).extracting(Doctor::getId).contains(doctor.getId());
 	}
 
 	@Test
 	void searchesByEachFilter() {
-		var page = PageRequest.of(0, 20);
+		var page = NEWEST_FIRST;
 
 		assertThat(doctorRepository.search(cardiology.getId(), null, null, null, null, page))
 				.extracting(Doctor::getId).contains(doctor.getId());

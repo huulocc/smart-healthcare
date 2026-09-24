@@ -12,6 +12,10 @@ import org.springframework.data.repository.query.Param;
 
 public interface DoctorRepository extends JpaRepository<Doctor, Long> {
 
+	/** Everything a DoctorResponse reads, in one select. */
+	@EntityGraph(attributePaths = { "user", "department" })
+	Optional<Doctor> findWithDetailsById(Long id);
+
 	Optional<Doctor> findByUserId(Long userId);
 
 	/** Belt to the unique key's braces: stops a second profile being created for one account. */
@@ -51,6 +55,11 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
 	/** The "Doctors" count on the departments screen. A mapped collection on Department
 	 *  would load every doctor just to call size(). */
 	long countByDepartmentId(Long departmentId);
+
+	/** Active doctors per department as [departmentId, count] rows: one query for the whole
+	 *  departments table instead of a count per row. */
+	@Query("select d.department.id, count(d) from Doctor d where d.status = :status and d.department is not null group by d.department.id")
+	List<Object[]> countByDepartment(@Param("status") DoctorStatus status);
 
 	/** Fills the Specialty filter dropdown. */
 	@Query("select distinct d.specialty from Doctor d where d.specialty is not null order by d.specialty")
