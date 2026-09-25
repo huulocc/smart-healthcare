@@ -11,7 +11,7 @@ import chromadb
 from pypdf import PdfReader
 
 import config
-from ollama_api import embed
+from llm import embed, embed_dim, embed_model_name
 
 NOISE = [re.compile(p) for p in config.NOISE_PATTERNS]
 HEADINGS = [(re.compile(p), section_id) for p, section_id in config.SECTION_HEADINGS]
@@ -112,10 +112,11 @@ def main():
         pages = f"{item['page_start']}-{item['page_end']}"
         print(f"  {item['section_id']:24s} {pages:8s} {len(item['text']):6d}  {item['heading'][:44]}")
 
-    print(f"\nembedding {len(chunks)} chunks with {config.EMBED_MODEL} ...")
+    model = embed_model_name()
+    print(f"\nembedding {len(chunks)} chunks with {model} ({config.EMBED_BACKEND}) ...")
     vectors = embed([item["text"] for item in chunks], is_query=False)
-    if len(vectors[0]) != config.EMBED_DIM:
-        sys.exit(f"Unexpected embedding dimension {len(vectors[0])}, expected {config.EMBED_DIM}")
+    if len(vectors[0]) != embed_dim():
+        sys.exit(f"Unexpected embedding dimension {len(vectors[0])}, expected {embed_dim()}")
 
     # Rebuild from scratch: a half-updated index is the kind of silent drift
     # that makes a baseline number meaningless.
@@ -124,8 +125,12 @@ def main():
     config.CHROMA_PATH.mkdir(parents=True, exist_ok=True)
 
     client = chromadb.PersistentClient(path=str(config.CHROMA_PATH))
+    # `embed_model` is stamped on the collection so a query embedded by a
+    # different model can be refused. Mixing two embedding models is the one
+    # failure here that produces no error at all - just quietly worse answers.
     collection = client.get_or_create_collection(
-        config.COLLECTION, metadata={"hnsw:space": "cosine"}
+        config.COLLECTION,
+        metadata={"hnsw:space": "cosine", "embed_model": model},
     )
     collection.upsert(
         ids=[f"{config.DOC_ID}::{item['section_id']}" for item in chunks],

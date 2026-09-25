@@ -21,9 +21,10 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 import config
+from errors import ModelError
 from generate import answer as generate_answer
 from generate import answer_stream
-from ollama_api import OllamaError, embed
+from llm import describe, embed
 from retrieve import retrieve
 
 MAX_QUESTION_CHARS = 500
@@ -65,7 +66,13 @@ def health():
 
     The widget uses this to explain an outage instead of just failing to send.
     """
-    status = {"index": False, "ollama": False, "chunks": 0}
+    status = {
+        "index": False,
+        "ollama": False,
+        "chunks": 0,
+        "backend": config.LLM_BACKEND,
+        "embed_backend": config.EMBED_BACKEND,
+    }
     try:
         from retrieve import _collection
 
@@ -75,8 +82,11 @@ def health():
         pass
     try:
         embed(["health check"], is_query=True)
+        # Kept as "ollama" for the widget's sake - it is really "the model
+        # backend answered", whichever one is configured. Renaming it would
+        # break AIChatWidget's health check for no gain.
         status["ollama"] = True
-    except OllamaError:
+    except ModelError:
         pass
     status["ready"] = status["index"] and status["ollama"]
     return status
@@ -92,7 +102,7 @@ def chat(request: ChatRequest):
     try:
         hits = retrieve(question, k=config.TOP_K)
         text = generate_answer(question, hits)
-    except OllamaError as exc:
+    except ModelError as exc:
         # The model backend being down is an operational problem, not a bad
         # request - 503 so the widget can say so rather than blaming the user.
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -152,7 +162,7 @@ def chat_stream_endpoint(request: ChatRequest):
             for kind, text in answer_stream(question, hits):
                 event = "thinking" if kind == "thinking" else "token"
                 yield json.dumps({"type": event, "delta": text}) + "\n"
-        except OllamaError as exc:
+        except ModelError as exc:
             # The stream has already started with a 200, so an error has to be
             # delivered in-band rather than as a status code.
             yield json.dumps({"type": "error", "message": str(exc)}) + "\n"
@@ -173,7 +183,7 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int, default=8000)
     args = parser.parse_args()
 
-    print(f"model={config.LLM_MODEL} think={config.LLM_THINK} top_k={config.TOP_K}")
-    if config.LLM_THINK:
+    print(f"{describe()} top_k={config.TOP_K}")
+    if config.LLM_THINK and config.LLM_BACKEND == "ollama":
         print("note: think=True is slow on /api/chat; the widget uses /api/chat/stream.")
     uvicorn.run(app, host="127.0.0.1", port=args.port)

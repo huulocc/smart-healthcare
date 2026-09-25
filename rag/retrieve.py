@@ -6,7 +6,7 @@ import sys
 import chromadb
 
 import config
-from ollama_api import embed
+from llm import embed, embed_model_name
 
 
 @functools.lru_cache(maxsize=1)
@@ -14,9 +14,30 @@ def _collection():
     if not config.CHROMA_PATH.exists():
         sys.exit("No index found. Run `python rag/ingest.py` first.")
     client = chromadb.PersistentClient(path=str(config.CHROMA_PATH))
-    return client.get_or_create_collection(
+    collection = client.get_or_create_collection(
         config.COLLECTION, metadata={"hnsw:space": "cosine"}
     )
+    _check_embed_model(collection)
+    return collection
+
+
+def _check_embed_model(collection):
+    """Refuse to query an index built by a different embedding model.
+
+    Vectors from two models share no geometry, so the search still returns
+    three chunks and a plausible score - they are just the wrong chunks. This
+    is the only failure in the pipeline with no symptom, so it is worth an
+    explicit stop. Indexes built before this stamp existed carry no name and
+    are trusted.
+    """
+    indexed = (collection.metadata or {}).get("embed_model")
+    current = embed_model_name()
+    if indexed and indexed != current:
+        sys.exit(
+            f"Index was built with '{indexed}' but you are querying with "
+            f"'{current}'. Vectors from different models are not comparable.\n"
+            f"Run `python rag/ingest.py` to rebuild, or set EMBED_BACKEND back."
+        )
 
 
 def retrieve(question, k=None):

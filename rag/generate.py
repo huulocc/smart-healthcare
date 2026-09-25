@@ -1,12 +1,12 @@
 """Phase B, step 2 - assemble the prompt and generate the answer.
 
-The LLM is reached only through `ollama_api.chat`, so swapping the model (or
-the whole backend) means touching config.py and that one function, not this
-file's logic.
+The LLM is reached only through `llm.chat`, so swapping the model (or the whole
+backend, Ollama <-> Gemini) means touching config.py and that one module, not
+this file's logic.
 """
 
 import config
-from ollama_api import chat, chat_stream
+from llm import chat, chat_stream
 
 
 def build_context(hits):

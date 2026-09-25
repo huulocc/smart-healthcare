@@ -46,6 +46,7 @@ the config that produced it, so record both together.
 | Vector store | ChromaDB, persistent |
 | Generation | `qwen3` via Ollama, `temperature=0` |
 | Retrieval | top-k = 3 |
+| Backend switch | `llm.py` - Ollama (default) or Gemini, see below |
 
 > The baseline numbers below were produced with `prompt=v1-baseline,
 > think=false`. `config.py` has since moved on - see **Hillclimb log**. Every
@@ -54,6 +55,40 @@ the config that produced it, so record both together.
 
 No LangChain or LlamaIndex. At this size a framework would hide the exact
 behaviour we are trying to measure.
+
+### Swapping the model backend
+
+`llm.py` routes `embed` / `chat` / `chat_stream` to either Ollama or Gemini;
+nothing else in the pipeline knows which answered. Generation and embedding
+switch independently, set in `config.py` or overridden per-run:
+
+```
+RAG_LLM_BACKEND=gemini python rag/evaluate.py
+```
+
+Gemini needs a key in `rag/.env` (gitignored; `rag/.env.example` shows the
+shape). `python rag/gemini_api.py` checks the key, lists the models it can
+reach and times one call of each kind - run it before trusting a model name,
+because Google retires them regularly.
+
+**Where the time actually goes.** Measured 2026-09-25 on this machine, warm,
+one question, medians:
+
+| Stage | Time | Share |
+|---|---|---|
+| Embed the question (`nomic-embed-text`) | 2.169 s | 3.0 % |
+| ChromaDB search (9 chunks) | 0.004 s | 0.0 % |
+| `qwen3` generates the answer | 70.9 s | 97.0 % |
+
+Cold, with model load, the first call took 130 s. So moving **generation** to
+a hosted model is the entire speed story; moving embedding saves ~2 s and
+costs a full re-ingest. Embedding choice matters for `recall@1`, not latency -
+and for ingest time once the corpus grows past a few hundred chunks.
+
+Mixing embedding models is the one failure in this pipeline with no symptom:
+the search still returns three chunks with plausible scores, just the wrong
+ones. `ingest.py` therefore stamps the collection with the model that built it
+and `retrieve.py` refuses to query it with a different one.
 
 ## Corpus
 

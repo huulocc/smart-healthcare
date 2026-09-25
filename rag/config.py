@@ -4,6 +4,7 @@ Nothing tunable lives outside this file. When a result is recorded in the
 README, it is only meaningful alongside the values below.
 """
 
+import os
 from pathlib import Path
 
 # --- paths ---------------------------------------------------------------
@@ -16,6 +17,49 @@ RESULTS_DIR = RAG_DIR / "eval" / "results"
 
 SOURCE_PDF = DATA_RAW / "asthma-what-you-need-to-know.pdf"
 DOC_ID = "asthma-leaflet"
+
+ENV_FILE = RAG_DIR / ".env"
+
+# --- secrets -------------------------------------------------------------
+
+
+def _load_env_file(path):
+    """Read KEY=VALUE lines into os.environ without overwriting real env vars.
+
+    A three-line parser instead of python-dotenv: the file holds one key, and
+    the baseline's no-dependency rule is worth more than quoting edge cases.
+    A real environment variable always wins, so CI can set the key without a
+    file on disk.
+    """
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        os.environ.setdefault(key.strip(), value.strip().strip("'\""))
+
+
+_load_env_file(ENV_FILE)
+
+# Never hard-code this. rag/.env is gitignored; the repo tracks .env.example.
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
+
+# --- backend selection ---------------------------------------------------
+
+# "ollama" (local, private, slow) or "gemini" (hosted, fast, needs a key).
+#
+# Generation and embedding switch independently on purpose. Generation is 97%
+# of the wall clock, so moving it to Gemini is the whole speed win; moving
+# embedding saves ~2s but forces a full re-ingest, because vectors from two
+# different models are not comparable and mixing them breaks retrieval with no
+# error message. Measured 2026-09-25: embed 2.17s, chroma 0.004s, qwen3 70.9s.
+#
+# The env override exists so a backend can be A/B'd without editing a tracked
+# file; evaluate.py records the effective value next to every score.
+LLM_BACKEND = os.environ.get("RAG_LLM_BACKEND", "ollama")
+EMBED_BACKEND = os.environ.get("RAG_EMBED_BACKEND", "ollama")
 
 # --- ollama --------------------------------------------------------------
 
@@ -38,6 +82,30 @@ LLM_MODEL = "qwen3"
 # as it is written - so the safer setting is back on. See README "Streaming".
 LLM_THINK = True
 LLM_TEMPERATURE = 0.0  # must stay 0 - a baseline that cannot be reproduced is not a baseline
+
+# --- gemini --------------------------------------------------------------
+
+GEMINI_HOST = "https://generativelanguage.googleapis.com/v1beta"
+
+# Google renames and retires these regularly. `python rag/gemini_api.py` lists
+# the models the key can actually reach - run it before trusting either name.
+GEMINI_LLM_MODEL = "gemini-2.5-flash"
+GEMINI_EMBED_MODEL = "gemini-embedding-001"
+
+# gemini-embedding-001 defaults to 3072 dimensions. Pinned to 768 so a Gemini
+# index is the same shape as the nomic one and the two stay comparable.
+GEMINI_EMBED_DIM = 768
+
+# Gemini has no prefix convention; it takes the task as a parameter instead.
+# Same idea as PASSAGE_PREFIX/QUERY_PREFIX, same silent failure if confused.
+GEMINI_PASSAGE_TASK = "RETRIEVAL_DOCUMENT"
+GEMINI_QUERY_TASK = "RETRIEVAL_QUERY"
+
+# LLM_THINK drives both backends. -1 lets the model choose how long to think,
+# 0 turns thinking off. Keep these aligned with LLM_THINK's trade-off above:
+# thinking on is what keeps "call for an ambulance" in the Q23 answer.
+GEMINI_THINKING_BUDGET_ON = -1
+GEMINI_THINKING_BUDGET_OFF = 0
 
 # --- retrieval -----------------------------------------------------------
 

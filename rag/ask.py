@@ -10,6 +10,7 @@ wrong, the first thing to check is whether the right chunk was even retrieved.
 import argparse
 
 import config
+import llm
 from generate import answer
 from retrieve import retrieve
 
@@ -33,7 +34,7 @@ def main():
     if args.no_llm:
         return
 
-    print(f"\ngenerating with {config.LLM_MODEL} ...\n")
+    print(f"\ngenerating with {llm.llm_model_name()} ({config.LLM_BACKEND}) ...\n")
     print(answer(args.question, hits))
     print()
 

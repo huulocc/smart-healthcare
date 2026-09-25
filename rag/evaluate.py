@@ -17,6 +17,7 @@ import time
 import yaml
 
 import config
+import llm
 from generate import answer
 from retrieve import retrieve
 
@@ -94,8 +95,9 @@ def main():
     data = load_eval()
     questions = data["questions"]
 
-    print(f"embedding : {config.EMBED_MODEL}")
-    print(f"llm       : {config.LLM_MODEL} (think={config.LLM_THINK}, temp={config.LLM_TEMPERATURE})")
+    print(f"embedding : {llm.embed_model_name()} ({config.EMBED_BACKEND})")
+    print(f"llm       : {llm.llm_model_name()} ({config.LLM_BACKEND}, "
+          f"think={config.LLM_THINK}, temp={config.LLM_TEMPERATURE})")
     print(f"chunking  : heading-based, top_k={config.TOP_K}")
     print(f"questions : {len(questions)}  (generation: {'on' if args.generate else 'off'})\n")
 
@@ -167,8 +169,10 @@ def main():
                 "timestamp": stamp,
                 "elapsed_seconds": round(elapsed, 1),
                 "config": {
-                    "embedding_model": config.EMBED_MODEL,
-                    "llm": config.LLM_MODEL,
+                    "embedding_model": llm.embed_model_name(),
+                    "embed_backend": config.EMBED_BACKEND,
+                    "llm": llm.llm_model_name(),
+                    "llm_backend": config.LLM_BACKEND,
                     "llm_think": config.LLM_THINK,
                     "temperature": config.LLM_TEMPERATURE,
                     "top_k": config.TOP_K,

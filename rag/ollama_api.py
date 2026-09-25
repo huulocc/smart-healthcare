@@ -17,9 +17,10 @@ from config import (
     PASSAGE_PREFIX,
     QUERY_PREFIX,
 )
+from errors import ModelError
 
 
-class OllamaError(RuntimeError):
+class OllamaError(ModelError):
     pass
 
 
