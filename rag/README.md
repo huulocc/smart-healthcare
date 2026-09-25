@@ -90,6 +90,20 @@ the search still returns three chunks with plausible scores, just the wrong
 ones. `ingest.py` therefore stamps the collection with the model that built it
 and `retrieve.py` refuses to query it with a different one.
 
+**What a hosted backend costs you.** All measured 2026-09-25, and all things a
+local model never does:
+
+| Failure | What happened | Handling |
+|---|---|---|
+| Model retired | `gemini-2.5-flash` is listed by the API and 404s for new keys | Listing proves nothing; only a call does. `python rag/gemini_api.py` calls. |
+| Capacity 503 | `3.8-flash` and `3.7-flash` refused nearly every request **with thinking on**; the same prompt with thinking off succeeded | Backoff, and `3.5-flash` pinned as default. Turning thinking off would trade away the Q23 ambulance step. |
+| Silent truncation | `3.8-flash` once streamed 475 chars of reasoning and **no answer**, HTTP 200 | `chat_stream` raises if a stream ends with no content, so the widget shows an error instead of a hanging "thinking" label. |
+| Daily quota | **20 requests per model per day** on the free tier | A 34-question eval run cannot finish on one model. Evaluation stays on Ollama. |
+
+So: Gemini is the fast path for the live widget, Ollama remains the backend the
+baseline is measured on. That split is deliberate - the recorded numbers stay
+reproducible offline, and no quota can make them unreproducible.
+
 ## Corpus
 
 One document: *Asthma: What you need to know*, University Hospitals Plymouth

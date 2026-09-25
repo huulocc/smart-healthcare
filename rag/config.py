@@ -89,7 +89,20 @@ GEMINI_HOST = "https://generativelanguage.googleapis.com/v1beta"
 
 # Google renames and retires these regularly. `python rag/gemini_api.py` lists
 # the models the key can actually reach - run it before trusting either name.
-GEMINI_LLM_MODEL = "gemini-2.5-flash"
+#
+# Pinned to an exact version, never "gemini-flash-latest": an alias would swap
+# the model underneath a recorded score and make the baseline unreproducible.
+# 2026-09-25: gemini-2.5-flash is listed but returns 404 for new keys, with
+# gemini-3.8-flash named as its replacement. Listing a model does not mean the
+# key may call it - only the call proves that.
+#
+# 3.8-flash is NOT the default despite being the newest. Measured the same day,
+# with thinking on, it returned 503 on almost every call and once streamed 475
+# characters of reasoning and no answer at all. 3.5-flash answered every time
+# in ~5s with thinking on. Reliability with thinking on is what matters here,
+# because thinking off is what drops the ambulance step from Q23. Retry the
+# newer model once its capacity settles.
+GEMINI_LLM_MODEL = "gemini-3.5-flash"
 GEMINI_EMBED_MODEL = "gemini-embedding-001"
 
 # gemini-embedding-001 defaults to 3072 dimensions. Pinned to 768 so a Gemini
@@ -106,6 +119,23 @@ GEMINI_QUERY_TASK = "RETRIEVAL_QUERY"
 # thinking on is what keeps "call for an ambulance" in the Q23 answer.
 GEMINI_THINKING_BUDGET_ON = -1
 GEMINI_THINKING_BUDGET_OFF = 0
+
+# A hosted model fails in ways a local one never does. Measured 2026-09-25:
+# gemini-3.8-flash and 3.7-flash returned 503 "high demand" for every request
+# with thinking ON, while the same prompt with thinking OFF succeeded and
+# 3.5-flash succeeded with thinking ON - so it is thinking capacity that runs
+# out, not the model. It recovers on its own, which is exactly what a retry is
+# for. Turning thinking off to dodge it would trade the Q23 safety step away.
+GEMINI_MAX_ATTEMPTS = 5
+GEMINI_BACKOFF_SECONDS = 2.0
+GEMINI_MAX_BACKOFF_SECONDS = 70.0  # a free-tier quota window is a minute long
+GEMINI_RETRY_CODES = (429, 500, 502, 503, 504)
+
+# Free tier: 20 generate_content requests per minute. Measured 2026-09-25, an
+# unpaced eval run tripped the quota at question 21 of 34. 3.2s spacing keeps a
+# batch just under the limit; interactive chat never comes close, so a real
+# user waits nothing extra.
+GEMINI_MIN_INTERVAL = 3.2
 
 # --- retrieval -----------------------------------------------------------
 
