@@ -184,11 +184,12 @@ is the first question to ask whenever an answer looks wrong.
 ## 7. Adding a document
 
 1. Put the PDF in `rag/data/raw/`.
-2. Teach `ingest.py` where its sections start: add entries to `SECTION_HEADINGS`
-   in `config.py`. The current list is hand-written for the asthma leaflet, so a
-   second document needs its own headings - or a general heading detector, which
-   is the better fix once there are several documents.
-3. Run `python rag/ingest.py` and check the printed chunk table looks sensible.
+2. Optionally give it an entry in `DOCUMENTS` in `config.py` - a stable
+   `doc_id` and a readable `title`. PDF metadata titles are often wrong, and the
+   title is written into every chunk.
+3. Run `python rag/ingest.py -v` and check the table: which strategy it chose
+   (manual / headings / pages / whole) and whether the chunks look sensible.
+   A heading detected in the wrong place can split a set of instructions.
 4. Add a few questions for the new document to `eval/eval_questions.yaml`.
 5. Run `python rag/evaluate.py` and compare against the previous score.
 
@@ -231,10 +232,11 @@ them degrades ranking silently - no error, just worse answers. Measured: droppin
 them moved one test question to the wrong section.
 
 **There is no similarity threshold.** The obvious design is "if the best score is
-too low, say I don't know". It does not work here: an unanswerable question
-scored 0.596 while an answerable one scored 0.606 on its correct section. The
-ranges overlap, so no cut-off can separate them. Refusal is enforced by the
-system prompt instead, and verified by the `refusal` group in the evaluation set.
+too low, say I don't know". It does not work here: the unanswerable Q25 tops out
+at **0.607**, while Q14's correct section scores only **0.584**. The unanswerable
+question scores *higher*, so a cut-off would reject the good answer and admit the
+bad one. Refusal is enforced by the system prompt instead, and verified by the
+`refusal` group in the evaluation set.
 
 **Chunks follow headings, not a fixed size.** The leaflet's asthma-attack section
 is a 4-step emergency procedure. A fixed-size splitter would cut it in half, and

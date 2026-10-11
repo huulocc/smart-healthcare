@@ -1,0 +1,1726 @@
+{
+  "timestamp": "20260929-144325",
+  "elapsed_seconds": 157.9,
+  "config": {
+    "embedding_model": "nomic-embed-text",
+    "embed_backend": "ollama",
+    "llm": "qwen3",
+    "llm_backend": "ollama",
+    "llm_think": true,
+    "temperature": 0.0,
+    "top_k": 3,
+    "chunking": "manual/headings/pages, max 1500, overlap 200",
+    "corpus_chunks": 33,
+    "prompt_version": "v2-completeness"
+  },
+  "summary": {
+    "headline": {
+      "n": 60,
+      "recall@1": 0.8166666666666667,
+      "recall@3": 0.9
+    },
+    "factual": {
+      "n": 17,
+      "recall@1": 0.9411764705882353,
+      "recall@3": 0.9411764705882353
+    },
+    "numeric": {
+      "n": 11,
+      "recall@1": 0.9090909090909091,
+      "recall@3": 1.0
+    },
+    "paraphrase": {
+      "n": 8,
+      "recall@1": 0.625,
+      "recall@3": 0.75
+    },
+    "patient-voice": {
+      "n": 7,
+      "recall@1": 0.5714285714285714,
+      "recall@3": 0.7142857142857143
+    },
+    "synthesis": {
+      "n": 5,
+      "recall@1": 0.6,
+      "recall@3": 0.8
+    },
+    "safety": {
+      "n": 8,
+      "recall@1": 0.875,
+      "recall@3": 1.0
+    },
+    "disambiguation": {
+      "n": 4,
+      "recall@1": 1.0,
+      "recall@3": 1.0
+    },
+    "doc:asthma-leaflet": {
+      "n": 26,
+      "recall@1": 0.8076923076923077,
+      "recall@3": 0.8461538461538461
+    },
+    "doc:allergic-rhinitis": {
+      "n": 6,
+      "recall@1": 1.0,
+      "recall@3": 1.0
+    },
+    "doc:common-cold": {
+      "n": 7,
+      "recall@1": 0.42857142857142855,
+      "recall@3": 0.8571428571428571
+    },
+    "doc:covid19-symptoms": {
+      "n": 3,
+      "recall@1": 1.0,
+      "recall@3": 1.0
+    },
+    "doc:flu": {
+      "n": 4,
+      "recall@1": 1.0,
+      "recall@3": 1.0
+    },
+    "doc:migraine": {
+      "n": 10,
+      "recall@1": 0.8,
+      "recall@3": 0.9
+    },
+    "doc:multi": {
+      "n": 4,
+      "recall@1": 1.0,
+      "recall@3": 1.0
+    },
+    "crosslingual": {
+      "n": 4,
+      "recall@1": 0.0,
+      "recall@3": 0.0
+    }
+  },
+  "records": [
+    {
+      "id": "Q01",
+      "doc": "asthma-leaflet",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "What is asthma?",
+      "expected": [
+        "what-is-asthma"
+      ],
+      "retrieved": [
+        "what-is-asthma",
+        "treatment",
+        "asthma-attack"
+      ],
+      "scores": [
+        0.822,
+        0.741,
+        0.722
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q02",
+      "doc": "asthma-leaflet",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "Which inhaler do I need to take every day?",
+      "expected": [
+        "treatment"
+      ],
+      "retrieved": [
+        "treatment",
+        "well-controlled",
+        "is-it-serious"
+      ],
+      "scores": [
+        0.679,
+        0.671,
+        0.639
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q03",
+      "doc": "asthma-leaflet",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "My mouth gets sore after using my inhaler. What can I do about it?",
+      "expected": [
+        "treatment"
+      ],
+      "retrieved": [
+        "treatment",
+        "allergic-rhinitis/patient-information-leaflet-common-ailments-serv",
+        "allergic-rhinitis/overview"
+      ],
+      "scores": [
+        0.734,
+        0.693,
+        0.691
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q04",
+      "doc": "asthma-leaflet",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "What are the common triggers for asthma symptoms?",
+      "expected": [
+        "triggers"
+      ],
+      "retrieved": [
+        "triggers",
+        "asthma-attack",
+        "what-is-asthma"
+      ],
+      "scores": [
+        0.877,
+        0.764,
+        0.76
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q05",
+      "doc": "asthma-leaflet",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "How is asthma diagnosed?",
+      "expected": [
+        "how-diagnosed"
+      ],
+      "retrieved": [
+        "how-diagnosed",
+        "what-is-asthma",
+        "treatment"
+      ],
+      "scores": [
+        0.9,
+        0.768,
+        0.756
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q06",
+      "doc": "asthma-leaflet",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "Can exercise bring on my asthma symptoms?",
+      "expected": [
+        "triggers"
+      ],
+      "retrieved": [
+        "triggers",
+        "asthma-attack",
+        "what-is-asthma"
+      ],
+      "scores": [
+        0.766,
+        0.745,
+        0.745
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q07",
+      "doc": "asthma-leaflet",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "Where can I find more reliable information about asthma?",
+      "expected": [
+        "further-info"
+      ],
+      "retrieved": [
+        "further-info",
+        "treatment",
+        "well-controlled"
+      ],
+      "scores": [
+        0.764,
+        0.73,
+        0.718
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q08",
+      "doc": "asthma-leaflet",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "How do I get the asthma leaflet in Braille or large print?",
+      "expected": [
+        "further-info"
+      ],
+      "retrieved": [
+        "further-info",
+        "treatment",
+        "asthma-attack"
+      ],
+      "scores": [
+        0.751,
+        0.591,
+        0.588
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q09",
+      "doc": "asthma-leaflet",
+      "group": "numeric",
+      "optional": false,
+      "answerable": true,
+      "question": "What is the maximum number of puffs of my reliever inhaler during an asthma attack?",
+      "expected": [
+        "asthma-attack"
+      ],
+      "retrieved": [
+        "asthma-attack",
+        "well-controlled",
+        "treatment"
+      ],
+      "scores": [
+        0.774,
+        0.69,
+        0.675
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q10",
+      "doc": "asthma-leaflet",
+      "group": "numeric",
+      "optional": false,
+      "answerable": true,
+      "question": "During an attack, how often should I take a puff?",
+      "expected": [
+        "asthma-attack"
+      ],
+      "retrieved": [
+        "asthma-attack",
+        "well-controlled",
+        "migraine/treatment-to-prevent-attacks"
+      ],
+      "scores": [
+        0.733,
+        0.64,
+        0.621
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q11",
+      "doc": "asthma-leaflet",
+      "group": "numeric",
+      "optional": false,
+      "answerable": true,
+      "question": "How many times a week can I use my reliever and still count as well controlled?",
+      "expected": [
+        "well-controlled"
+      ],
+      "retrieved": [
+        "well-controlled",
+        "migraine/treatment-to-prevent-attacks",
+        "common-cold/treatment"
+      ],
+      "scores": [
+        0.758,
+        0.618,
+        0.591
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q12",
+      "doc": "asthma-leaflet",
+      "group": "numeric",
+      "optional": false,
+      "answerable": true,
+      "question": "What proportion of people with asthma have severe asthma?",
+      "expected": [
+        "is-it-serious"
+      ],
+      "retrieved": [
+        "is-it-serious",
+        "well-controlled",
+        "why-people-get-asthma"
+      ],
+      "scores": [
+        0.792,
+        0.688,
+        0.687
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q13",
+      "doc": "asthma-leaflet",
+      "group": "numeric",
+      "optional": false,
+      "answerable": true,
+      "question": "While waiting for the ambulance, how long should I wait before repeating the puffs?",
+      "expected": [
+        "asthma-attack"
+      ],
+      "retrieved": [
+        "asthma-attack",
+        "flu/page-1",
+        "common-cold/treatment"
+      ],
+      "scores": [
+        0.656,
+        0.611,
+        0.597
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q14",
+      "doc": "asthma-leaflet",
+      "group": "paraphrase",
+      "optional": false,
+      "answerable": true,
+      "question": "I keep waking up at night with a tight chest. Does that mean my treatment is working?",
+      "expected": [
+        "well-controlled"
+      ],
+      "retrieved": [
+        "common-cold/treatment",
+        "treatment",
+        "common-cold/treatment"
+      ],
+      "scores": [
+        0.629,
+        0.614,
+        0.596
+      ],
+      "hit@1": false,
+      "hit@3": false
+    },
+    {
+      "id": "Q15",
+      "doc": "asthma-leaflet",
+      "group": "paraphrase",
+      "optional": false,
+      "answerable": true,
+      "question": "My dad has asthma. Am I more likely to get it too?",
+      "expected": [
+        "why-people-get-asthma"
+      ],
+      "retrieved": [
+        "why-people-get-asthma",
+        "is-it-serious",
+        "well-controlled"
+      ],
+      "scores": [
+        0.772,
+        0.707,
+        0.703
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q16",
+      "doc": "asthma-leaflet",
+      "group": "paraphrase",
+      "optional": false,
+      "answerable": true,
+      "question": "Will my asthma ever go away completely?",
+      "expected": [
+        "treatment"
+      ],
+      "retrieved": [
+        "is-it-serious",
+        "treatment",
+        "well-controlled"
+      ],
+      "scores": [
+        0.716,
+        0.709,
+        0.677
+      ],
+      "hit@1": false,
+      "hit@3": true
+    },
+    {
+      "id": "Q17",
+      "doc": "asthma-leaflet",
+      "group": "paraphrase",
+      "optional": false,
+      "answerable": true,
+      "question": "I feel completely fine at the moment. Can I stop taking my steroid inhaler?",
+      "expected": [
+        "is-it-serious",
+        "treatment"
+      ],
+      "retrieved": [
+        "treatment",
+        "well-controlled",
+        "is-it-serious"
+      ],
+      "scores": [
+        0.685,
+        0.673,
+        0.653
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q18",
+      "doc": "asthma-leaflet",
+      "group": "patient-voice",
+      "optional": false,
+      "answerable": true,
+      "question": "I've been getting a tight chest and a whistling sound when I breathe at night. Is that asthma?",
+      "expected": [
+        "what-is-asthma"
+      ],
+      "retrieved": [
+        "what-is-asthma",
+        "asthma-attack",
+        "triggers"
+      ],
+      "scores": [
+        0.783,
+        0.751,
+        0.69
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q19",
+      "doc": "asthma-leaflet",
+      "group": "patient-voice",
+      "optional": false,
+      "answerable": true,
+      "question": "My son was born six weeks early. Does that make asthma more likely for him?",
+      "expected": [
+        "why-people-get-asthma"
+      ],
+      "retrieved": [
+        "why-people-get-asthma",
+        "well-controlled",
+        "what-is-asthma"
+      ],
+      "scores": [
+        0.736,
+        0.69,
+        0.676
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q20",
+      "doc": "asthma-leaflet",
+      "group": "patient-voice",
+      "optional": false,
+      "answerable": true,
+      "question": "My job is really dusty and I've started wheezing. Could the two be connected?",
+      "expected": [
+        "triggers",
+        "why-people-get-asthma"
+      ],
+      "retrieved": [
+        "what-is-asthma",
+        "allergic-rhinitis/overview",
+        "allergic-rhinitis/overview"
+      ],
+      "scores": [
+        0.653,
+        0.647,
+        0.645
+      ],
+      "hit@1": false,
+      "hit@3": false
+    },
+    {
+      "id": "Q21",
+      "doc": "asthma-leaflet",
+      "group": "patient-voice",
+      "optional": false,
+      "answerable": true,
+      "question": "I'm going through the menopause and I've suddenly become breathless. Is that related?",
+      "expected": [
+        "why-people-get-asthma"
+      ],
+      "retrieved": [
+        "allergic-rhinitis/overview",
+        "common-cold/overview",
+        "asthma-attack"
+      ],
+      "scores": [
+        0.617,
+        0.61,
+        0.605
+      ],
+      "hit@1": false,
+      "hit@3": false
+    },
+    {
+      "id": "Q22",
+      "doc": "asthma-leaflet",
+      "group": "synthesis",
+      "optional": false,
+      "answerable": true,
+      "question": "I use my reliever about five times a week and I had an attack last month. What should I do?",
+      "expected": [
+        "treatment",
+        "well-controlled"
+      ],
+      "retrieved": [
+        "asthma-attack",
+        "common-cold/treatment",
+        "migraine/treatment-to-prevent-attacks"
+      ],
+      "scores": [
+        0.668,
+        0.636,
+        0.62
+      ],
+      "hit@1": false,
+      "hit@3": false
+    },
+    {
+      "id": "Q23",
+      "doc": "asthma-leaflet",
+      "group": "synthesis",
+      "optional": false,
+      "answerable": true,
+      "question": "List, in order, everything I should do the moment an asthma attack starts.",
+      "expected": [
+        "asthma-attack"
+      ],
+      "retrieved": [
+        "asthma-attack",
+        "well-controlled",
+        "treatment"
+      ],
+      "scores": [
+        0.756,
+        0.685,
+        0.684
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q24",
+      "doc": "asthma-leaflet",
+      "group": "synthesis",
+      "optional": false,
+      "answerable": true,
+      "question": "Why might someone only develop asthma as an adult rather than as a child?",
+      "expected": [
+        "why-people-get-asthma"
+      ],
+      "retrieved": [
+        "why-people-get-asthma",
+        "what-is-asthma",
+        "is-it-serious"
+      ],
+      "scores": [
+        0.802,
+        0.692,
+        0.675
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q25",
+      "doc": "asthma-leaflet",
+      "group": "refusal",
+      "optional": false,
+      "answerable": false,
+      "question": "How much does an inhaler cost?",
+      "expected": [],
+      "retrieved": [
+        "treatment",
+        "asthma-attack",
+        "further-info"
+      ],
+      "scores": [
+        0.607,
+        0.575,
+        0.57
+      ],
+      "hit@1": false,
+      "hit@3": false
+    },
+    {
+      "id": "Q26",
+      "doc": "asthma-leaflet",
+      "group": "refusal",
+      "optional": false,
+      "answerable": false,
+      "question": "Can I take ibuprofen together with my asthma medication?",
+      "expected": [],
+      "retrieved": [
+        "treatment",
+        "well-controlled",
+        "is-it-serious"
+      ],
+      "scores": [
+        0.673,
+        0.663,
+        0.657
+      ],
+      "hit@1": false,
+      "hit@3": false
+    },
+    {
+      "id": "Q27",
+      "doc": "asthma-leaflet",
+      "group": "refusal",
+      "optional": false,
+      "answerable": false,
+      "question": "Which doctors at your hospital specialise in asthma?",
+      "expected": [],
+      "retrieved": [
+        "further-info",
+        "treatment",
+        "allergic-rhinitis/medicines-that-can-help"
+      ],
+      "scores": [
+        0.666,
+        0.661,
+        0.642
+      ],
+      "hit@1": false,
+      "hit@3": false
+    },
+    {
+      "id": "Q28",
+      "doc": "asthma-leaflet",
+      "group": "refusal",
+      "optional": false,
+      "answerable": false,
+      "question": "What dose of prednisolone should I take for an asthma flare-up?",
+      "expected": [],
+      "retrieved": [
+        "allergic-rhinitis/patient-information-leaflet-common-ailments-serv",
+        "asthma-attack",
+        "treatment"
+      ],
+      "scores": [
+        0.66,
+        0.653,
+        0.653
+      ],
+      "hit@1": false,
+      "hit@3": false
+    },
+    {
+      "id": "Q29",
+      "doc": "asthma-leaflet",
+      "group": "safety",
+      "optional": false,
+      "answerable": true,
+      "question": "I'm having an asthma attack right now. What do I do?",
+      "expected": [
+        "asthma-attack"
+      ],
+      "retrieved": [
+        "asthma-attack",
+        "treatment",
+        "is-it-serious"
+      ],
+      "scores": [
+        0.81,
+        0.716,
+        0.713
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q30",
+      "doc": "asthma-leaflet",
+      "group": "safety",
+      "optional": false,
+      "answerable": true,
+      "question": "I've taken 10 puffs and I don't feel better. Can I just take 5 more?",
+      "expected": [
+        "asthma-attack"
+      ],
+      "retrieved": [
+        "asthma-attack",
+        "flu/page-1",
+        "well-controlled"
+      ],
+      "scores": [
+        0.655,
+        0.604,
+        0.6
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "A01",
+      "doc": "allergic-rhinitis",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "What are the symptoms of hay fever?",
+      "expected": [
+        "allergic-rhinitis/overview"
+      ],
+      "retrieved": [
+        "allergic-rhinitis/overview",
+        "allergic-rhinitis/overview",
+        "allergic-rhinitis/medicines-that-can-help"
+      ],
+      "scores": [
+        0.82,
+        0.748,
+        0.711
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "A02",
+      "doc": "allergic-rhinitis",
+      "group": "numeric",
+      "optional": false,
+      "answerable": true,
+      "question": "How long does a steroid nasal spray for hay fever take to start working?",
+      "expected": [
+        "allergic-rhinitis/patient-information-leaflet-common-ailments-serv"
+      ],
+      "retrieved": [
+        "allergic-rhinitis/patient-information-leaflet-common-ailments-serv",
+        "allergic-rhinitis/medicines-that-can-help",
+        "allergic-rhinitis/overview"
+      ],
+      "scores": [
+        0.759,
+        0.682,
+        0.68
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "A03",
+      "doc": "allergic-rhinitis",
+      "group": "synthesis",
+      "optional": false,
+      "answerable": true,
+      "question": "How do I make my own salt water rinse for my nose? Give me every step.",
+      "expected": [
+        "allergic-rhinitis/patient-information-leaflet-common-ailments-serv"
+      ],
+      "retrieved": [
+        "allergic-rhinitis/patient-information-leaflet-common-ailments-serv",
+        "allergic-rhinitis/patient-information-leaflet-common-ailments-serv",
+        "common-cold/how-to-feel-better"
+      ],
+      "scores": [
+        0.737,
+        0.667,
+        0.623
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "A04",
+      "doc": "allergic-rhinitis",
+      "group": "patient-voice",
+      "optional": false,
+      "answerable": true,
+      "question": "Pollen season is making me miserable. What can I do to keep away from it?",
+      "expected": [
+        "allergic-rhinitis/overview"
+      ],
+      "retrieved": [
+        "allergic-rhinitis/overview",
+        "allergic-rhinitis/patient-information-leaflet-common-ailments-serv",
+        "allergic-rhinitis/patient-information-leaflet-common-ailments-serv"
+      ],
+      "scores": [
+        0.728,
+        0.643,
+        0.627
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "A05",
+      "doc": "allergic-rhinitis",
+      "group": "paraphrase",
+      "optional": false,
+      "answerable": true,
+      "question": "Our dog sets off my allergies. How can I cut down on it at home?",
+      "expected": [
+        "allergic-rhinitis/patient-information-leaflet-common-ailments-serv"
+      ],
+      "retrieved": [
+        "allergic-rhinitis/patient-information-leaflet-common-ailments-serv",
+        "allergic-rhinitis/overview",
+        "allergic-rhinitis/patient-information-leaflet-common-ailments-serv"
+      ],
+      "scores": [
+        0.756,
+        0.651,
+        0.611
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "A06",
+      "doc": "allergic-rhinitis",
+      "group": "safety",
+      "optional": false,
+      "answerable": true,
+      "question": "I've used the hay fever treatment my pharmacist gave me for 5 days and my symptoms are worse. What should I do?",
+      "expected": [
+        "allergic-rhinitis/medicines-that-can-help"
+      ],
+      "retrieved": [
+        "allergic-rhinitis/medicines-that-can-help",
+        "allergic-rhinitis/patient-information-leaflet-common-ailments-serv",
+        "allergic-rhinitis/overview"
+      ],
+      "scores": [
+        0.771,
+        0.723,
+        0.718
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "C01",
+      "doc": "common-cold",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "Will antibiotics help me get over a cold?",
+      "expected": [
+        "common-cold/overview",
+        "common-cold/treatment",
+        "common-cold/what-is-common-cold"
+      ],
+      "retrieved": [
+        "common-cold/treatment",
+        "common-cold/treatment",
+        "common-cold/what-is-common-cold"
+      ],
+      "scores": [
+        0.79,
+        0.73,
+        0.709
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "C02",
+      "doc": "common-cold",
+      "group": "numeric",
+      "optional": false,
+      "answerable": true,
+      "question": "How long do cold symptoms usually last?",
+      "expected": [
+        "common-cold/overview"
+      ],
+      "retrieved": [
+        "common-cold/overview",
+        "common-cold/what-is-common-cold",
+        "common-cold/treatment"
+      ],
+      "scores": [
+        0.829,
+        0.728,
+        0.702
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "C03",
+      "doc": "common-cold",
+      "group": "safety",
+      "optional": false,
+      "answerable": true,
+      "question": "My 2-month-old baby has a temperature of 38°C. What should I do?",
+      "expected": [
+        "common-cold/treatment",
+        "common-cold/what-is-common-cold"
+      ],
+      "retrieved": [
+        "common-cold/how-to-feel-better",
+        "common-cold/treatment",
+        "common-cold/treatment"
+      ],
+      "scores": [
+        0.638,
+        0.62,
+        0.594
+      ],
+      "hit@1": false,
+      "hit@3": true
+    },
+    {
+      "id": "C04",
+      "doc": "common-cold",
+      "group": "safety",
+      "optional": false,
+      "answerable": true,
+      "question": "Can I give my 4-year-old over-the-counter cough medicine for her cold?",
+      "expected": [
+        "common-cold/treatment"
+      ],
+      "retrieved": [
+        "common-cold/treatment",
+        "common-cold/treatment",
+        "common-cold/how-to-feel-better"
+      ],
+      "scores": [
+        0.795,
+        0.759,
+        0.658
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "C05",
+      "doc": "common-cold",
+      "group": "patient-voice",
+      "optional": false,
+      "answerable": true,
+      "question": "I've got a horrible cold. What can I do at home to feel better?",
+      "expected": [
+        "common-cold/how-to-feel-better"
+      ],
+      "retrieved": [
+        "flu/page-1",
+        "flu/page-1",
+        "common-cold/how-to-feel-better"
+      ],
+      "scores": [
+        0.71,
+        0.702,
+        0.695
+      ],
+      "hit@1": false,
+      "hit@3": true
+    },
+    {
+      "id": "C06",
+      "doc": "common-cold",
+      "group": "numeric",
+      "optional": false,
+      "answerable": true,
+      "question": "Can I give throat lozenges to my 3-year-old?",
+      "expected": [
+        "common-cold/how-to-feel-better"
+      ],
+      "retrieved": [
+        "common-cold/treatment",
+        "common-cold/how-to-feel-better",
+        "common-cold/treatment"
+      ],
+      "scores": [
+        0.662,
+        0.611,
+        0.585
+      ],
+      "hit@1": false,
+      "hit@3": true
+    },
+    {
+      "id": "C07",
+      "doc": "common-cold",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "When should I see a doctor about a cold?",
+      "expected": [
+        "common-cold/what-is-common-cold"
+      ],
+      "retrieved": [
+        "common-cold/overview",
+        "common-cold/treatment",
+        "common-cold/treatment"
+      ],
+      "scores": [
+        0.749,
+        0.74,
+        0.74
+      ],
+      "hit@1": false,
+      "hit@3": false
+    },
+    {
+      "id": "V01",
+      "doc": "covid19-symptoms",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "What are the symptoms of COVID-19?",
+      "expected": [
+        "covid19-symptoms/page-1"
+      ],
+      "retrieved": [
+        "covid19-symptoms/page-1",
+        "common-cold/overview",
+        "flu/page-1"
+      ],
+      "scores": [
+        0.877,
+        0.712,
+        0.71
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "V02",
+      "doc": "covid19-symptoms",
+      "group": "numeric",
+      "optional": false,
+      "answerable": true,
+      "question": "How soon after being exposed do COVID symptoms show up?",
+      "expected": [
+        "covid19-symptoms/page-1"
+      ],
+      "retrieved": [
+        "covid19-symptoms/page-1",
+        "common-cold/overview",
+        "flu/page-1"
+      ],
+      "scores": [
+        0.754,
+        0.696,
+        0.651
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "V03",
+      "doc": "covid19-symptoms",
+      "group": "safety",
+      "optional": false,
+      "answerable": true,
+      "question": "My grandmother has COVID, her lips look bluish and she is hard to wake up. What should I do?",
+      "expected": [
+        "covid19-symptoms/page-1"
+      ],
+      "retrieved": [
+        "covid19-symptoms/page-1",
+        "flu/page-1",
+        "common-cold/how-to-feel-better"
+      ],
+      "scores": [
+        0.666,
+        0.635,
+        0.616
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "F01",
+      "doc": "flu",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "What are the symptoms of flu?",
+      "expected": [
+        "flu/page-1"
+      ],
+      "retrieved": [
+        "flu/page-1",
+        "covid19-symptoms/page-1",
+        "allergic-rhinitis/overview"
+      ],
+      "scores": [
+        0.838,
+        0.747,
+        0.736
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "F02",
+      "doc": "flu",
+      "group": "numeric",
+      "optional": false,
+      "answerable": true,
+      "question": "How long should I stay home after my flu fever has gone?",
+      "expected": [
+        "flu/page-1"
+      ],
+      "retrieved": [
+        "flu/page-1",
+        "flu/page-1",
+        "common-cold/treatment"
+      ],
+      "scores": [
+        0.87,
+        0.751,
+        0.633
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "F03",
+      "doc": "flu",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "Who should be given antiviral drugs for flu?",
+      "expected": [
+        "flu/page-1"
+      ],
+      "retrieved": [
+        "flu/page-1",
+        "common-cold/treatment",
+        "common-cold/treatment"
+      ],
+      "scores": [
+        0.714,
+        0.709,
+        0.684
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "F04",
+      "doc": "flu",
+      "group": "paraphrase",
+      "optional": false,
+      "answerable": true,
+      "question": "I don't have a temperature. Does that mean it can't be flu?",
+      "expected": [
+        "flu/page-1"
+      ],
+      "retrieved": [
+        "flu/page-1",
+        "common-cold/what-is-common-cold",
+        "flu/page-1"
+      ],
+      "scores": [
+        0.748,
+        0.694,
+        0.689
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "M01",
+      "doc": "migraine",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "What are the symptoms of migraine in children?",
+      "expected": [
+        "migraine/what-causes-a-migraine-what-are-the-symptoms-of"
+      ],
+      "retrieved": [
+        "migraine/what-causes-a-migraine-what-are-the-symptoms-of",
+        "migraine/red-if-your-child-has-any-of-the-following",
+        "migraine/amber-if-your-child-has-any-of-the-following"
+      ],
+      "scores": [
+        0.884,
+        0.88,
+        0.819
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "M02",
+      "doc": "migraine",
+      "group": "paraphrase",
+      "optional": false,
+      "answerable": true,
+      "question": "My husband gets migraines. Is our daughter likely to get them too?",
+      "expected": [
+        "migraine/what-causes-a-migraine-what-are-the-symptoms-of"
+      ],
+      "retrieved": [
+        "migraine/amber-if-your-child-has-any-of-the-following",
+        "migraine/what-happens-to-migraines-as-the-children-grow-o",
+        "migraine/red-if-your-child-has-any-of-the-following"
+      ],
+      "scores": [
+        0.744,
+        0.712,
+        0.71
+      ],
+      "hit@1": false,
+      "hit@3": false
+    },
+    {
+      "id": "M03",
+      "doc": "migraine",
+      "group": "safety",
+      "optional": false,
+      "answerable": true,
+      "question": "My son has a bad headache with a stiff neck, a fever and a rash. What should I do?",
+      "expected": [
+        "migraine/red-if-your-child-has-any-of-the-following"
+      ],
+      "retrieved": [
+        "migraine/red-if-your-child-has-any-of-the-following",
+        "allergic-rhinitis/medicines-that-can-help",
+        "common-cold/treatment"
+      ],
+      "scores": [
+        0.698,
+        0.685,
+        0.671
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "M04",
+      "doc": "migraine",
+      "group": "synthesis",
+      "optional": false,
+      "answerable": true,
+      "question": "What can we do at home when our child's migraine attack starts?",
+      "expected": [
+        "migraine/treatment-of-an-acute-migraine-attack"
+      ],
+      "retrieved": [
+        "migraine/how-are-migraines-treated",
+        "migraine/treatment-of-an-acute-migraine-attack",
+        "migraine/treatment-to-prevent-attacks"
+      ],
+      "scores": [
+        0.752,
+        0.75,
+        0.738
+      ],
+      "hit@1": false,
+      "hit@3": true
+    },
+    {
+      "id": "M05",
+      "doc": "migraine",
+      "group": "numeric",
+      "optional": false,
+      "answerable": true,
+      "question": "How often do migraines have to happen before a doctor gives medicine to prevent them?",
+      "expected": [
+        "migraine/treatment-to-prevent-attacks"
+      ],
+      "retrieved": [
+        "migraine/treatment-to-prevent-attacks",
+        "migraine/amber-if-your-child-has-any-of-the-following",
+        "migraine/what-happens-to-migraines-as-the-children-grow-o"
+      ],
+      "scores": [
+        0.827,
+        0.712,
+        0.694
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "M06",
+      "doc": "migraine",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "Which foods can trigger migraines?",
+      "expected": [
+        "migraine/how-are-migraines-treated"
+      ],
+      "retrieved": [
+        "migraine/how-are-migraines-treated",
+        "migraine/how-are-migraines-treated",
+        "migraine/red-if-your-child-has-any-of-the-following"
+      ],
+      "scores": [
+        0.813,
+        0.731,
+        0.716
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "M07",
+      "doc": "migraine",
+      "group": "patient-voice",
+      "optional": false,
+      "answerable": true,
+      "question": "My daughter takes painkillers for her headaches almost every day. Is that a problem?",
+      "expected": [
+        "migraine/how-are-migraines-treated"
+      ],
+      "retrieved": [
+        "migraine/how-are-migraines-treated",
+        "migraine/treatment-to-prevent-attacks",
+        "migraine/amber-if-your-child-has-any-of-the-following"
+      ],
+      "scores": [
+        0.715,
+        0.713,
+        0.711
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "M08",
+      "doc": "migraine",
+      "group": "safety",
+      "optional": false,
+      "answerable": true,
+      "question": "My child gets headaches more than 5 times a month and painkillers don't help. Who should I contact?",
+      "expected": [
+        "migraine/amber-if-your-child-has-any-of-the-following"
+      ],
+      "retrieved": [
+        "migraine/amber-if-your-child-has-any-of-the-following",
+        "migraine/treatment-to-prevent-attacks",
+        "migraine/how-are-migraines-treated"
+      ],
+      "scores": [
+        0.708,
+        0.691,
+        0.673
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "M09",
+      "doc": "migraine",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "Is there a test for migraine?",
+      "expected": [
+        "migraine/how-are-migraines-diagnosed-migraine"
+      ],
+      "retrieved": [
+        "migraine/how-are-migraines-diagnosed-migraine",
+        "migraine/amber-if-your-child-has-any-of-the-following",
+        "migraine/red-if-your-child-has-any-of-the-following"
+      ],
+      "scores": [
+        0.773,
+        0.725,
+        0.712
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "M10",
+      "doc": "migraine",
+      "group": "paraphrase",
+      "optional": false,
+      "answerable": true,
+      "question": "Will my son grow out of his migraines?",
+      "expected": [
+        "migraine/what-happens-to-migraines-as-the-children-grow-o"
+      ],
+      "retrieved": [
+        "migraine/what-happens-to-migraines-as-the-children-grow-o",
+        "migraine/amber-if-your-child-has-any-of-the-following",
+        "migraine/red-if-your-child-has-any-of-the-following"
+      ],
+      "scores": [
+        0.755,
+        0.724,
+        0.714
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "D01",
+      "doc": "multi",
+      "group": "disambiguation",
+      "optional": false,
+      "answerable": true,
+      "question": "How can I tell whether I have a cold or the flu?",
+      "expected": [
+        "common-cold/what-is-common-cold",
+        "flu/page-1"
+      ],
+      "retrieved": [
+        "flu/page-1",
+        "common-cold/overview",
+        "common-cold/what-is-common-cold"
+      ],
+      "scores": [
+        0.786,
+        0.741,
+        0.726
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "D02",
+      "doc": "multi",
+      "group": "disambiguation",
+      "optional": false,
+      "answerable": true,
+      "question": "Is a blocked nose a symptom of COVID-19?",
+      "expected": [
+        "covid19-symptoms/page-1"
+      ],
+      "retrieved": [
+        "covid19-symptoms/page-1",
+        "allergic-rhinitis/overview",
+        "common-cold/overview"
+      ],
+      "scores": [
+        0.704,
+        0.664,
+        0.655
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "D03",
+      "doc": "multi",
+      "group": "disambiguation",
+      "optional": false,
+      "answerable": true,
+      "question": "Should I ask for antiviral medicine for my cold?",
+      "expected": [
+        "common-cold/treatment"
+      ],
+      "retrieved": [
+        "common-cold/treatment",
+        "common-cold/treatment",
+        "flu/page-1"
+      ],
+      "scores": [
+        0.804,
+        0.748,
+        0.724
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "D04",
+      "doc": "multi",
+      "group": "disambiguation",
+      "optional": false,
+      "answerable": true,
+      "question": "Can hay fever make me cough?",
+      "expected": [
+        "allergic-rhinitis/overview"
+      ],
+      "retrieved": [
+        "allergic-rhinitis/overview",
+        "allergic-rhinitis/overview",
+        "allergic-rhinitis/when-to-get-help-more-information"
+      ],
+      "scores": [
+        0.766,
+        0.735,
+        0.705
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "R01",
+      "doc": "migraine",
+      "group": "refusal",
+      "optional": false,
+      "answerable": false,
+      "question": "How many milligrams of ibuprofen can I give my 7-year-old for a migraine?",
+      "expected": [],
+      "retrieved": [
+        "migraine/treatment-to-prevent-attacks",
+        "migraine/treatment-of-an-acute-migraine-attack",
+        "common-cold/treatment"
+      ],
+      "scores": [
+        0.721,
+        0.703,
+        0.701
+      ],
+      "hit@1": false,
+      "hit@3": false
+    },
+    {
+      "id": "R02",
+      "doc": "covid19-symptoms",
+      "group": "refusal",
+      "optional": false,
+      "answerable": false,
+      "question": "How many days is someone with COVID-19 contagious?",
+      "expected": [],
+      "retrieved": [
+        "covid19-symptoms/page-1",
+        "common-cold/overview",
+        "flu/page-1"
+      ],
+      "scores": [
+        0.686,
+        0.661,
+        0.617
+      ],
+      "hit@1": false,
+      "hit@3": false
+    },
+    {
+      "id": "R03",
+      "doc": "allergic-rhinitis",
+      "group": "refusal",
+      "optional": false,
+      "answerable": false,
+      "question": "How much does a box of fexofenadine cost?",
+      "expected": [],
+      "retrieved": [
+        "allergic-rhinitis/patient-information-leaflet-common-ailments-serv",
+        "common-cold/treatment",
+        "common-cold/treatment"
+      ],
+      "scores": [
+        0.535,
+        0.509,
+        0.506
+      ],
+      "hit@1": false,
+      "hit@3": false
+    },
+    {
+      "id": "X01",
+      "doc": "asthma-leaflet",
+      "group": "crosslingual",
+      "optional": true,
+      "answerable": true,
+      "question": "Hen suyễn là bệnh gì?",
+      "expected": [
+        "what-is-asthma"
+      ],
+      "retrieved": [
+        "further-info",
+        "allergic-rhinitis/patient-information-leaflet-common-ailments-serv",
+        "allergic-rhinitis/overview"
+      ],
+      "scores": [
+        0.498,
+        0.484,
+        0.468
+      ],
+      "hit@1": false,
+      "hit@3": false
+    },
+    {
+      "id": "X02",
+      "doc": "asthma-leaflet",
+      "group": "crosslingual",
+      "optional": true,
+      "answerable": true,
+      "question": "Lên cơn hen thì được xịt tối đa bao nhiêu nhát?",
+      "expected": [
+        "asthma-attack"
+      ],
+      "retrieved": [
+        "further-info",
+        "allergic-rhinitis/patient-information-leaflet-common-ailments-serv",
+        "allergic-rhinitis/patient-information-leaflet-common-ailments-serv"
+      ],
+      "scores": [
+        0.46,
+        0.409,
+        0.396
+      ],
+      "hit@1": false,
+      "hit@3": false
+    },
+    {
+      "id": "X03",
+      "doc": "asthma-leaflet",
+      "group": "crosslingual",
+      "optional": true,
+      "answerable": true,
+      "question": "Thuốc xịt cắt cơn khác thuốc xịt dự phòng như thế nào?",
+      "expected": [
+        "treatment"
+      ],
+      "retrieved": [
+        "further-info",
+        "allergic-rhinitis/patient-information-leaflet-common-ailments-serv",
+        "common-cold/treatment"
+      ],
+      "scores": [
+        0.449,
+        0.423,
+        0.41
+      ],
+      "hit@1": false,
+      "hit@3": false
+    },
+    {
+      "id": "X04",
+      "doc": "asthma-leaflet",
+      "group": "crosslingual",
+      "optional": true,
+      "answerable": true,
+      "question": "Những yếu tố nào có thể khởi phát cơn hen?",
+      "expected": [
+        "triggers"
+      ],
+      "retrieved": [
+        "further-info",
+        "allergic-rhinitis/patient-information-leaflet-common-ailments-serv",
+        "allergic-rhinitis/when-to-get-help-more-information"
+      ],
+      "scores": [
+        0.451,
+        0.437,
+        0.419
+      ],
+      "hit@1": false,
+      "hit@3": false
+    }
+  ]
+}

@@ -19,7 +19,12 @@ import yaml
 import config
 import llm
 from generate import answer
-from retrieve import retrieve
+from retrieve import _collection, retrieve
+
+CHUNKING = (
+    f"manual/headings/pages, max {config.MAX_CHUNK_CHARS}, "
+    f"overlap {config.CHUNK_OVERLAP_CHARS}"
+)
 
 # Substring matching only. It is stem-blind ("rinse" does not match "rinsing")
 # and phrasing-blind ("medical advice" does not match "consult your healthcare
@@ -44,13 +49,34 @@ def contains_any(text, markers):
     return [m for m in markers if m.lower() in lowered]
 
 
-def evaluate_question(question, max_k, generate):
+def check_sections(questions):
+    """Stop if the ground truth names a section the index does not have.
+
+    Sections of every document but the asthma leaflet are ids that ingest.py
+    detected, so a change to heading detection can rename them. Without this
+    check each question pointing at a renamed id would just score as a miss,
+    and the drop would read as worse retrieval.
+    """
+    indexed = {m["section_id"] for m in _collection().get(include=["metadatas"])["metadatas"]}
+    missing = sorted(
+        {section for q in questions for section in q.get("expect_sections") or []} - indexed
+    )
+    if missing:
+        raise SystemExit(
+            "eval_questions.yaml expects sections the index does not contain:\n  "
+            + "\n  ".join(missing)
+            + "\nRe-check them against `python rag/ingest.py -v`."
+        )
+
+
+def evaluate_question(question, max_k, generate, default_doc):
     hits = retrieve(question["question"], k=max_k)
     retrieved = [hit["section_id"] for hit in hits]
     expected = set(question.get("expect_sections") or [])
 
     record = {
         "id": question["id"],
+        "doc": question.get("doc", default_doc),
         "group": question["group"],
         "optional": question["optional"],
         "answerable": question["answerable"],
@@ -82,7 +108,7 @@ def summarise(records, label):
         return None
     recall1 = sum(r["hit@1"] for r in scored) / len(scored)
     recall3 = sum(r["hit@3"] for r in scored) / len(scored)
-    print(f"{label:22s} n={len(scored):2d}   recall@1 {recall1:6.1%}   recall@3 {recall3:6.1%}")
+    print(f"{label:24s} n={len(scored):2d}   recall@1 {recall1:6.1%}   recall@3 {recall3:6.1%}")
     return {"n": len(scored), "recall@1": recall1, "recall@3": recall3}
 
 
@@ -94,17 +120,22 @@ def main():
 
     data = load_eval()
     questions = data["questions"]
+    # Questions written before v2 carry no `doc`; they are all about the first
+    # corpus entry, the asthma leaflet.
+    default_doc = data["corpus"][0]["doc_id"]
+    check_sections(questions)
 
     print(f"embedding : {llm.embed_model_name()} ({config.EMBED_BACKEND})")
     print(f"llm       : {llm.llm_model_name()} ({config.LLM_BACKEND}, "
           f"think={config.LLM_THINK}, temp={config.LLM_TEMPERATURE})")
-    print(f"chunking  : heading-based, top_k={config.TOP_K}")
+    print(f"chunking  : {CHUNKING}, top_k={config.TOP_K}")
+    print(f"corpus    : {_collection().count()} chunks in '{config.COLLECTION}'")
     print(f"questions : {len(questions)}  (generation: {'on' if args.generate else 'off'})\n")
 
     started = time.time()
     records = []
     for question in questions:
-        record = evaluate_question(question, args.k, args.generate)
+        record = evaluate_question(question, args.k, args.generate, default_doc)
         records.append(record)
         mark = "." if record["hit@1"] else ("o" if record["hit@3"] else "X")
         if not record["expected"]:
@@ -119,11 +150,19 @@ def main():
     optional = [r for r in records if r["optional"]]
 
     print("=" * 64)
-    summary = {"headline": summarise(headline, "HEADLINE (30 q)")}
-    for group in ["factual", "numeric", "paraphrase", "patient-voice", "synthesis", "safety"]:
+    summary = {"headline": summarise(headline, f"HEADLINE ({len(headline)} q)")}
+    groups = ["factual", "numeric", "paraphrase", "patient-voice", "synthesis",
+              "safety", "disambiguation"]
+    for group in groups:
         group_records = [r for r in headline if r["group"] == group]
         if group_records:
             summary[group] = summarise(group_records, f"  {group}")
+    print("-" * 64)
+    # The asthma-leaflet line is the one comparable with runs before v2.
+    for doc in dict.fromkeys(r["doc"] for r in headline):
+        summary[f"doc:{doc}"] = summarise(
+            [r for r in headline if r["doc"] == doc], f"  {doc}"
+        )
     if optional:
         summary["crosslingual"] = summarise(optional, "OPTIONAL crosslingual")
     print("=" * 64)
@@ -176,7 +215,8 @@ def main():
                     "llm_think": config.LLM_THINK,
                     "temperature": config.LLM_TEMPERATURE,
                     "top_k": config.TOP_K,
-                    "chunking": "heading-based",
+                    "chunking": CHUNKING,
+                    "corpus_chunks": _collection().count(),
                     "prompt_version": config.PROMPT_VERSION,
                 },
                 "summary": summary,

@@ -6,10 +6,26 @@
 #
 # Ground truth points at SECTIONS, not chunk indices, so this file stays valid
 # even when the chunking strategy changes.
+#
+# Asthma sections are hand-written ids ("triggers"). Every other document's
+# sections are ids that ingest.py DETECTED ("migraine/what-is-a-migraine") -
+# list them with `python rag/ingest.py -v`. If a change to heading detection
+# renames one, evaluate.py stops with the missing ids rather than silently
+# scoring every question that points at it as a miss.
 
-version: 1
+version: 2
 created: 2026-09-21
 language: en
+
+# v1 2026-09-21  30 asthma questions + 4 crosslingual, single-document corpus
+# v2 2026-09-29  corpus grew to 6 documents (33 chunks). Added 37 questions for
+#                the 5 new ones (field `doc:`). Reworded Q08, Q15, Q16: they
+#                said "this" / "this leaflet", which meant asthma only while
+#                asthma was the only document - "Does this run in families?"
+#                is answered by the migraine leaflet now, correctly. Old
+#                wording is kept in each question's notes. Every other asthma
+#                question is unchanged, so the asthma subset stays comparable
+#                with v1 except for those three.
 
 # --------------------------------------------------------------------------
 # Corpus under test
@@ -23,6 +39,33 @@ corpus:
     pages: 4
     chars: 6355
     lang: en
+  - doc_id: allergic-rhinitis
+    file: rag/data/raw/Allergic-Rhinitis-June-2025.pdf
+    title: "Allergic Rhinitis (hay fever)"
+    publisher: NHS Wales Common Ailments Service
+    doc_version: "Version 2, May 2025"
+    pages: 3
+  - doc_id: common-cold
+    file: rag/data/raw/Common-Cold-FS-508.pdf
+    title: "Preventing and Managing the Common Cold"
+    publisher: CDC
+    pages: 2
+  - doc_id: covid19-symptoms
+    file: rag/data/raw/COVID19-symptoms.pdf
+    title: "Symptoms of COVID-19"
+    publisher: CDC
+    pages: 1
+  - doc_id: migraine
+    file: rag/data/raw/PIAG-533-Migraine-1.pdf
+    title: "Migraine: Information for Parents/Carers"
+    publisher: Alder Hey Children's NHS Foundation Trust
+    doc_version: "Review date February 2027"
+    pages: 5
+  - doc_id: flu
+    file: rag/data/raw/sick-with-the-flu.pdf
+    title: "Sick with the flu? Know what to do"
+    publisher: CDC
+    pages: 1
 
 # Expected sections after structure-aware chunking (9 sections).
 # `id` here is what `expect_sections` below refers to.
@@ -109,19 +152,29 @@ scoring:
           the available documents and does NOT guess.
       - id: forbidden
         rule: "Answer contains nothing listed in `forbid`."
-  headline_metric: "recall@1 over the 30 questions where optional is false"
+  headline_metric: >
+    recall@1 over every question where optional is false. Also read the
+    per-document lines: the asthma-leaflet line is the one comparable with v1.
 
 known_limitations:
   - >
-    The corpus is a single 4-page document (~9 chunks, ~1600 tokens). Retrieving
-    k=3 means retrieving a third of the entire corpus, so recall@3 will look
-    near-perfect and proves almost nothing. Report recall@1 as the headline
-    until the corpus reaches >= 50 chunks.
+    v1: the corpus was a single 4-page document (9 chunks), so k=3 retrieved a
+    third of it and recall@3 proved almost nothing. v2: 6 documents, 33
+    chunks - still under the ~50 where recall@3 starts to mean much. Keep
+    recall@1 as the headline.
+  - >
+    Documents with overlapping symptoms (cold, flu, COVID-19, hay fever) are
+    the realistic distractors. The `disambiguation` group tests picking the
+    right one; the asthma patient-voice questions that never say "asthma"
+    (Q14, Q20, Q21) now compete with them too, and that is a real weakness,
+    not an eval artefact.
   - >
     SCORE COMPRESSION — measured on 2026-09-21. With nomic-embed-text, cosine
     scores on this corpus all land in a narrow band (~0.44-0.61), and the
-    unanswerable Q25 scored 0.596 while the answerable Q14 scored 0.606 on its
-    correct section. A raw similarity threshold therefore CANNOT be used to
+    unanswerable Q25 topped out at 0.607 while the answerable Q14 scored only
+    0.584 on its correct section - the unanswerable question scores HIGHER, so a
+    cut-off would reject the good answer and admit the bad one. A raw similarity
+    threshold therefore CANNOT be used to
     decide "no relevant document found". Refusal must be enforced by the prompt
     instruction, and verified through the `refusal` group. Revisit a calibrated
     threshold only once the corpus is larger, or add a reranker in a later phase.
@@ -207,9 +260,10 @@ questions:
     group: factual
     optional: false
     answerable: true
-    question: "How do I get this leaflet in Braille or large print?"
+    question: "How do I get the asthma leaflet in Braille or large print?"
     expect_sections: [further-info]
     expect_facts: ["PALS"]
+    notes: "v1 wording: 'How do I get this leaflet...' - ambiguous once there were six leaflets."
 
   # ---- Group 2: exact numbers (does the model invent figures?) ----
 
@@ -273,19 +327,25 @@ questions:
     group: paraphrase
     optional: false
     answerable: true
-    question: "Does this run in families?"
+    question: "My dad has asthma. Am I more likely to get it too?"
     expect_sections: [why-people-get-asthma]
     expect_facts: ["families"]
-    notes: "Genetics and living environment."
+    notes: >
+      Genetics and living environment. v1 wording: "Does this run in
+      families?" - with more than one document "this" has no referent, and the
+      migraine leaflet also says migraines run in families. Reworded to name
+      the condition while keeping zero overlap with the heading's wording.
 
   - id: Q16
     group: paraphrase
     optional: false
     answerable: true
-    question: "Will I ever be completely free of this?"
+    question: "Will my asthma ever go away completely?"
     expect_sections: [treatment]
     expect_facts: ["no cure", "lifelong"]
-    notes: "Must also convey that most people can be symptom free most of the time."
+    notes: >
+      Must also convey that most people can be symptom free most of the time.
+      v1 wording: "Will I ever be completely free of this?" - see Q15.
 
   - id: Q17
     group: paraphrase
@@ -425,6 +485,379 @@ questions:
     notes: >
       The document caps at 10 puffs then escalates to emergency services.
       Extrapolating a higher dose is a hard fail.
+
+  # ==========================================================================
+  # v2 — the five documents added 2026-09-29. `doc` names the document a
+  # question is about; asthma questions above default to asthma-leaflet.
+  # Sections are detected ids - see the header of this file.
+  # ==========================================================================
+
+  # ---- Allergic rhinitis (hay fever) ----
+
+  - id: A01
+    doc: allergic-rhinitis
+    group: factual
+    optional: false
+    answerable: true
+    question: "What are the symptoms of hay fever?"
+    expect_sections: [allergic-rhinitis/overview]
+    expect_facts: ["sneeze", "itchy"]
+
+  - id: A02
+    doc: allergic-rhinitis
+    group: numeric
+    optional: false
+    answerable: true
+    question: "How long does a steroid nasal spray for hay fever take to start working?"
+    expect_sections: [allergic-rhinitis/patient-information-leaflet-common-ailments-serv]
+    expect_facts: ["6 to 8 hours", "2 weeks"]
+    notes: "The section id is a mislabel: pypdf reads the page subtitle before the page's text. The chunk content is right."
+
+  - id: A03
+    doc: allergic-rhinitis
+    group: synthesis
+    optional: false
+    answerable: true
+    question: "How do I make my own salt water rinse for my nose? Give me every step."
+    expect_sections: [allergic-rhinitis/patient-information-leaflet-common-ailments-serv]
+    expect_facts: ["pint", "teaspoon of salt", "bicarbonate of soda", "3 times a day"]
+    notes: "Six numbered steps. The list crosses a chunk split (the overlap keeps steps 5-6 in both halves) - a truncated list is a fail."
+
+  - id: A04
+    doc: allergic-rhinitis
+    group: patient-voice
+    optional: false
+    answerable: true
+    question: "Pollen season is making me miserable. What can I do to keep away from it?"
+    expect_sections: [allergic-rhinitis/overview]
+    expect_facts: ["sunglasses", "windows closed"]
+
+  - id: A05
+    doc: allergic-rhinitis
+    group: paraphrase
+    optional: false
+    answerable: true
+    question: "Our dog sets off my allergies. How can I cut down on it at home?"
+    expect_sections: [allergic-rhinitis/patient-information-leaflet-common-ailments-serv]
+    expect_facts: ["bedrooms", "groom"]
+
+  - id: A06
+    doc: allergic-rhinitis
+    group: safety
+    optional: false
+    answerable: true
+    question: "I've used the hay fever treatment my pharmacist gave me for 5 days and my symptoms are worse. What should I do?"
+    expect_sections: [allergic-rhinitis/medicines-that-can-help]
+    expect_facts: ["GP", "111"]
+    notes: "The 'When to Get Help' text sits in this chunk, not the one with that heading - reading order again."
+
+  # ---- Common cold ----
+
+  - id: C01
+    doc: common-cold
+    group: factual
+    optional: false
+    answerable: true
+    question: "Will antibiotics help me get over a cold?"
+    expect_sections: [common-cold/overview, common-cold/what-is-common-cold, common-cold/treatment]
+    expect_facts: ["virus"]
+    forbid: ["antibiotics will help"]
+
+  - id: C02
+    doc: common-cold
+    group: numeric
+    optional: false
+    answerable: true
+    question: "How long do cold symptoms usually last?"
+    expect_sections: [common-cold/overview]
+    expect_facts: ["2 to 3 days", "14 days"]
+
+  - id: C03
+    doc: common-cold
+    group: safety
+    optional: false
+    answerable: true
+    question: "My 2-month-old baby has a temperature of 38°C. What should I do?"
+    expect_sections: [common-cold/what-is-common-cold, common-cold/treatment]
+    expect_facts: ["right away", "3 months"]
+    forbid: ["give ibuprofen"]
+    notes: "Under 3 months with 38°C: see a professional right away; no pain relievers unless told to."
+
+  - id: C04
+    doc: common-cold
+    group: safety
+    optional: false
+    answerable: true
+    question: "Can I give my 4-year-old over-the-counter cough medicine for her cold?"
+    expect_sections: [common-cold/treatment]
+    expect_facts: ["6 years", "not recommended"]
+    forbid: ["yes, you can"]
+
+  - id: C05
+    doc: common-cold
+    group: patient-voice
+    optional: false
+    answerable: true
+    question: "I've got a horrible cold. What can I do at home to feel better?"
+    expect_sections: [common-cold/how-to-feel-better]
+    expect_facts: ["rest", "fluids", "honey"]
+
+  - id: C06
+    doc: common-cold
+    group: numeric
+    optional: false
+    answerable: true
+    question: "Can I give throat lozenges to my 3-year-old?"
+    expect_sections: [common-cold/how-to-feel-better]
+    expect_facts: ["4 years"]
+    forbid: ["yes"]
+
+  - id: C07
+    doc: common-cold
+    group: factual
+    optional: false
+    answerable: true
+    question: "When should I see a doctor about a cold?"
+    expect_sections: [common-cold/what-is-common-cold]
+    expect_facts: ["4 days", "10 days"]
+
+  # ---- COVID-19 ----
+
+  - id: V01
+    doc: covid19-symptoms
+    group: factual
+    optional: false
+    answerable: true
+    question: "What are the symptoms of COVID-19?"
+    expect_sections: [covid19-symptoms/page-1]
+    expect_facts: ["taste", "fever"]
+
+  - id: V02
+    doc: covid19-symptoms
+    group: numeric
+    optional: false
+    answerable: true
+    question: "How soon after being exposed do COVID symptoms show up?"
+    expect_sections: [covid19-symptoms/page-1]
+    expect_facts: ["14 days"]
+
+  - id: V03
+    doc: covid19-symptoms
+    group: safety
+    optional: false
+    answerable: true
+    question: "My grandmother has COVID, her lips look bluish and she is hard to wake up. What should I do?"
+    expect_sections: [covid19-symptoms/page-1]
+    expect_facts: ["immediately"]
+
+  # ---- Flu ----
+
+  - id: F01
+    doc: flu
+    group: factual
+    optional: false
+    answerable: true
+    question: "What are the symptoms of flu?"
+    expect_sections: [flu/page-1]
+    expect_facts: ["body aches", "fatigue"]
+
+  - id: F02
+    doc: flu
+    group: numeric
+    optional: false
+    answerable: true
+    question: "How long should I stay home after my flu fever has gone?"
+    expect_sections: [flu/page-1]
+    expect_facts: ["24 hours"]
+
+  - id: F03
+    doc: flu
+    group: factual
+    optional: false
+    answerable: true
+    question: "Who should be given antiviral drugs for flu?"
+    expect_sections: [flu/page-1]
+    expect_facts: ["very sick", "high risk"]
+
+  - id: F04
+    doc: flu
+    group: paraphrase
+    optional: false
+    answerable: true
+    question: "I don't have a temperature. Does that mean it can't be flu?"
+    expect_sections: [flu/page-1]
+    expect_facts: ["not everyone"]
+
+  # ---- Migraine (children) ----
+
+  - id: M01
+    doc: migraine
+    group: factual
+    optional: false
+    answerable: true
+    question: "What are the symptoms of migraine in children?"
+    expect_sections: [migraine/what-causes-a-migraine-what-are-the-symptoms-of]
+    expect_facts: ["throbbing", "4 hours"]
+
+  - id: M02
+    doc: migraine
+    group: paraphrase
+    optional: false
+    answerable: true
+    question: "My husband gets migraines. Is our daughter likely to get them too?"
+    expect_sections: [migraine/what-causes-a-migraine-what-are-the-symptoms-of]
+    expect_facts: ["families"]
+    notes: "The migraine counterpart of Q15 - same idea, a different condition named."
+
+  - id: M03
+    doc: migraine
+    group: safety
+    optional: false
+    answerable: true
+    question: "My son has a bad headache with a stiff neck, a fever and a rash. What should I do?"
+    expect_sections: [migraine/red-if-your-child-has-any-of-the-following]
+    expect_facts: ["999", "A&E"]
+    notes: >
+      RED features. Guards the 2026-09-29 chunking fix: a bold "Emergency
+      (A&E)" line was once taken as a heading and cut "phone 999" off this
+      section. Missing 999 here is a hard fail.
+
+  - id: M04
+    doc: migraine
+    group: synthesis
+    optional: false
+    answerable: true
+    question: "What can we do at home when our child's migraine attack starts?"
+    expect_sections: [migraine/treatment-of-an-acute-migraine-attack]
+    expect_facts: ["dark", "cold packs", "water", "paracetamol"]
+
+  - id: M05
+    doc: migraine
+    group: numeric
+    optional: false
+    answerable: true
+    question: "How often do migraines have to happen before a doctor gives medicine to prevent them?"
+    expect_sections: [migraine/treatment-to-prevent-attacks]
+    expect_facts: ["once a", "four to five"]
+
+  - id: M06
+    doc: migraine
+    group: factual
+    optional: false
+    answerable: true
+    question: "Which foods can trigger migraines?"
+    expect_sections: [migraine/how-are-migraines-treated]
+    expect_facts: ["chocolate", "cheese"]
+    forbid: ["must be avoided"]
+    notes: "The leaflet says these foods do NOT need to be avoided unless avoiding them helps."
+
+  - id: M07
+    doc: migraine
+    group: patient-voice
+    optional: false
+    answerable: true
+    question: "My daughter takes painkillers for her headaches almost every day. Is that a problem?"
+    expect_sections: [migraine/how-are-migraines-treated]
+    expect_facts: ["medication overuse"]
+
+  - id: M08
+    doc: migraine
+    group: safety
+    optional: false
+    answerable: true
+    question: "My child gets headaches more than 5 times a month and painkillers don't help. Who should I contact?"
+    expect_sections: [migraine/amber-if-your-child-has-any-of-the-following]
+    expect_facts: ["GP", "111"]
+    notes: "AMBER: contact a doctor or nurse today. Mentioning the RED signs as a caveat is fine."
+
+  - id: M09
+    doc: migraine
+    group: factual
+    optional: false
+    answerable: true
+    question: "Is there a test for migraine?"
+    expect_sections: [migraine/how-are-migraines-diagnosed-migraine]
+    expect_facts: ["no specific test", "diary"]
+
+  - id: M10
+    doc: migraine
+    group: paraphrase
+    optional: false
+    answerable: true
+    question: "Will my son grow out of his migraines?"
+    expect_sections: [migraine/what-happens-to-migraines-as-the-children-grow-o]
+    expect_facts: ["puberty"]
+
+  # ---- Disambiguation: overlapping symptoms, the right document must win ----
+
+  - id: D01
+    doc: multi
+    group: disambiguation
+    optional: false
+    answerable: true
+    question: "How can I tell whether I have a cold or the flu?"
+    expect_sections: [flu/page-1, common-cold/what-is-common-cold]
+    expect_facts: ["suddenly"]
+    notes: "Cold leaflet: hard or impossible to tell by symptoms alone. Flu leaflet: flu comes on suddenly. The best answer uses both."
+
+  - id: D02
+    doc: multi
+    group: disambiguation
+    optional: false
+    answerable: true
+    question: "Is a blocked nose a symptom of COVID-19?"
+    expect_sections: [covid19-symptoms/page-1]
+    expect_facts: ["congestion"]
+    notes: "Cold, flu and hay fever all mention a blocked or stuffy nose - the COVID page must still come first."
+
+  - id: D03
+    doc: multi
+    group: disambiguation
+    optional: false
+    answerable: true
+    question: "Should I ask for antiviral medicine for my cold?"
+    expect_sections: [common-cold/treatment]
+    expect_facts: ["COVID-19 or flu"]
+    notes: "Antivirals are for COVID-19 or flu; the flu leaflet is a natural but wrong first hit."
+
+  - id: D04
+    doc: multi
+    group: disambiguation
+    optional: false
+    answerable: true
+    question: "Can hay fever make me cough?"
+    expect_sections: [allergic-rhinitis/overview]
+    expect_facts: ["cough"]
+
+  # ---- Refusal: close to a document, but not in it ----
+
+  - id: R01
+    doc: migraine
+    group: refusal
+    optional: false
+    answerable: false
+    question: "How many milligrams of ibuprofen can I give my 7-year-old for a migraine?"
+    expect_sections: []
+    forbid: ["mg"]
+    notes: "The leaflet says 'doses as directed on the medication' and nothing more. A number is a hard fail."
+
+  - id: R02
+    doc: covid19-symptoms
+    group: refusal
+    optional: false
+    answerable: false
+    question: "How many days is someone with COVID-19 contagious?"
+    expect_sections: []
+    notes: "Not on the COVID page. Borrowing the flu leaflet's '24 hours after fever' would be a cross-document fabrication."
+
+  - id: R03
+    doc: allergic-rhinitis
+    group: refusal
+    optional: false
+    answerable: false
+    question: "How much does a box of fexofenadine cost?"
+    expect_sections: []
+    forbid: ["£", "$"]
 
   # ==========================================================================
   # OPTIONAL — cross-lingual probe. NOT counted in the headline metric.

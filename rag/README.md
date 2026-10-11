@@ -41,7 +41,8 @@ the config that produced it, so record both together.
 | Step | Choice |
 |---|---|
 | Loader | `pypdf` |
-| Chunking | heading-based, 9 sections |
+| Corpus | 6 PDFs in `data/raw/`, 33 chunks (was 1 PDF, 9 chunks, until 2026-09-29) |
+| Chunking | hand-written headings (asthma), detected headings, or pages; max 1500 chars, 200 overlap |
 | Embedding | `nomic-embed-text` via Ollama, 768-dim, cosine |
 | Vector store | ChromaDB, persistent |
 | Generation | `qwen3` via Ollama, `temperature=0` |
@@ -106,270 +107,77 @@ reproducible offline, and no quota can make them unreproducible.
 
 ## Corpus
 
-One document: *Asthma: What you need to know*, University Hospitals Plymouth
-NHS Trust, version June 2026. 4 pages, ~6,400 characters, ~1,600 tokens,
-9 chunks (151-1,533 chars). The `treatment` section spans a page break, which
-is why chunking by page would be wrong here.
+6 patient leaflets since 2026-09-29 (was the asthma leaflet alone).
+`python rag/ingest.py` picks the chunking strategy per file:
 
-## Baseline result - 2026-09-21
+| Document | Pages | Strategy | Chunks |
+|---|---:|---|---:|
+| asthma-leaflet | 4 | manual (hand-written headings) | 9 |
+| allergic-rhinitis | 3 | headings | 6 |
+| common-cold | 2 | headings | 5 |
+| covid19-symptoms | 1 | whole | 1 |
+| migraine | 5 | headings (bold only) | 10 |
+| flu | 1 | pages | 2 |
 
-Retrieval, 26 scorable questions (the 4 refusal questions have no correct
-section by design):
+**Left out on purpose** (supplied with the others, removed the same day):
 
-| Group | n | recall@1 | recall@3 |
-|---|---|---|---|
-| **Headline** | **26** | **76.9%** | **100.0%** |
-| factual | 8 | 100.0% | 100.0% |
-| numeric | 5 | 100.0% | 100.0% |
-| paraphrase | 4 | 25.0% | 100.0% |
-| patient-voice | 4 | 50.0% | 100.0% |
-| synthesis | 3 | 66.7% | 100.0% |
-| safety | 2 | 100.0% | 100.0% |
-| *optional crosslingual* | *4* | *0.0%* | *25.0%* |
+- An older edition of the hay fever leaflet (May 2023). It duplicated the 2025
+  one and took a top-3 slot on Q03, Q20 and Q28; without it recall@1 went
+  back from 73.1% to 76.9% on the asthma questions.
+- Two clinical guidelines written for staff - rashes in children (24 pages)
+  and UTI management (38 pages). They hold paediatric antibiotic doses, and
+  `SYSTEM_PROMPT` forbids inventing a dose but not quoting one to a patient.
 
-**recall@3 = 100% is not a result.** With 9 chunks, k=3 retrieves a third of
-the entire corpus. Treat recall@1 (76.9%) as the baseline figure and ignore
-recall@3 until the corpus is larger.
+Ingest takes well under a minute. Answering is no slower: search time barely
+moves with corpus size (1.07 ms at 9 chunks, 1.72 ms at 1000) and generation
+still reads only the top 3.
 
-The split across groups is the useful part: questions that share vocabulary
-with the source (factual, numeric) are solved completely, while rephrased
-questions (paraphrase 25%, patient-voice 50%) are where the embedding model
-actually struggles. Those groups are the ones to watch when tuning.
+**The asthma chunks are byte-for-byte unchanged**, verified against the old
+index, so their scores stay comparable.
 
-Answers, hand-graded: **27 / 30 acceptable**. The automated checker flagged 11,
-but 8 were artifacts of substring matching - it is stem-blind (`rinse` vs
-`rinsing`, `hormones` vs `hormonal`) and phrasing-blind (`medical advice` vs
-`consult your healthcare provider`). Refusals: **4 / 4 correct**. Forbidden
-strings (invented doses, prices, higher puff counts): **0**.
+### Retrieval, eval set v2 (2026-09-29, 33 chunks)
 
-### The three real failures
+`eval/eval_questions.yaml` v2 adds 37 questions for the new documents and
+rewords Q08, Q15, Q16, which said "this" when asthma was the only thing "this"
+could mean.
 
-1. **Q23 - incomplete safety instructions.** Asked to list every step of
-   responding to an attack in order, the answer stopped after step 2, dropping
-   "call for an ambulance" and "repeat after 15 minutes". Retrieval was correct
-   (rank 1). The revealing part: **Q29** asks the same thing phrased as "I'm
-   having an attack right now" and gets the complete four-step answer from the
-   same chunk. So this is prompt sensitivity, not a retrieval or context
-   problem - the system prompt does not enforce completeness for list-shaped
-   questions. Highest-priority fix.
-2. **Q17 - over-refusal.** "I feel fine, can I stop my steroid inhaler?" is
-   answered by the document (preventer inhalers must be taken every day even
-   when symptom free; take medication as prescribed even if you feel well). The
-   model refused instead. Safer than inventing an answer, but it withheld
-   safety-relevant guidance that was sitting in the retrieved context.
-3. **Q07 - dropped the URL.** Asked where to find more information, the answer
-   named the organisation but omitted `asthma.org.uk`, the actionable part.
+| | n | recall@1 | recall@3 |
+|---|---:|---:|---:|
+| **All headline questions** | 60 | 81.7% | 90.0% |
+| asthma-leaflet | 26 | 80.8% | 84.6% |
+| allergic-rhinitis | 6 | 100% | 100% |
+| common-cold | 7 | 42.9% | 85.7% |
+| covid19-symptoms | 3 | 100% | 100% |
+| flu | 4 | 100% | 100% |
+| migraine | 10 | 80.0% | 90.0% |
+| disambiguation (cold vs flu vs COVID vs hay fever) | 4 | 100% | 100% |
 
-## Hillclimb log
+For reference, asthma alone on v1: recall@1 76.9%, recall@3 100%.
 
-One change at a time, re-scored against the same 34 questions. Result files:
+What the numbers say:
 
-| Run | Config | recall@1 | Answers OK (hand) | Wall clock |
-|---|---|---|---|---|
-| `20260921-213530-full` | v1-baseline, think=false | 76.9% | 27/30 | ~4 min |
-| `20260921-214648-full` | v2-completeness, think=false | 76.9% | 27/30 | ~4 min |
-| `20260921-221934-full` | v2-completeness, **think=true** | 76.9% | **29/30** | ~30 min |
+- **Asthma lost recall@3 to real distractors.** Q14 (tight chest at night),
+  Q20 (dusty job, wheezing), Q21 (menopause, breathless) and Q22 never say
+  "asthma"; cold and hay fever chunks now outrank the right section. The asthma
+  chunk scores themselves did not change.
+- **The common cold is the weak document**, and the cause is extraction, not
+  embedding. The leaflet is two columns; pypdf reads them interleaved, so
+  "When to Seek Medical Care" lands inside the chunk headed "What is Common
+  Cold?" and C07 ("when should I see a doctor") misses it. Same effect gives
+  the hay fever chunks a subtitle as their heading. A layout-aware extractor is
+  the fix, not a retrieval change.
+- **Disambiguation held**: all four questions where cold, flu, COVID-19 and hay
+  fever share symptoms went to the right document first.
 
-`20260921-212657-full` is an earlier run of the same config as `213530` and is
-kept only for provenance - its refusal check had a bug (the marker list missed
-"do not provide"), so it reports two false failures. Use `213530`.
+Generation over v2 has not been run yet (`python rag/evaluate.py --generate`,
+roughly an hour on Ollama for 71 questions).
 
-**v1 -> v2, adding a completeness rule to the system prompt.** Retrieval was
-bit-identical, which is the expected result and a useful check that the harness
-does not leak prompt changes into retrieval. But **26 of 34 answers changed
-text** from one added rule - prompts are a noisy lever, and without a fixed
-question set that churn is invisible. It fixed Q07 (the missing URL) and made
-Q08/Q15 more complete, but regressed Q11, which went from a written answer to a
-verbatim copy of the document's bullet. **It did not fix Q23**, its actual
-target: the answer still stopped after step 2 despite an explicit instruction
-never to stop part-way through a list. Not clearly a net improvement.
-
-**Root cause of Q23, found by probing rather than guessing.** The retrieved
-context provably contained all four steps (`ambulance`, `15 minutes`,
-`Repeat step 2`). Re-running the same prompt and the same context with
-`think=true` produced all four steps; `think=false` produced two. So the lever
-is the model's reasoning mode, not the prompt wording.
-
-This also invalidates how `think=false` was chosen in the first place: it was
-picked from a 2-question probe where the answers looked identical and it ran
-~5x faster. Two questions were not enough to see the difference. The 30-question
-set was.
-
-**think=false -> think=true, prompt held at v2.** Answers graded by hand went
-from 27/30 to **29/30**, and all three outstanding problems closed at once:
-
-- **Q23** now returns all four attack steps including "call for an ambulance"
-  and "repeat after 15 minutes" - the safety failure is gone.
-- **Q17** stopped over-refusing. It now answers from the document ("preventer
-  inhalers need to be taken every day even if you are symptom-free") instead of
-  claiming the guidance is absent.
-- **Q11** recovered from the v2 regression, back to a written sentence rather
-  than a verbatim bullet.
-
-One small regression: **Q06** dropped the actionable half of its answer. It says
-exercise can bring on symptoms but no longer mentions that taking a reliever
-beforehand often prevents them, which `think=false` did include.
-
-The cost is time: about 30 minutes per full run against about 4, roughly 7x.
-That is tolerable for a nightly scoring run and painful for an interactive loop,
-so the sensible split is `think=false` while iterating and `think=true` for any
-number that gets recorded or shipped.
-
-**Not tested:** whether the v1 prompt would also fix Q07 once thinking is on.
-v2's gains were measured with thinking off, so part of what it bought may now be
-redundant. That cell of the grid costs another 30-minute run to fill.
-
-**Retrieval has not moved in any round - 76.9% in all three.** That is not a
-disappointing result, it is the correct one: nothing changed so far touches
-retrieval. Moving recall@1 requires acting on the retrieval side - a different
-embedding model, a different chunking strategy, or adding reranking or hybrid
-search - and each of those belongs to a later phase, measured one at a time
-against this same table.
-
-## Serving the chat
-
-`rag/server.py` exposes the pipeline over HTTP for the React chat widget. It
-calls the same `retrieve` / `answer` functions that `evaluate.py` scores, so
-what is served is what was measured.
-
-```bash
-python rag/server.py                 # terminal 1 - port 8000
-npm run dev --prefix frontend        # terminal 2 - port 5173
-```
-
-Both processes must be running for the widget to answer. (They are also defined
-in `.claude/launch.json`, but that directory is gitignored, so it is a local
-convenience rather than something the repo carries.)
-
-| Route | Purpose |
-|---|---|
-| `POST /api/chat` | `{question}` -> `{answer, sources[], elapsed_seconds}` |
-| `GET /api/chat/health` | `{index, ollama, chunks, ready}` - the widget greys itself out when not ready |
-
-The routes are mounted under `/api/chat` because that is the path Spring Boot
-will expose when it fronts this service. The React code calls that relative path
-and the Vite proxy points at port 8000; moving behind the backend later is a
-change of `target` in `vite.config.ts` and nothing else. Going through the proxy
-also keeps the browser on one origin, which is why no CORS setup is needed for
-the app.
-
-### Streaming, and why thinking is back on
-
-`POST /api/chat/stream` returns newline-delimited JSON as the answer is
-produced - `sources`, `thinking`, `token`, `done`, `error`. NDJSON rather than
-SSE because `EventSource` cannot send a POST body, and the client reads it with
-`fetch` anyway. The widget uses this route; `POST /api/chat` stays for the CLI
-and for anything that wants one JSON object.
-
-At temperature 0 the streamed text is identical to the non-streamed text, so
-this changes delivery only - what is served is still the configuration scored at
-29/30 in run `20260921-221934`.
-
-That is what let `LLM_THINK` go back to `True` and **closed the Q23 gap**.
-Verified in the browser, not just by curl: asked to list the attack steps, the
-widget now shows all four including "call 999 for an ambulance" and "repeat
-after 15 minutes".
-
-Measured through the full stack for that question:
-
-| Event | When |
-|---|---|
-| Sources delivered, chips appear | 4-6s |
-| Reasoning starts, label switches to "Thinking" | ~13s |
-| First answer token, text starts streaming | ~40s |
-| Complete | ~51s |
-
-The total is no faster. What changed is that the wait is now populated: the
-reader sees which sections were found within a few seconds, then a phase label
-and a counter, then the answer being written.
-
-**The raw reasoning is deliberately not displayed.** It arrives first and would
-fill the pause nicely, but it is unedited working-out that can contain
-half-formed medical claims, and this is a patient-facing widget. Its arrival is
-used only to drive the phase label.
-
-Remaining cost: `POST /api/chat` (non-streaming) and `python rag/ask.py` now
-take 45-80s again, since they wait for the whole answer. `evaluate.py --generate`
-is back to roughly 30 minutes.
-
-### Historical: speed had forced the model config back to think=false
-
-Measured on this machine, `think=true` through the full stack:
-
-| Path | Time |
-|---|---|
-| Direct to the service, warm | 82s |
-| Direct to the service, with other requests queued | 237s |
-| Through the Vite proxy | dies at the 180s proxy timeout |
-| `think=false`, through the proxy | **8.7s** |
-
-Two things make this worse than the 30-50s seen when probing single questions.
-Ollama serialises generation, and an abandoned HTTP request keeps being
-processed after the client gives up - so one impatient reload puts the next
-question behind a minute of work nobody is waiting for any more.
-
-`config.py` went to `LLM_THINK = False` at that point, which re-opened the Q23
-gap. Streaming removed the constraint and it is back on - see above. The section
-is kept because the measurements explain why the streaming endpoint exists.
-
-### Verified end to end in the browser
-
-Happy path with source chips, Enter-to-send, the elapsed counter while waiting,
-the offline state when the service is stopped, recovery when it comes back, and
-the refusal behaviour surviving the HTTP layer ("The information is not in the
-available documents").
-
-### Open issues from this round
-
-1. ~~**Q23 safety gap.**~~ Closed by streaming with thinking on; verified in the
-   browser. What remains is that the first answer token is ~40s away - worth
-   revisiting with a faster model, but no longer a correctness problem.
-2. **Abandoned requests keep running.** The service should notice a disconnected
-   client and stop, or queue with a cap.
-3. **No rate limiting.** Anyone can hold the single generation slot. Belongs with
-   the Spring Boot layer in phase 3.
-4. **One document in the corpus.** Visitors will ask about appointments and
-   opening hours and get a refusal, which is correct but looks broken. The
-   greeting now states the scope; more documents are the real answer.
-5. **The Vite proxy will conflict with the backend branches.** This branch sets
-   `'/api/chat'` -> port 8000 with long timeouts. `feature/backend-admin-doctor`
-   (and the other backend branches) set a single `'/api'` -> port 8080 rule,
-   which swallows `/api/chat` and would send chat requests to Spring Boot, where
-   the route does not exist. Merging either way round silently breaks the
-   chatbot. The resolution is to keep both, with the more specific key first,
-   since Vite matches proxy keys in insertion order:
-
-   ```ts
-   proxy: {
-     '/api/chat': { target: 'http://localhost:8000', changeOrigin: true,
-                    timeout: 180000, proxyTimeout: 180000 },
-     '/api': env.API_PROXY_TARGET || 'http://localhost:8080',
-   }
-   ```
-
-   The long timeouts matter: answers take ~50s, past Node's default socket
-   timeout, so dropping them makes slow answers die in the proxy.
-
-## Known limitations
-
-- **Corpus too small to draw conclusions from.** One document, 9 chunks,
-  ~1,600 tokens - small enough to fit in a single prompt, which means this
-  corpus does not by itself justify RAG. It is a fixture for building and
-  debugging the pipeline. Add documents until the corpus exceeds ~50 chunks
-  before treating any number here as stable.
-- **No similarity threshold, on purpose.** Measured on this corpus, an
-  unanswerable question (Q25) scored 0.596 while an answerable one (Q14) scored
-  0.606 on its correct section. The bands overlap, so no cut-off can separate
-  "relevant" from "irrelevant". Refusal is enforced by the system prompt and
-  verified by the `refusal` group instead. Revisit once the corpus is larger.
-- **`nomic-embed-text` is English-only.** The optional crosslingual block
-  scores 0% at k=1 by design; it exists as a before/after probe for swapping in
-  a multilingual model, not as a failure.
-- **Heading map is hand-written** for this leaflet (`SECTION_HEADINGS` in
-  `config.py`). Generalise it when more documents arrive rather than guessing a
-  universal heading detector now.
-- On Windows, `–` and `’` may render as `?` in the console. The stored data is
-  correct UTF-8 (U+2013 / U+2019); it is a cp1252 console artifact only.
+A detected heading that is wrong can split an instruction. The migraine
+leaflet's "Go to the nearest Hospital / **Emergency (A&E)** / Department or
+phone 999" first cut "phone 999" off the RED advice and attached it to AMBER.
+A bold line that finishes an unfinished sentence at the same size is no longer
+taken as a heading, and M03 now guards it. Check `python rag/ingest.py -v`
+after adding any document.
 
 ## Deliberately not in the baseline
 
