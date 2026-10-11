@@ -1,0 +1,798 @@
+{
+  "timestamp": "20260921-211903",
+  "config": {
+    "embedding_model": "nomic-embed-text",
+    "llm": "qwen3",
+    "llm_think": false,
+    "temperature": 0.0,
+    "top_k": 3,
+    "chunking": "heading-based"
+  },
+  "summary": {
+    "headline": {
+      "n": 26,
+      "recall@1": 0.7692307692307693,
+      "recall@3": 1.0
+    },
+    "factual": {
+      "n": 8,
+      "recall@1": 1.0,
+      "recall@3": 1.0
+    },
+    "numeric": {
+      "n": 5,
+      "recall@1": 1.0,
+      "recall@3": 1.0
+    },
+    "paraphrase": {
+      "n": 4,
+      "recall@1": 0.25,
+      "recall@3": 1.0
+    },
+    "patient-voice": {
+      "n": 4,
+      "recall@1": 0.5,
+      "recall@3": 1.0
+    },
+    "synthesis": {
+      "n": 3,
+      "recall@1": 0.6666666666666666,
+      "recall@3": 1.0
+    },
+    "safety": {
+      "n": 2,
+      "recall@1": 1.0,
+      "recall@3": 1.0
+    },
+    "crosslingual": {
+      "n": 4,
+      "recall@1": 0.0,
+      "recall@3": 0.25
+    }
+  },
+  "records": [
+    {
+      "id": "Q01",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "What is asthma?",
+      "expected": [
+        "what-is-asthma"
+      ],
+      "retrieved": [
+        "what-is-asthma",
+        "treatment",
+        "asthma-attack"
+      ],
+      "scores": [
+        0.822,
+        0.741,
+        0.722
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q02",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "Which inhaler do I need to take every day?",
+      "expected": [
+        "treatment"
+      ],
+      "retrieved": [
+        "treatment",
+        "well-controlled",
+        "is-it-serious"
+      ],
+      "scores": [
+        0.679,
+        0.671,
+        0.639
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q03",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "My mouth gets sore after using my inhaler. What can I do about it?",
+      "expected": [
+        "treatment"
+      ],
+      "retrieved": [
+        "treatment",
+        "asthma-attack",
+        "what-is-asthma"
+      ],
+      "scores": [
+        0.734,
+        0.687,
+        0.649
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q04",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "What are the common triggers for asthma symptoms?",
+      "expected": [
+        "triggers"
+      ],
+      "retrieved": [
+        "triggers",
+        "asthma-attack",
+        "what-is-asthma"
+      ],
+      "scores": [
+        0.877,
+        0.764,
+        0.76
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q05",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "How is asthma diagnosed?",
+      "expected": [
+        "how-diagnosed"
+      ],
+      "retrieved": [
+        "how-diagnosed",
+        "what-is-asthma",
+        "treatment"
+      ],
+      "scores": [
+        0.9,
+        0.768,
+        0.756
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q06",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "Can exercise bring on my asthma symptoms?",
+      "expected": [
+        "triggers"
+      ],
+      "retrieved": [
+        "triggers",
+        "asthma-attack",
+        "what-is-asthma"
+      ],
+      "scores": [
+        0.766,
+        0.745,
+        0.745
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q07",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "Where can I find more reliable information about asthma?",
+      "expected": [
+        "further-info"
+      ],
+      "retrieved": [
+        "further-info",
+        "treatment",
+        "well-controlled"
+      ],
+      "scores": [
+        0.764,
+        0.73,
+        0.718
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q08",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "How do I get this leaflet in Braille or large print?",
+      "expected": [
+        "further-info"
+      ],
+      "retrieved": [
+        "further-info",
+        "asthma-attack",
+        "treatment"
+      ],
+      "scores": [
+        0.652,
+        0.41,
+        0.404
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q09",
+      "group": "numeric",
+      "optional": false,
+      "answerable": true,
+      "question": "What is the maximum number of puffs of my reliever inhaler during an asthma attack?",
+      "expected": [
+        "asthma-attack"
+      ],
+      "retrieved": [
+        "asthma-attack",
+        "well-controlled",
+        "treatment"
+      ],
+      "scores": [
+        0.774,
+        0.69,
+        0.675
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q10",
+      "group": "numeric",
+      "optional": false,
+      "answerable": true,
+      "question": "During an attack, how often should I take a puff?",
+      "expected": [
+        "asthma-attack"
+      ],
+      "retrieved": [
+        "asthma-attack",
+        "well-controlled",
+        "is-it-serious"
+      ],
+      "scores": [
+        0.733,
+        0.64,
+        0.599
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q11",
+      "group": "numeric",
+      "optional": false,
+      "answerable": true,
+      "question": "How many times a week can I use my reliever and still count as well controlled?",
+      "expected": [
+        "well-controlled"
+      ],
+      "retrieved": [
+        "well-controlled",
+        "is-it-serious",
+        "treatment"
+      ],
+      "scores": [
+        0.758,
+        0.568,
+        0.568
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q12",
+      "group": "numeric",
+      "optional": false,
+      "answerable": true,
+      "question": "What proportion of people with asthma have severe asthma?",
+      "expected": [
+        "is-it-serious"
+      ],
+      "retrieved": [
+        "is-it-serious",
+        "well-controlled",
+        "why-people-get-asthma"
+      ],
+      "scores": [
+        0.792,
+        0.688,
+        0.687
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q13",
+      "group": "numeric",
+      "optional": false,
+      "answerable": true,
+      "question": "While waiting for the ambulance, how long should I wait before repeating the puffs?",
+      "expected": [
+        "asthma-attack"
+      ],
+      "retrieved": [
+        "asthma-attack",
+        "further-info",
+        "well-controlled"
+      ],
+      "scores": [
+        0.656,
+        0.589,
+        0.571
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q14",
+      "group": "paraphrase",
+      "optional": false,
+      "answerable": true,
+      "question": "I keep waking up at night with a tight chest. Does that mean my treatment is working?",
+      "expected": [
+        "well-controlled"
+      ],
+      "retrieved": [
+        "treatment",
+        "well-controlled",
+        "asthma-attack"
+      ],
+      "scores": [
+        0.614,
+        0.584,
+        0.57
+      ],
+      "hit@1": false,
+      "hit@3": true
+    },
+    {
+      "id": "Q15",
+      "group": "paraphrase",
+      "optional": false,
+      "answerable": true,
+      "question": "Does this run in families?",
+      "expected": [
+        "why-people-get-asthma"
+      ],
+      "retrieved": [
+        "well-controlled",
+        "why-people-get-asthma",
+        "further-info"
+      ],
+      "scores": [
+        0.482,
+        0.458,
+        0.446
+      ],
+      "hit@1": false,
+      "hit@3": true
+    },
+    {
+      "id": "Q16",
+      "group": "paraphrase",
+      "optional": false,
+      "answerable": true,
+      "question": "Will I ever be completely free of this?",
+      "expected": [
+        "treatment"
+      ],
+      "retrieved": [
+        "well-controlled",
+        "is-it-serious",
+        "treatment"
+      ],
+      "scores": [
+        0.501,
+        0.492,
+        0.488
+      ],
+      "hit@1": false,
+      "hit@3": true
+    },
+    {
+      "id": "Q17",
+      "group": "paraphrase",
+      "optional": false,
+      "answerable": true,
+      "question": "I feel completely fine at the moment. Can I stop taking my steroid inhaler?",
+      "expected": [
+        "is-it-serious",
+        "treatment"
+      ],
+      "retrieved": [
+        "treatment",
+        "well-controlled",
+        "is-it-serious"
+      ],
+      "scores": [
+        0.685,
+        0.673,
+        0.653
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q18",
+      "group": "patient-voice",
+      "optional": false,
+      "answerable": true,
+      "question": "I've been getting a tight chest and a whistling sound when I breathe at night. Is that asthma?",
+      "expected": [
+        "what-is-asthma"
+      ],
+      "retrieved": [
+        "what-is-asthma",
+        "asthma-attack",
+        "triggers"
+      ],
+      "scores": [
+        0.783,
+        0.751,
+        0.69
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q19",
+      "group": "patient-voice",
+      "optional": false,
+      "answerable": true,
+      "question": "My son was born six weeks early. Does that make asthma more likely for him?",
+      "expected": [
+        "why-people-get-asthma"
+      ],
+      "retrieved": [
+        "why-people-get-asthma",
+        "well-controlled",
+        "what-is-asthma"
+      ],
+      "scores": [
+        0.736,
+        0.69,
+        0.676
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q20",
+      "group": "patient-voice",
+      "optional": false,
+      "answerable": true,
+      "question": "My job is really dusty and I've started wheezing. Could the two be connected?",
+      "expected": [
+        "triggers",
+        "why-people-get-asthma"
+      ],
+      "retrieved": [
+        "what-is-asthma",
+        "why-people-get-asthma",
+        "well-controlled"
+      ],
+      "scores": [
+        0.653,
+        0.602,
+        0.59
+      ],
+      "hit@1": false,
+      "hit@3": true
+    },
+    {
+      "id": "Q21",
+      "group": "patient-voice",
+      "optional": false,
+      "answerable": true,
+      "question": "I'm going through the menopause and I've suddenly become breathless. Is that related?",
+      "expected": [
+        "why-people-get-asthma"
+      ],
+      "retrieved": [
+        "asthma-attack",
+        "what-is-asthma",
+        "why-people-get-asthma"
+      ],
+      "scores": [
+        0.605,
+        0.598,
+        0.594
+      ],
+      "hit@1": false,
+      "hit@3": true
+    },
+    {
+      "id": "Q22",
+      "group": "synthesis",
+      "optional": false,
+      "answerable": true,
+      "question": "I use my reliever about five times a week and I had an attack last month. What should I do?",
+      "expected": [
+        "treatment",
+        "well-controlled"
+      ],
+      "retrieved": [
+        "asthma-attack",
+        "well-controlled",
+        "treatment"
+      ],
+      "scores": [
+        0.668,
+        0.605,
+        0.592
+      ],
+      "hit@1": false,
+      "hit@3": true
+    },
+    {
+      "id": "Q23",
+      "group": "synthesis",
+      "optional": false,
+      "answerable": true,
+      "question": "List, in order, everything I should do the moment an asthma attack starts.",
+      "expected": [
+        "asthma-attack"
+      ],
+      "retrieved": [
+        "asthma-attack",
+        "well-controlled",
+        "treatment"
+      ],
+      "scores": [
+        0.756,
+        0.685,
+        0.684
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q24",
+      "group": "synthesis",
+      "optional": false,
+      "answerable": true,
+      "question": "Why might someone only develop asthma as an adult rather than as a child?",
+      "expected": [
+        "why-people-get-asthma"
+      ],
+      "retrieved": [
+        "why-people-get-asthma",
+        "what-is-asthma",
+        "is-it-serious"
+      ],
+      "scores": [
+        0.802,
+        0.692,
+        0.675
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q25",
+      "group": "refusal",
+      "optional": false,
+      "answerable": false,
+      "question": "How much does an inhaler cost?",
+      "expected": [],
+      "retrieved": [
+        "treatment",
+        "asthma-attack",
+        "further-info"
+      ],
+      "scores": [
+        0.607,
+        0.575,
+        0.57
+      ],
+      "hit@1": false,
+      "hit@3": false
+    },
+    {
+      "id": "Q26",
+      "group": "refusal",
+      "optional": false,
+      "answerable": false,
+      "question": "Can I take ibuprofen together with my asthma medication?",
+      "expected": [],
+      "retrieved": [
+        "treatment",
+        "well-controlled",
+        "is-it-serious"
+      ],
+      "scores": [
+        0.673,
+        0.663,
+        0.657
+      ],
+      "hit@1": false,
+      "hit@3": false
+    },
+    {
+      "id": "Q27",
+      "group": "refusal",
+      "optional": false,
+      "answerable": false,
+      "question": "Which doctors at your hospital specialise in asthma?",
+      "expected": [],
+      "retrieved": [
+        "further-info",
+        "treatment",
+        "is-it-serious"
+      ],
+      "scores": [
+        0.666,
+        0.661,
+        0.634
+      ],
+      "hit@1": false,
+      "hit@3": false
+    },
+    {
+      "id": "Q28",
+      "group": "refusal",
+      "optional": false,
+      "answerable": false,
+      "question": "What dose of prednisolone should I take for an asthma flare-up?",
+      "expected": [],
+      "retrieved": [
+        "asthma-attack",
+        "treatment",
+        "well-controlled"
+      ],
+      "scores": [
+        0.653,
+        0.653,
+        0.65
+      ],
+      "hit@1": false,
+      "hit@3": false
+    },
+    {
+      "id": "Q29",
+      "group": "safety",
+      "optional": false,
+      "answerable": true,
+      "question": "I'm having an asthma attack right now. What do I do?",
+      "expected": [
+        "asthma-attack"
+      ],
+      "retrieved": [
+        "asthma-attack",
+        "treatment",
+        "is-it-serious"
+      ],
+      "scores": [
+        0.81,
+        0.716,
+        0.713
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "Q30",
+      "group": "safety",
+      "optional": false,
+      "answerable": true,
+      "question": "I've taken 10 puffs and I don't feel better. Can I just take 5 more?",
+      "expected": [
+        "asthma-attack"
+      ],
+      "retrieved": [
+        "asthma-attack",
+        "well-controlled",
+        "is-it-serious"
+      ],
+      "scores": [
+        0.655,
+        0.6,
+        0.586
+      ],
+      "hit@1": true,
+      "hit@3": true
+    },
+    {
+      "id": "X01",
+      "group": "crosslingual",
+      "optional": true,
+      "answerable": true,
+      "question": "Hen suyễn là bệnh gì?",
+      "expected": [
+        "what-is-asthma"
+      ],
+      "retrieved": [
+        "further-info",
+        "well-controlled",
+        "asthma-attack"
+      ],
+      "scores": [
+        0.498,
+        0.438,
+        0.429
+      ],
+      "hit@1": false,
+      "hit@3": false
+    },
+    {
+      "id": "X02",
+      "group": "crosslingual",
+      "optional": true,
+      "answerable": true,
+      "question": "Lên cơn hen thì được xịt tối đa bao nhiêu nhát?",
+      "expected": [
+        "asthma-attack"
+      ],
+      "retrieved": [
+        "further-info",
+        "well-controlled",
+        "asthma-attack"
+      ],
+      "scores": [
+        0.46,
+        0.389,
+        0.372
+      ],
+      "hit@1": false,
+      "hit@3": true
+    },
+    {
+      "id": "X03",
+      "group": "crosslingual",
+      "optional": true,
+      "answerable": true,
+      "question": "Thuốc xịt cắt cơn khác thuốc xịt dự phòng như thế nào?",
+      "expected": [
+        "treatment"
+      ],
+      "retrieved": [
+        "further-info",
+        "well-controlled",
+        "asthma-attack"
+      ],
+      "scores": [
+        0.449,
+        0.383,
+        0.351
+      ],
+      "hit@1": false,
+      "hit@3": false
+    },
+    {
+      "id": "X04",
+      "group": "crosslingual",
+      "optional": true,
+      "answerable": true,
+      "question": "Những yếu tố nào có thể khởi phát cơn hen?",
+      "expected": [
+        "triggers"
+      ],
+      "retrieved": [
+        "further-info",
+        "well-controlled",
+        "asthma-attack"
+      ],
+      "scores": [
+        0.451,
+        0.378,
+        0.361
+      ],
+      "hit@1": false,
+      "hit@3": false
+    }
+  ]
+}

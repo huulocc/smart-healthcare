@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+
+# Rebuilt from the PDFs by `python rag/ingest.py` - not worth versioning.
+data/chroma/

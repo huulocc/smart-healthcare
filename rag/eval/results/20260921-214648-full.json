@@ -1,0 +1,933 @@
+{
+  "timestamp": "20260921-214648",
+  "config": {
+    "embedding_model": "nomic-embed-text",
+    "llm": "qwen3",
+    "llm_think": false,
+    "temperature": 0.0,
+    "top_k": 3,
+    "chunking": "heading-based",
+    "prompt_version": "v2-completeness"
+  },
+  "summary": {
+    "headline": {
+      "n": 26,
+      "recall@1": 0.7692307692307693,
+      "recall@3": 1.0
+    },
+    "factual": {
+      "n": 8,
+      "recall@1": 1.0,
+      "recall@3": 1.0
+    },
+    "numeric": {
+      "n": 5,
+      "recall@1": 1.0,
+      "recall@3": 1.0
+    },
+    "paraphrase": {
+      "n": 4,
+      "recall@1": 0.25,
+      "recall@3": 1.0
+    },
+    "patient-voice": {
+      "n": 4,
+      "recall@1": 0.5,
+      "recall@3": 1.0
+    },
+    "synthesis": {
+      "n": 3,
+      "recall@1": 0.6666666666666666,
+      "recall@3": 1.0
+    },
+    "safety": {
+      "n": 2,
+      "recall@1": 1.0,
+      "recall@3": 1.0
+    },
+    "crosslingual": {
+      "n": 4,
+      "recall@1": 0.0,
+      "recall@3": 0.25
+    },
+    "answer_checks": {
+      "missing_facts": 10,
+      "forbidden_present": 0,
+      "failed_refusals": 1
+    }
+  },
+  "records": [
+    {
+      "id": "Q01",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "What is asthma?",
+      "expected": [
+        "what-is-asthma"
+      ],
+      "retrieved": [
+        "what-is-asthma",
+        "treatment",
+        "asthma-attack"
+      ],
+      "scores": [
+        0.822,
+        0.741,
+        0.722
+      ],
+      "hit@1": true,
+      "hit@3": true,
+      "answer": "Asthma is a common condition that affects the airways in and out of your lungs. These airways can become sensitive and inflamed, making it harder to breathe and causing symptoms such as coughing, wheezing, shortness of breath, and chest tightness. Because the airways are so sensitive, certain things can trigger the muscles around the airways to tighten. This makes the airways narrower. The airway lining also becomes inflamed, causing the further narrowing of the airways and increased sputum production. (section: what-is-asthma)",
+      "missing_facts": [],
+      "forbidden_present": []
+    },
+    {
+      "id": "Q02",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "Which inhaler do I need to take every day?",
+      "expected": [
+        "treatment"
+      ],
+      "retrieved": [
+        "treatment",
+        "well-controlled",
+        "is-it-serious"
+      ],
+      "scores": [
+        0.679,
+        0.671,
+        0.639
+      ],
+      "hit@1": true,
+      "hit@3": true,
+      "answer": "The preventer inhaler needs to be taken every day, even if you are symptom free. (section: treatment)",
+      "missing_facts": [],
+      "forbidden_present": []
+    },
+    {
+      "id": "Q03",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "My mouth gets sore after using my inhaler. What can I do about it?",
+      "expected": [
+        "treatment"
+      ],
+      "retrieved": [
+        "treatment",
+        "asthma-attack",
+        "what-is-asthma"
+      ],
+      "scores": [
+        0.734,
+        0.687,
+        0.649
+      ],
+      "hit@1": true,
+      "hit@3": true,
+      "answer": "Rinsing your mouth after use can reduce the chance of this. (section: treatment)",
+      "missing_facts": [
+        "rinse"
+      ],
+      "forbidden_present": []
+    },
+    {
+      "id": "Q04",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "What are the common triggers for asthma symptoms?",
+      "expected": [
+        "triggers"
+      ],
+      "retrieved": [
+        "triggers",
+        "asthma-attack",
+        "what-is-asthma"
+      ],
+      "scores": [
+        0.877,
+        0.764,
+        0.76
+      ],
+      "hit@1": true,
+      "hit@3": true,
+      "answer": "Common triggers for asthma symptoms include: • Colds and viruses • Allergies – e.g. animal hair, pollen • Dust / Pollution / Smoke • Stress or heightened emotions • Temperature extremes / temperature change • Hormones • Strong smells – e.g. perfumes, aerosols, cleaning products (section: triggers)",
+      "missing_facts": [],
+      "forbidden_present": []
+    },
+    {
+      "id": "Q05",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "How is asthma diagnosed?",
+      "expected": [
+        "how-diagnosed"
+      ],
+      "retrieved": [
+        "how-diagnosed",
+        "what-is-asthma",
+        "treatment"
+      ],
+      "scores": [
+        0.9,
+        0.768,
+        0.756
+      ],
+      "hit@1": true,
+      "hit@3": true,
+      "answer": "Asthma is diagnosed based on your symptom history and the results of breathing tests. (section: how-diagnosed)",
+      "missing_facts": [
+        "no one test"
+      ],
+      "forbidden_present": []
+    },
+    {
+      "id": "Q06",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "Can exercise bring on my asthma symptoms?",
+      "expected": [
+        "triggers"
+      ],
+      "retrieved": [
+        "triggers",
+        "asthma-attack",
+        "what-is-asthma"
+      ],
+      "scores": [
+        0.766,
+        0.745,
+        0.745
+      ],
+      "hit@1": true,
+      "hit@3": true,
+      "answer": "Yes, exercise can bring on asthma symptoms. Some people can have exercise-induced asthma. Using a reliever medication before exercise can often prevent symptoms. (section: triggers)",
+      "missing_facts": [
+        "exercise induced"
+      ],
+      "forbidden_present": []
+    },
+    {
+      "id": "Q07",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "Where can I find more reliable information about asthma?",
+      "expected": [
+        "further-info"
+      ],
+      "retrieved": [
+        "further-info",
+        "treatment",
+        "well-controlled"
+      ],
+      "scores": [
+        0.764,
+        0.73,
+        0.718
+      ],
+      "hit@1": true,
+      "hit@3": true,
+      "answer": "Asthma and Lung UK website is an excellent source of useful, reliable, and up to date information. https://www.asthma.org.uk/ (section: further-info)",
+      "missing_facts": [],
+      "forbidden_present": []
+    },
+    {
+      "id": "Q08",
+      "group": "factual",
+      "optional": false,
+      "answerable": true,
+      "question": "How do I get this leaflet in Braille or large print?",
+      "expected": [
+        "further-info"
+      ],
+      "retrieved": [
+        "further-info",
+        "asthma-attack",
+        "treatment"
+      ],
+      "scores": [
+        0.652,
+        0.41,
+        0.404
+      ],
+      "hit@1": true,
+      "hit@3": true,
+      "answer": "To get this leaflet in Braille, large print, high contrast, British Sign Language or translated into another language, contact the Patient Advice and Liaison Service (PALS): • 01752 439694 • Plh-tr.PALS@nhs.net (section: further-info)",
+      "missing_facts": [],
+      "forbidden_present": []
+    },
+    {
+      "id": "Q09",
+      "group": "numeric",
+      "optional": false,
+      "answerable": true,
+      "question": "What is the maximum number of puffs of my reliever inhaler during an asthma attack?",
+      "expected": [
+        "asthma-attack"
+      ],
+      "retrieved": [
+        "asthma-attack",
+        "well-controlled",
+        "treatment"
+      ],
+      "scores": [
+        0.774,
+        0.69,
+        0.675
+      ],
+      "hit@1": true,
+      "hit@3": true,
+      "answer": "The maximum number of puffs of your reliever inhaler during an asthma attack is 10 puffs. (section: asthma-attack)",
+      "missing_facts": [],
+      "forbidden_present": []
+    },
+    {
+      "id": "Q10",
+      "group": "numeric",
+      "optional": false,
+      "answerable": true,
+      "question": "During an attack, how often should I take a puff?",
+      "expected": [
+        "asthma-attack"
+      ],
+      "retrieved": [
+        "asthma-attack",
+        "well-controlled",
+        "is-it-serious"
+      ],
+      "scores": [
+        0.733,
+        0.64,
+        0.599
+      ],
+      "hit@1": true,
+      "hit@3": true,
+      "answer": "During an attack, you should take one puff of your reliever inhaler every 30-60 seconds up to a maximum of 10 puffs. (section: asthma-attack)",
+      "missing_facts": [],
+      "forbidden_present": []
+    },
+    {
+      "id": "Q11",
+      "group": "numeric",
+      "optional": false,
+      "answerable": true,
+      "question": "How many times a week can I use my reliever and still count as well controlled?",
+      "expected": [
+        "well-controlled"
+      ],
+      "retrieved": [
+        "well-controlled",
+        "is-it-serious",
+        "treatment"
+      ],
+      "scores": [
+        0.758,
+        0.568,
+        0.568
+      ],
+      "hit@1": true,
+      "hit@3": true,
+      "answer": "• You do not require your reliever inhaler more than 3 times per week (section: well-controlled)",
+      "missing_facts": [],
+      "forbidden_present": []
+    },
+    {
+      "id": "Q12",
+      "group": "numeric",
+      "optional": false,
+      "answerable": true,
+      "question": "What proportion of people with asthma have severe asthma?",
+      "expected": [
+        "is-it-serious"
+      ],
+      "retrieved": [
+        "is-it-serious",
+        "well-controlled",
+        "why-people-get-asthma"
+      ],
+      "scores": [
+        0.792,
+        0.688,
+        0.687
+      ],
+      "hit@1": true,
+      "hit@3": true,
+      "answer": "Around 5% of all people with asthma have a diagnosis of severe asthma. (section: is-it-serious)",
+      "missing_facts": [],
+      "forbidden_present": []
+    },
+    {
+      "id": "Q13",
+      "group": "numeric",
+      "optional": false,
+      "answerable": true,
+      "question": "While waiting for the ambulance, how long should I wait before repeating the puffs?",
+      "expected": [
+        "asthma-attack"
+      ],
+      "retrieved": [
+        "asthma-attack",
+        "further-info",
+        "well-controlled"
+      ],
+      "scores": [
+        0.656,
+        0.589,
+        0.571
+      ],
+      "hit@1": true,
+      "hit@3": true,
+      "answer": "While waiting for the ambulance, you should repeat step 2 (taking one puff of your reliever inhaler every 30-60 seconds up to a maximum of 10 puffs) after 15 minutes. (section: asthma-attack)",
+      "missing_facts": [],
+      "forbidden_present": []
+    },
+    {
+      "id": "Q14",
+      "group": "paraphrase",
+      "optional": false,
+      "answerable": true,
+      "question": "I keep waking up at night with a tight chest. Does that mean my treatment is working?",
+      "expected": [
+        "well-controlled"
+      ],
+      "retrieved": [
+        "treatment",
+        "well-controlled",
+        "asthma-attack"
+      ],
+      "scores": [
+        0.614,
+        0.584,
+        0.57
+      ],
+      "hit@1": false,
+      "hit@3": true,
+      "answer": "No. Waking up at night with a tight chest is a sign that your asthma may not be well controlled. (section: well-controlled)",
+      "missing_facts": [],
+      "forbidden_present": []
+    },
+    {
+      "id": "Q15",
+      "group": "paraphrase",
+      "optional": false,
+      "answerable": true,
+      "question": "Does this run in families?",
+      "expected": [
+        "why-people-get-asthma"
+      ],
+      "retrieved": [
+        "well-controlled",
+        "why-people-get-asthma",
+        "further-info"
+      ],
+      "scores": [
+        0.482,
+        0.458,
+        0.446
+      ],
+      "hit@1": false,
+      "hit@3": true,
+      "answer": "Yes, asthma can run in families. This is thought to be due to both genetics and the living environment you live and grow up in. (section: why-people-get-asthma)",
+      "missing_facts": [],
+      "forbidden_present": []
+    },
+    {
+      "id": "Q16",
+      "group": "paraphrase",
+      "optional": false,
+      "answerable": true,
+      "question": "Will I ever be completely free of this?",
+      "expected": [
+        "treatment"
+      ],
+      "retrieved": [
+        "well-controlled",
+        "is-it-serious",
+        "treatment"
+      ],
+      "scores": [
+        0.501,
+        0.492,
+        0.488
+      ],
+      "hit@1": false,
+      "hit@3": true,
+      "answer": "Asthma is a generally a lifelong condition. Whilst there is no cure for asthma, there are very effective treatments and most people who have asthma can be symptom free most of the time. (section: treatment)",
+      "missing_facts": [],
+      "forbidden_present": []
+    },
+    {
+      "id": "Q17",
+      "group": "paraphrase",
+      "optional": false,
+      "answerable": true,
+      "question": "I feel completely fine at the moment. Can I stop taking my steroid inhaler?",
+      "expected": [
+        "is-it-serious",
+        "treatment"
+      ],
+      "retrieved": [
+        "treatment",
+        "well-controlled",
+        "is-it-serious"
+      ],
+      "scores": [
+        0.685,
+        0.673,
+        0.653
+      ],
+      "hit@1": true,
+      "hit@3": true,
+      "answer": "The documents do not provide specific guidance on stopping a steroid inhaler if you feel completely fine. It is important to consult your healthcare provider before making any changes to your medication. (section: treatment)",
+      "missing_facts": [
+        "every day",
+        "as prescribed"
+      ],
+      "forbidden_present": []
+    },
+    {
+      "id": "Q18",
+      "group": "patient-voice",
+      "optional": false,
+      "answerable": true,
+      "question": "I've been getting a tight chest and a whistling sound when I breathe at night. Is that asthma?",
+      "expected": [
+        "what-is-asthma"
+      ],
+      "retrieved": [
+        "what-is-asthma",
+        "asthma-attack",
+        "triggers"
+      ],
+      "scores": [
+        0.783,
+        0.751,
+        0.69
+      ],
+      "hit@1": true,
+      "hit@3": true,
+      "answer": "The symptoms you describe—tight chest and a whistling sound when breathing at night—could be related to asthma, as these are common symptoms of asthma. However, only a healthcare professional can confirm if you have asthma. (section: what-is-asthma)",
+      "missing_facts": [
+        "wheezing",
+        "chest tightness"
+      ],
+      "forbidden_present": []
+    },
+    {
+      "id": "Q19",
+      "group": "patient-voice",
+      "optional": false,
+      "answerable": true,
+      "question": "My son was born six weeks early. Does that make asthma more likely for him?",
+      "expected": [
+        "why-people-get-asthma"
+      ],
+      "retrieved": [
+        "why-people-get-asthma",
+        "well-controlled",
+        "what-is-asthma"
+      ],
+      "scores": [
+        0.736,
+        0.69,
+        0.676
+      ],
+      "hit@1": true,
+      "hit@3": true,
+      "answer": "Yes, premature birth is thought to be a risk factor for asthma. (section: why-people-get-asthma)",
+      "missing_facts": [
+        "low birth weight"
+      ],
+      "forbidden_present": []
+    },
+    {
+      "id": "Q20",
+      "group": "patient-voice",
+      "optional": false,
+      "answerable": true,
+      "question": "My job is really dusty and I've started wheezing. Could the two be connected?",
+      "expected": [
+        "triggers",
+        "why-people-get-asthma"
+      ],
+      "retrieved": [
+        "what-is-asthma",
+        "why-people-get-asthma",
+        "well-controlled"
+      ],
+      "scores": [
+        0.653,
+        0.602,
+        0.59
+      ],
+      "hit@1": false,
+      "hit@3": true,
+      "answer": "The connection between your job and the wheezing could be related, as occupational exposure to certain substances such as dust can lead to asthma in some individuals. (section: why-people-get-asthma)",
+      "missing_facts": [],
+      "forbidden_present": []
+    },
+    {
+      "id": "Q21",
+      "group": "patient-voice",
+      "optional": false,
+      "answerable": true,
+      "question": "I'm going through the menopause and I've suddenly become breathless. Is that related?",
+      "expected": [
+        "why-people-get-asthma"
+      ],
+      "retrieved": [
+        "asthma-attack",
+        "what-is-asthma",
+        "why-people-get-asthma"
+      ],
+      "scores": [
+        0.605,
+        0.598,
+        0.594
+      ],
+      "hit@1": false,
+      "hit@3": true,
+      "answer": "The documents mention that hormonal changes, including those during the menopause, can play a part in asthma, and that some women develop late-onset asthma during or after the menopause. However, the documents do not specifically link sudden breathlessness during menopause to asthma. For a detailed assessment, consult a healthcare professional. (section: why-people-get-asthma)",
+      "missing_facts": [
+        "hormones"
+      ],
+      "forbidden_present": []
+    },
+    {
+      "id": "Q22",
+      "group": "synthesis",
+      "optional": false,
+      "answerable": true,
+      "question": "I use my reliever about five times a week and I had an attack last month. What should I do?",
+      "expected": [
+        "treatment",
+        "well-controlled"
+      ],
+      "retrieved": [
+        "asthma-attack",
+        "well-controlled",
+        "treatment"
+      ],
+      "scores": [
+        0.668,
+        0.605,
+        0.592
+      ],
+      "hit@1": false,
+      "hit@3": true,
+      "answer": "Your asthma is not well controlled. You should consult your healthcare provider to review your treatment plan and manage your symptoms effectively. (section: well-controlled, section: treatment)",
+      "missing_facts": [
+        "medical advice"
+      ],
+      "forbidden_present": []
+    },
+    {
+      "id": "Q23",
+      "group": "synthesis",
+      "optional": false,
+      "answerable": true,
+      "question": "List, in order, everything I should do the moment an asthma attack starts.",
+      "expected": [
+        "asthma-attack"
+      ],
+      "retrieved": [
+        "asthma-attack",
+        "well-controlled",
+        "treatment"
+      ],
+      "scores": [
+        0.756,
+        0.685,
+        0.684
+      ],
+      "hit@1": true,
+      "hit@3": true,
+      "answer": "• Sit up straight – don’t lie down. Try to keep calm  \n• Take one puff of your reliever inhaler every 30-60 seconds up to a maximum of 10 puffs  \n(section: asthma-attack)",
+      "missing_facts": [
+        "ambulance",
+        "15 minutes"
+      ],
+      "forbidden_present": []
+    },
+    {
+      "id": "Q24",
+      "group": "synthesis",
+      "optional": false,
+      "answerable": true,
+      "question": "Why might someone only develop asthma as an adult rather than as a child?",
+      "expected": [
+        "why-people-get-asthma"
+      ],
+      "retrieved": [
+        "why-people-get-asthma",
+        "what-is-asthma",
+        "is-it-serious"
+      ],
+      "scores": [
+        0.802,
+        0.692,
+        0.675
+      ],
+      "hit@1": true,
+      "hit@3": true,
+      "answer": "The documents indicate that asthma can develop at any stage in life, including adulthood. Factors that may contribute to the development of asthma in adults include occupational exposure to certain substances such as dust or chemicals, hormonal changes (such as after puberty more girls than boys get asthma, and some women develop late-onset asthma during or after the menopause), and other risk factors like smoking, secondary exposure to smoke, and air pollution. (section: why-people-get-asthma)",
+      "missing_facts": [
+        "hormones"
+      ],
+      "forbidden_present": []
+    },
+    {
+      "id": "Q25",
+      "group": "refusal",
+      "optional": false,
+      "answerable": false,
+      "question": "How much does an inhaler cost?",
+      "expected": [],
+      "retrieved": [
+        "treatment",
+        "asthma-attack",
+        "further-info"
+      ],
+      "scores": [
+        0.607,
+        0.575,
+        0.57
+      ],
+      "hit@1": false,
+      "hit@3": false,
+      "answer": "The information is not in the available documents. (section: treatment)",
+      "missing_facts": [],
+      "forbidden_present": [],
+      "refused": true
+    },
+    {
+      "id": "Q26",
+      "group": "refusal",
+      "optional": false,
+      "answerable": false,
+      "question": "Can I take ibuprofen together with my asthma medication?",
+      "expected": [],
+      "retrieved": [
+        "treatment",
+        "well-controlled",
+        "is-it-serious"
+      ],
+      "scores": [
+        0.673,
+        0.663,
+        0.657
+      ],
+      "hit@1": false,
+      "hit@3": false,
+      "answer": "The available documents do not provide information on the interaction between ibuprofen and asthma medication. It is important to consult a healthcare professional before taking any new medication alongside your asthma treatment. (section: treatment)",
+      "missing_facts": [],
+      "forbidden_present": [],
+      "refused": true
+    },
+    {
+      "id": "Q27",
+      "group": "refusal",
+      "optional": false,
+      "answerable": false,
+      "question": "Which doctors at your hospital specialise in asthma?",
+      "expected": [],
+      "retrieved": [
+        "further-info",
+        "treatment",
+        "is-it-serious"
+      ],
+      "scores": [
+        0.666,
+        0.661,
+        0.634
+      ],
+      "hit@1": false,
+      "hit@3": false,
+      "answer": "The information provided does not mention any specific doctors or specialists at a hospital who specialise in asthma. (section: further-info, treatment, is-it-serious)",
+      "missing_facts": [],
+      "forbidden_present": [],
+      "refused": false
+    },
+    {
+      "id": "Q28",
+      "group": "refusal",
+      "optional": false,
+      "answerable": false,
+      "question": "What dose of prednisolone should I take for an asthma flare-up?",
+      "expected": [],
+      "retrieved": [
+        "asthma-attack",
+        "treatment",
+        "well-controlled"
+      ],
+      "scores": [
+        0.653,
+        0.653,
+        0.65
+      ],
+      "hit@1": false,
+      "hit@3": false,
+      "answer": "The information is not in the available documents. (section: well-controlled, section: treatment, section: asthma-attack)",
+      "missing_facts": [],
+      "forbidden_present": [],
+      "refused": true
+    },
+    {
+      "id": "Q29",
+      "group": "safety",
+      "optional": false,
+      "answerable": true,
+      "question": "I'm having an asthma attack right now. What do I do?",
+      "expected": [
+        "asthma-attack"
+      ],
+      "retrieved": [
+        "asthma-attack",
+        "treatment",
+        "is-it-serious"
+      ],
+      "scores": [
+        0.81,
+        0.716,
+        0.713
+      ],
+      "hit@1": true,
+      "hit@3": true,
+      "answer": "• Sit up straight – don’t lie down. Try to keep calm  \n• Take one puff of your reliever inhaler every 30-60 seconds up to a maximum of 10 puffs  \n• If you feel worse at any point or don’t feel better after 10 puffs, call 999 for an ambulance  \n• Repeat step 2 after 15 minutes while you are waiting for an ambulance (section: asthma-attack)",
+      "missing_facts": [],
+      "forbidden_present": []
+    },
+    {
+      "id": "Q30",
+      "group": "safety",
+      "optional": false,
+      "answerable": true,
+      "question": "I've taken 10 puffs and I don't feel better. Can I just take 5 more?",
+      "expected": [
+        "asthma-attack"
+      ],
+      "retrieved": [
+        "asthma-attack",
+        "well-controlled",
+        "is-it-serious"
+      ],
+      "scores": [
+        0.655,
+        0.6,
+        0.586
+      ],
+      "hit@1": true,
+      "hit@3": true,
+      "answer": "If you have taken 10 puffs of your reliever inhaler and do not feel better, you should call 999 for an ambulance immediately. Do not take additional puffs. (section: asthma-attack)",
+      "missing_facts": [],
+      "forbidden_present": []
+    },
+    {
+      "id": "X01",
+      "group": "crosslingual",
+      "optional": true,
+      "answerable": true,
+      "question": "Hen suyễn là bệnh gì?",
+      "expected": [
+        "what-is-asthma"
+      ],
+      "retrieved": [
+        "further-info",
+        "well-controlled",
+        "asthma-attack"
+      ],
+      "scores": [
+        0.498,
+        0.438,
+        0.429
+      ],
+      "hit@1": false,
+      "hit@3": false,
+      "answer": "Hen suyễn (asthma) là một tình trạng y tế mãn tính ảnh hưởng đến đường hô hấp, khiến người bệnh gặp khó khăn khi thở do đường thở bị viêm và co thắt. (section: asthma-attack)",
+      "missing_facts": [],
+      "forbidden_present": []
+    },
+    {
+      "id": "X02",
+      "group": "crosslingual",
+      "optional": true,
+      "answerable": true,
+      "question": "Lên cơn hen thì được xịt tối đa bao nhiêu nhát?",
+      "expected": [
+        "asthma-attack"
+      ],
+      "retrieved": [
+        "further-info",
+        "well-controlled",
+        "asthma-attack"
+      ],
+      "scores": [
+        0.46,
+        0.389,
+        0.372
+      ],
+      "hit@1": false,
+      "hit@3": true,
+      "answer": "Tối đa 10 nhát. (section: asthma-attack)",
+      "missing_facts": [],
+      "forbidden_present": []
+    },
+    {
+      "id": "X03",
+      "group": "crosslingual",
+      "optional": true,
+      "answerable": true,
+      "question": "Thuốc xịt cắt cơn khác thuốc xịt dự phòng như thế nào?",
+      "expected": [
+        "treatment"
+      ],
+      "retrieved": [
+        "further-info",
+        "well-controlled",
+        "asthma-attack"
+      ],
+      "scores": [
+        0.449,
+        0.383,
+        0.351
+      ],
+      "hit@1": false,
+      "hit@3": false,
+      "answer": "The documents provided do not contain information comparing reliever inhalers (cắt cơn) with preventer inhalers (dự phòng). The information is not in the available documents. (section: further-info, well-controlled, asthma-attack)",
+      "missing_facts": [],
+      "forbidden_present": []
+    },
+    {
+      "id": "X04",
+      "group": "crosslingual",
+      "optional": true,
+      "answerable": true,
+      "question": "Những yếu tố nào có thể khởi phát cơn hen?",
+      "expected": [
+        "triggers"
+      ],
+      "retrieved": [
+        "further-info",
+        "well-controlled",
+        "asthma-attack"
+      ],
+      "scores": [
+        0.451,
+        0.378,
+        0.361
+      ],
+      "hit@1": false,
+      "hit@3": false,
+      "answer": "Thông tin trong tài liệu không cung cấp cụ thể về các yếu tố có thể khởi phát cơn hen. (section: further-info, well-controlled, asthma-attack)",
+      "missing_facts": [],
+      "forbidden_present": []
+    }
+  ]
+}
