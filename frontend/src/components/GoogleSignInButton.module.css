@@ -1,0 +1,10 @@
+.container {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+}
+
+/* Google renders its own iframe; keep it from overflowing the card on small screens. */
+.container > div {
+  max-width: 100%;
+}

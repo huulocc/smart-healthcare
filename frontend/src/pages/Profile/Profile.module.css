@@ -105,6 +105,39 @@
   margin-top: 0.5rem;
 }
 
+.statusCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
+}
+
+.spinner {
+  color: var(--primary);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.errorIcon {
+  color: var(--error);
+}
+
+.formError {
+  font-size: 0.875rem;
+  color: var(--error);
+  background-color: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--border-radius-md);
+  padding: 0.75rem 0.875rem;
+  margin: 0;
+}
+
 .successBanner {
   max-width: 640px;
   margin: 0 auto 1.5rem;

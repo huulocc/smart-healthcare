@@ -103,3 +103,9 @@
 .registerBtn:hover {
   background-color: var(--primary-hover);
 }
+
+.logoutBtn {
+  border: none;
+  font-family: inherit;
+  font-size: 1rem;
+}

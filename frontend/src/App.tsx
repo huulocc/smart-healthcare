@@ -2,15 +2,17 @@ import type { ReactNode } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import AuthLayout from './layouts/AuthLayout';
+import AuthProvider from './context/AuthProvider';
+import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home/Home';
 import Departments from './pages/Departments/Departments';
 import Doctors from './pages/Doctors/Doctors';
-import Login from './pages/Login/Login';
-import Register from './pages/Register/Register';
+import AuthPage from './pages/Auth/AuthPage';
 import Profile from './pages/Profile/Profile';
 import ChangePassword from './pages/ChangePassword/ChangePassword';
 import ForgotPassword from './pages/ForgotPassword/ForgotPassword';
 import ResetPassword from './pages/ResetPassword/ResetPassword';
+import VerifyEmail from './pages/VerifyEmail/VerifyEmail';
 import AdminLayout from './components/admin/AdminLayout';
 import AdminDashboard from './components/admin/AdminDashboard';
 import AdminManagementPage from './components/admin/AdminManagementPage';
@@ -23,16 +25,17 @@ import AdminNotifications from './components/admin/AdminNotifications';
 function PublicPage({ children }: { children: ReactNode }) { return <MainLayout>{children}</MainLayout>; }
 
 function App() {
-  return <BrowserRouter><Routes>
+  return <BrowserRouter><AuthProvider><Routes>
     <Route path="/" element={<PublicPage><Home /></PublicPage>} />
     <Route path="/departments" element={<PublicPage><Departments /></PublicPage>} />
     <Route path="/doctors" element={<PublicPage><Doctors /></PublicPage>} />
-    <Route path="/login" element={<AuthLayout><Login /></AuthLayout>} />
-    <Route path="/register" element={<AuthLayout><Register /></AuthLayout>} />
+    <Route path="/login" element={<AuthLayout><AuthPage /></AuthLayout>} />
+    <Route path="/register" element={<AuthLayout><AuthPage /></AuthLayout>} />
     <Route path="/forgot-password" element={<AuthLayout><ForgotPassword /></AuthLayout>} />
     <Route path="/reset-password" element={<AuthLayout><ResetPassword /></AuthLayout>} />
-    <Route path="/profile" element={<PublicPage><Profile /></PublicPage>} />
-    <Route path="/profile/change-password" element={<PublicPage><ChangePassword /></PublicPage>} />
+    <Route path="/verify-email" element={<AuthLayout><VerifyEmail /></AuthLayout>} />
+    <Route path="/profile" element={<ProtectedRoute><PublicPage><Profile /></PublicPage></ProtectedRoute>} />
+    <Route path="/profile/change-password" element={<ProtectedRoute><PublicPage><ChangePassword /></PublicPage></ProtectedRoute>} />
     <Route path="/admin" element={<AdminLayout />}>
       <Route index element={<AdminDashboard />} />
       <Route path="patients" element={<AdminManagementPage type="patients" />} />
@@ -47,7 +50,7 @@ function App() {
       <Route path="notifications" element={<AdminNotifications />} />
       <Route path="settings" element={<AdminSettings />} />
     </Route>
-  </Routes></BrowserRouter>;
+  </Routes></AuthProvider></BrowserRouter>;
 }
 
 export default App;

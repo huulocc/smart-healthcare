@@ -1,0 +1,27 @@
+.wrapper {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.link {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.sent,
+.failed {
+  font-weight: 600;
+}
