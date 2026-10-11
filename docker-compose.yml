@@ -1,0 +1,22 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: smart-healthcare-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: smart_healthcare
+      MYSQL_USER: healthcare
+      MYSQL_PASSWORD: healthcare
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mysql-data:

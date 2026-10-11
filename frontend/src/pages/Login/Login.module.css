@@ -1,47 +1,106 @@
 .wrapper {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
 }
 
 .title {
-  font-size: 1.75rem;
-  margin-bottom: 0.25rem;
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
 }
 
 .subtitle {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.55;
   color: var(--text-muted);
-  margin-bottom: 2rem;
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  text-align: left;
-}
-
-.forgotRow {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: -0.75rem;
+  gap: 18px;
 }
 
 .forgotLink {
-  font-size: 0.875rem;
+  font-size: 12.5px;
+  font-weight: 600;
   color: var(--primary);
 }
 
+.remember {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: -4px;
+  font-size: 13.5px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.checkbox {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--primary);
+  cursor: pointer;
+  flex: none;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12.5px;
+  color: var(--text-light);
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.formNotice,
 .formError {
-  font-size: 0.875rem;
-  color: var(--error);
-  background-color: var(--bg-muted);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 13.5px;
+  line-height: 1.5;
   border-radius: var(--border-radius-md);
-  padding: 0.625rem 0.875rem;
-  margin: 0;
+  padding: 0.75rem 0.875rem;
+}
+
+.formNotice {
+  color: var(--success);
+  background-color: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.formError {
+  color: var(--error);
+  background-color: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.bannerIcon {
+  flex-shrink: 0;
+  margin-top: 0.0625rem;
 }
 
 .footerText {
-  margin-top: 2rem;
-  margin-bottom: 0;
-  font-size: 0.9375rem;
+  margin: 0;
+  font-size: 14px;
   color: var(--text-muted);
 }

@@ -1,7 +1,21 @@
-import { Link } from 'react-router-dom';
+import { startTransition } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/useAuth';
 import styles from './Navbar.module.css';
 
 const Navbar = () => {
+  const { isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    // One transition for both updates. Otherwise React renders "logged out" while still on a protected
+    // page, and ProtectedRoute sends the user to /login instead of the home page.
+    startTransition(() => {
+      logout();
+      navigate('/');
+    });
+  };
+
   return (
     <header className={styles.header}>
       <div className={`container ${styles.navContainer}`}>
@@ -10,7 +24,7 @@ const Navbar = () => {
             <span className={styles.logoAccent}>Smart</span>Healthcare
           </Link>
         </div>
-        
+
         <nav className={styles.nav}>
           <ul className={styles.navList}>
             <li><Link to="/">Home</Link></li>
@@ -20,8 +34,19 @@ const Navbar = () => {
         </nav>
 
         <div className={styles.actions}>
-          <Link to="/login" className={styles.loginBtn}>Log In</Link>
-          <Link to="/register" className={styles.registerBtn}>Sign Up</Link>
+          {isAuthenticated ? (
+            <>
+              <Link to="/profile" className={styles.loginBtn}>Profile</Link>
+              <button type="button" onClick={handleLogout} className={`${styles.registerBtn} ${styles.logoutBtn}`}>
+                Log Out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className={styles.loginBtn}>Log In</Link>
+              <Link to="/register" className={styles.registerBtn}>Sign Up</Link>
+            </>
+          )}
         </div>
       </div>
     </header>

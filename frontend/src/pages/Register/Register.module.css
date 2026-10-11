@@ -1,36 +1,210 @@
 .wrapper {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
 }
 
 .title {
-  font-size: 1.75rem;
-  margin-bottom: 0.25rem;
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
 }
 
 .subtitle {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.55;
   color: var(--text-muted);
-  margin-bottom: 2rem;
+}
+
+.doneIcon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: var(--auth-tint);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12.5px;
+  color: var(--text-light);
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.roleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.roleLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--auth-label);
+}
+
+.roleGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.roleCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  text-align: left;
+  padding: 13px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-surface);
+  color: var(--text-main);
+  font-family: inherit;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.roleCard:hover {
+  border-color: var(--text-light);
+}
+
+.roleCardActive {
+  border-color: var(--primary);
+  background: var(--auth-tint);
+  box-shadow: 0 0 0 3px rgba(59, 76, 192, 0.12);
+}
+
+.roleTitle {
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.roleDescription {
+  font-size: 12.5px;
+  line-height: 1.45;
+  opacity: 0.75;
+}
+
+.roleNote {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  text-align: left;
+  gap: 18px;
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px;
+}
+
+.passwordField {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.meter {
+  display: flex;
+  gap: 5px;
+  margin-top: 3px;
+}
+
+.bar {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--auth-hairline);
+  transition: background 0.2s;
+}
+
+.toneWeak {
+  background: oklch(0.62 0.15 30);
+}
+
+.toneMedium {
+  background: oklch(0.72 0.13 80);
+}
+
+.toneStrong {
+  background: oklch(0.55 0.11 150);
+}
+
+.strengthLabel {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.terms {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.termsLabel {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.checkbox {
+  width: 17px;
+  height: 17px;
+  margin: 2px 0 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+  flex: none;
+}
+
+.fieldError,
+.formError {
+  font-size: 12.5px;
+  color: var(--error);
 }
 
 .formError {
-  font-size: 0.875rem;
-  color: var(--error);
-  background-color: var(--bg-muted);
-  border-radius: var(--border-radius-md);
-  padding: 0.625rem 0.875rem;
   margin: 0;
+  background-color: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--border-radius-md);
+  padding: 0.75rem 0.875rem;
+  font-size: 13.5px;
+  line-height: 1.5;
 }
 
 .footerText {
-  margin-top: 2rem;
-  margin-bottom: 0;
-  font-size: 0.9375rem;
+  margin: 0;
+  font-size: 14px;
   color: var(--text-muted);
 }
