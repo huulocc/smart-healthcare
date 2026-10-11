@@ -1,0 +1,160 @@
+### Admin API — try it by hand from VS Code.
+#
+# Needs the "REST Client" extension (humao.rest-client). Click "Send Request" above a request.
+#
+# Before the first run:
+#   1. Put ADMIN_EMAIL and ADMIN_PASSWORD in backend/.env and restart the backend once: it
+#      creates that admin account (see AdminAccountBootstrap). {{$dotenv ...}} reads the same
+#      file, so the password never has to be written in here.
+#   2. Run "login" first. Every other request reuses its token.
+#
+# The ids below are the seeded ones (V3/V4): departments 1-5, doctors 1-5.
+
+@baseUrl = http://localhost:8081/api
+@token = {{login.response.body.$.accessToken}}
+
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{"email": "{{$dotenv ADMIN_EMAIL}}", "password": "{{$dotenv ADMIN_PASSWORD}}"}
+
+
+############################## Doctors
+
+### List, filtered and paged. Every parameter is optional.
+GET {{baseUrl}}/admin/doctors?search=&departmentId=&specialty=&availability=&status=&page=0&size=10
+Authorization: Bearer {{token}}
+
+### Only the doctors on leave
+GET {{baseUrl}}/admin/doctors?availability=ON_LEAVE
+Authorization: Bearer {{token}}
+
+### Stat tiles: total, active, available, on leave, pending requests
+GET {{baseUrl}}/admin/doctors/stats
+Authorization: Bearer {{token}}
+
+### Specialty filter dropdown
+GET {{baseUrl}}/admin/doctors/specialties
+Authorization: Bearer {{token}}
+
+### One doctor
+GET {{baseUrl}}/admin/doctors/1
+Authorization: Bearer {{token}}
+
+### Edit the profile. departmentId null = no department.
+PUT {{baseUrl}}/admin/doctors/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"departmentId": 1, "specialty": "Interventional Cardiology", "experienceYears": 13, "avatarUrl": "/images/doctor_2.jpg"}
+
+### Availability: AVAILABLE, IN_CONSULTATION, ON_LEAVE, OFF_DUTY
+PATCH {{baseUrl}}/admin/doctors/4/availability
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"availability": "AVAILABLE"}
+
+### "Delete" a doctor: INACTIVE also sets OFF_DUTY and ends any headship. ACTIVE brings them back.
+PATCH {{baseUrl}}/admin/doctors/5/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"status": "INACTIVE"}
+
+
+############################## Doctor requests
+#
+# To make one: register with "role": "DOCTOR" (below), then activate the account. Without
+# MAIL_USERNAME in .env the activation link is printed in the backend console instead of
+# emailed -- copy the token from it into "verify-email".
+
+### Sign up asking to be a doctor (no token: this is the public register form)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{"fullName": "Dr. Test Applicant", "email": "applicant@example.com", "phone": "0901234567", "password": "password123", "role": "DOCTOR"}
+
+### Activate it with the token from the console log
+POST {{baseUrl}}/auth/verify-email
+Content-Type: application/json
+
+{"token": "PASTE-THE-TOKEN-FROM-THE-CONSOLE"}
+
+### Waiting requests, oldest first
+GET {{baseUrl}}/admin/doctor-requests?page=0&size=20
+Authorization: Bearer {{token}}
+
+### Approve: use the userId from the list above
+POST {{baseUrl}}/admin/doctor-requests/USER_ID/approve
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"departmentId": 1, "specialty": "General Cardiology", "experienceYears": 4}
+
+### Reject: they stay an ordinary patient
+POST {{baseUrl}}/admin/doctor-requests/USER_ID/reject
+Authorization: Bearer {{token}}
+
+
+############################## Departments
+
+### All departments, with their head and number of active doctors
+GET {{baseUrl}}/admin/departments
+Authorization: Bearer {{token}}
+
+### One department
+GET {{baseUrl}}/admin/departments/1
+Authorization: Bearer {{token}}
+
+### New department; its code (DEP-006, ...) comes from its id
+POST {{baseUrl}}/admin/departments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"name": "Orthopedics", "description": "Bones, joints and muscles"}
+
+### Edit. The head must be an active doctor of this department; omit headDoctorId for none.
+### INACTIVE retires the department: it takes no new doctors.
+PUT {{baseUrl}}/admin/departments/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"name": "Cardiology", "description": "Cardiovascular care and treatment", "headDoctorId": 1, "status": "ACTIVE"}
+
+
+############################## Schedules
+
+### The board: active doctors, each with their week (Monday first)
+GET {{baseUrl}}/admin/schedules?departmentId=&search=&page=0&size=20
+Authorization: Bearer {{token}}
+
+### One doctor's week
+GET {{baseUrl}}/admin/doctors/1/schedules
+Authorization: Bearer {{token}}
+
+### Add a slot. shiftType: WORK, BREAK (must sit inside a WORK slot), LEAVE
+POST {{baseUrl}}/admin/doctors/1/schedules
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"dayOfWeek": "SATURDAY", "startTime": "08:00", "endTime": "12:00", "shiftType": "WORK"}
+
+### This one is refused: it overlaps Monday's 09:00-17:00 shift
+POST {{baseUrl}}/admin/doctors/1/schedules
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"dayOfWeek": "MONDAY", "startTime": "16:00", "endTime": "20:00", "shiftType": "WORK"}
+
+### Edit a slot: use an id from the week above
+PUT {{baseUrl}}/admin/schedules/SLOT_ID
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"dayOfWeek": "SATURDAY", "startTime": "08:00", "endTime": "13:00", "shiftType": "WORK"}
+
+### Delete a slot. Refused if it would leave a break outside any working shift.
+DELETE {{baseUrl}}/admin/schedules/SLOT_ID
+Authorization: Bearer {{token}}
