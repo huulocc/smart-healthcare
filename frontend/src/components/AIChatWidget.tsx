@@ -25,7 +25,7 @@ interface Message {
   isError?: boolean;
 }
 
-const AIChatWidget = () => {
+const AIChatWidget = ({ inline = false }: { inline?: boolean }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -153,7 +153,7 @@ const AIChatWidget = () => {
   );
 
   return (
-    <div className={styles.widgetContainer}>
+    <div className={`${styles.widgetContainer} ${inline ? styles.inlineWidget : ''}`}>
       {isOpen ? (
         <div className={styles.chatWindow}>
           <div className={styles.header}>

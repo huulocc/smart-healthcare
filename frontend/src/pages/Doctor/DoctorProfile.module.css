@@ -1,0 +1,4 @@
+@import '../../components/healthcare/Healthcare.module.css';
+.card {
+  max-width: 900px;
+}

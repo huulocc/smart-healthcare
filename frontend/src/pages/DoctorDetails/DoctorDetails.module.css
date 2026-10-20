@@ -1,0 +1,31 @@
+@import '../../components/healthcare/Healthcare.module.css';
+
+.profileHero {
+  padding: 1.5rem;
+  align-items: flex-start;
+  margin-bottom: 0;
+  background: white;
+}
+.profilePhoto {
+  width: 220px;
+  height: 250px;
+  flex-shrink: 0;
+}
+.profileIntro h1 {
+  font-size: 2rem;
+}
+@media (max-width: 1100px) {
+  .profilePhoto {
+    width: 150px;
+    height: 180px;
+  }
+}
+@media (max-width: 767px) {
+  .profileHero {
+    flex-direction: column;
+  }
+  .profilePhoto {
+    width: 160px;
+    height: 180px;
+  }
+}
