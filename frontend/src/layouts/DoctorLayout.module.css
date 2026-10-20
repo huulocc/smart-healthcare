@@ -1,0 +1,188 @@
+.shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg-main);
+}
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: white;
+  border-right: 1px solid var(--border);
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+}
+.workspace {
+  margin-left: 240px;
+  min-width: 0;
+  width: calc(100% - 240px);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--text-main);
+  font-size: 1rem;
+  font-weight: 700;
+}
+.brand svg {
+  color: var(--primary);
+  width: 24px;
+  flex-shrink: 0;
+}
+.brand b {
+  color: var(--primary);
+}
+.preview {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  margin: 0.8rem 0 2rem;
+}
+.sidebar nav,
+.mobileNavigation nav {
+  display: grid;
+  gap: 0.3rem;
+}
+.sidebar nav small,
+.mobileNavigation nav small {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  margin: 0.6rem 0.7rem;
+}
+.sidebar nav a,
+.mobileNavigation nav a {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.7rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  border-radius: 8px;
+}
+.sidebar nav a[aria-current='page'],
+.mobileNavigation nav a[aria-current='page'] {
+  background: #e0f2fe;
+  color: var(--primary);
+  font-weight: 600;
+}
+.bottom {
+  margin-top: auto;
+  padding-top: 2rem;
+  display: grid;
+  gap: 0.6rem;
+}
+.bottom a,
+.bottom button {
+  font-size: 0.8rem;
+  padding: 0.7rem;
+}
+.bottom button {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  border: 0;
+  color: var(--text-muted);
+  background: transparent;
+  text-align: left;
+  min-height: 44px;
+}
+.topbar {
+  height: 72px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  background: white;
+  padding: 0 1.8rem;
+}
+.topbar strong {
+  display: block;
+  font-size: 0.9rem;
+}
+.topbar small {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  margin-top: 0.25rem;
+}
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+.identity img,
+.identity > div {
+  width: 38px;
+  height: 38px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+.main {
+  padding: 0 1rem;
+  min-width: 0;
+}
+.menuButton {
+  display: none;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--primary);
+  padding: 0.6rem;
+  background: white;
+}
+.drawer {
+  position: fixed;
+  margin: 0;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: auto;
+  width: min(310px, calc(100vw - 2rem));
+  height: 100dvh;
+  max-height: 100dvh;
+  border-radius: 0;
+  padding: 1.5rem;
+}
+.shell :is(a, button):focus-visible {
+  outline: 3px solid #85c5ef;
+  outline-offset: 2px;
+}
+@media (max-width: 1023px) {
+  .sidebar {
+    display: none;
+  }
+  .workspace {
+    margin-left: 0;
+    width: 100%;
+  }
+  .menuButton {
+    display: inline-flex;
+  }
+  .topbar {
+    padding: 0 1rem;
+  }
+  .topbar > div:nth-child(2) {
+    margin-right: auto;
+  }
+  .main {
+    padding: 0;
+  }
+}
+@media (max-width: 500px) {
+  .identity span {
+    display: none;
+  }
+  .topbar {
+    gap: 0.75rem;
+  }
+}

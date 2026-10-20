@@ -1,0 +1,18 @@
+@import '../../components/healthcare/Healthcare.module.css';
+.demoControls {
+  border: 1px dashed var(--border);
+  padding: 1rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+}
+.demoControls summary {
+  cursor: pointer;
+  color: var(--text-muted);
+}
+.demoControls[open] {
+  display: grid;
+  gap: 1rem;
+}
+.demoControls .field {
+  margin: 1rem 0;
+}

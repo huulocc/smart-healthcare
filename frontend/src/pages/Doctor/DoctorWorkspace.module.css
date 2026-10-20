@@ -1,0 +1,6 @@
+@import '../../components/healthcare/Healthcare.module.css';
+@media (max-width: 1200px) {
+  .twoColumn {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -1,0 +1,31 @@
+@import '../../components/healthcare/Healthcare.module.css';
+.result {
+  max-width: 680px;
+  margin: 1rem auto;
+  text-align: center;
+}
+.result .card {
+  text-align: left;
+  margin-top: 2rem;
+}
+.result .actions {
+  justify-content: center;
+}
+.resultIcon {
+  display: inline-flex;
+  border-radius: 50%;
+  padding: 1.2rem;
+  margin-bottom: 1rem;
+}
+.resultSuccess {
+  background: #e9f9f0;
+  color: #087454;
+}
+.resultOther {
+  background: #fff5db;
+  color: #8c5a06;
+}
+.reference {
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}

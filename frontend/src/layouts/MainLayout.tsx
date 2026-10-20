@@ -1,4 +1,5 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import AIChatWidget from '../components/AIChatWidget';
@@ -9,12 +10,16 @@ interface MainLayoutProps {
 }
 
 const MainLayout = ({ children }: MainLayoutProps) => {
+  const { pathname } = useLocation();
+  const inlineChat =
+    /^\/(book|booking|my-appointments|appointments)(\/|$)/.test(pathname) ||
+    /^\/doctors\//.test(pathname);
   return (
     <div className={styles.layout}>
       <Navbar />
       <main className={styles.main}>{children}</main>
       <Footer />
-      <AIChatWidget />
+      <AIChatWidget inline={inlineChat} />
     </div>
   );
 };
