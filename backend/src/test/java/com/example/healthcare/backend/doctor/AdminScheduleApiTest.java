@@ -128,13 +128,58 @@ class AdminScheduleApiTest extends AdminApiTestSupport {
 
 	@Test
 	void unknownIdsAre404() throws Exception {
+		String work = slot("MONDAY", "09:00", "17:00", "WORK");
+
 		get("/api/admin/doctors/999999/schedules", admin).andExpect(status().isNotFound());
 		delete("/api/admin/schedules/999999", admin).andExpect(status().isNotFound());
+		postJson("/api/admin/doctors/999999/schedules", work, admin).andExpect(status().isNotFound());
+		putJson("/api/admin/schedules/999999", work, admin).andExpect(status().isNotFound());
 	}
 
 	@Test
 	void onlyAnAdminGetsIn() throws Exception {
-		get("/api/admin/schedules", registerAndLogin(uniqueEmail())).andExpect(status().isForbidden());
+		String patient = registerAndLogin(uniqueEmail());
+		String work = slot("MONDAY", "09:00", "17:00", "WORK");
+
+		get("/api/admin/schedules", patient).andExpect(status().isForbidden());
+		postJson(slotsUrl(), work, patient).andExpect(status().isForbidden());
+		putJson("/api/admin/schedules/1", work, patient).andExpect(status().isForbidden());
+		delete("/api/admin/schedules/1", patient).andExpect(status().isForbidden());
+
+		postJson(slotsUrl(), work, null).andExpect(status().isUnauthorized());
+		delete("/api/admin/schedules/1", null).andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void everyFieldOfASlotIsRequired() throws Exception {
+		postJson(slotsUrl(), """
+				{"dayOfWeek": null, "startTime": null, "endTime": null, "shiftType": null}
+				""", admin)
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors.dayOfWeek").value("Please select a day"))
+				.andExpect(jsonPath("$.errors.startTime").value("Please enter a start time"))
+				.andExpect(jsonPath("$.errors.endTime").value("Please enter an end time"))
+				.andExpect(jsonPath("$.errors.shiftType").value("Please select a shift type"));
+	}
+
+	/** The board lists active doctors only, so a shift added here would never be seen again. */
+	@Test
+	void anInactiveDoctorsWeekCanOnlyBeCleared() throws Exception {
+		Long monday = idOf(add("MONDAY", "09:00", "17:00", "WORK").andExpect(status().isCreated()));
+		patchJson("/api/admin/doctors/" + doctor.getId() + "/status", """
+				{"status": "INACTIVE"}
+				""", admin).andExpect(status().isOk());
+
+		postJson(slotsUrl(), slot("TUESDAY", "09:00", "17:00", "WORK"), admin)
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.errors.doctorId")
+						.value("Activate this doctor before editing their schedule"));
+		putJson("/api/admin/schedules/" + monday, slot("MONDAY", "08:00", "16:00", "WORK"), admin)
+				.andExpect(status().isConflict());
+
+		// Clearing an old week stays open, so a deactivation can still be tidied up.
+		delete("/api/admin/schedules/" + monday, admin).andExpect(status().isNoContent());
+		get(slotsUrl(), admin).andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(0)));
 	}
 
 	private ResultActions add(String day, String start, String end, String type) throws Exception {

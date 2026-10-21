@@ -56,7 +56,8 @@ Content-Type: application/json
 
 {"availability": "AVAILABLE"}
 
-### "Delete" a doctor: INACTIVE also sets OFF_DUTY and ends any headship. ACTIVE brings them back.
+### "Delete" a doctor: INACTIVE also sets OFF_DUTY, ends any headship and moves the account
+### back to PATIENT, so their next token no longer carries ROLE_DOCTOR. ACTIVE undoes all of it.
 PATCH {{baseUrl}}/admin/doctors/5/status
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -134,7 +135,8 @@ Authorization: Bearer {{token}}
 GET {{baseUrl}}/admin/doctors/1/schedules
 Authorization: Bearer {{token}}
 
-### Add a slot. shiftType: WORK, BREAK (must sit inside a WORK slot), LEAVE
+### Add a slot. shiftType: WORK, BREAK (must sit inside a WORK slot), LEAVE.
+### Refused for an INACTIVE doctor: the board would never show it. Deleting stays allowed.
 POST {{baseUrl}}/admin/doctors/1/schedules
 Authorization: Bearer {{token}}
 Content-Type: application/json

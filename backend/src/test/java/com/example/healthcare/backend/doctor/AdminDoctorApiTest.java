@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Test;
 import com.example.healthcare.backend.department.Department;
 import com.example.healthcare.backend.department.DepartmentStatus;
 import com.example.healthcare.backend.support.AdminApiTestSupport;
+import com.example.healthcare.backend.user.Role;
+import com.jayway.jsonpath.JsonPath;
 
 class AdminDoctorApiTest extends AdminApiTestSupport {
 
@@ -190,4 +192,125 @@ class AdminDoctorApiTest extends AdminApiTestSupport {
 				.andExpect(jsonPath("$.status").value("ACTIVE"))
 				.andExpect(jsonPath("$.availability").value("OFF_DUTY"));
 	}
+	@Test
+	void unassigningTheDepartmentAlsoEndsTheHeadship() throws Exception {
+		Department department = department("Cardiology");
+		Doctor doctor = doctor("Sophia Chen", department);
+		makeHead(department, doctor);
+
+		// A null department is how a doctor is taken off a team without being deactivated.
+		putJson("/api/admin/doctors/" + doctor.getId(), """
+				{"departmentId": null, "experienceYears": 13}
+				""", admin)
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.department").doesNotExist());
+
+		assertThat(departmentRepository.findById(department.getId()).orElseThrow().getHeadDoctor()).isNull();
+	}
+
+	/** The role rides in the token, so leaving it on DOCTOR would outlive the deactivation. */
+	@Test
+	void deactivatingTakesTheDoctorRoleAwayAndActivatingGivesItBack() throws Exception {
+		Doctor doctor = doctor("James Wilson", department("Neurology"));
+		Long userId = doctor.getUser().getId();
+
+		patchJson("/api/admin/doctors/" + doctor.getId() + "/status", """
+				{"status": "INACTIVE"}
+				""", admin).andExpect(status().isOk());
+		assertThat(userRepository.findById(userId).orElseThrow().getRole()).isEqualTo(Role.PATIENT);
+
+		patchJson("/api/admin/doctors/" + doctor.getId() + "/status", """
+				{"status": "ACTIVE"}
+				""", admin).andExpect(status().isOk());
+		assertThat(userRepository.findById(userId).orElseThrow().getRole()).isEqualTo(Role.DOCTOR);
+	}
+
+	/** OFF_DUTY is the one availability an inactive doctor is allowed to be moved to. */
+	@Test
+	void anInactiveDoctorCanStillBeSentOffDuty() throws Exception {
+		Doctor doctor = doctor("Daniel Kim", department("Dermatology"));
+		patchJson("/api/admin/doctors/" + doctor.getId() + "/status", """
+				{"status": "INACTIVE"}
+				""", admin).andExpect(status().isOk());
+
+		patchJson("/api/admin/doctors/" + doctor.getId() + "/availability", """
+				{"availability": "OFF_DUTY"}
+				""", admin)
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.availability").value("OFF_DUTY"));
+	}
+
+	@Test
+	void filtersByAccountStatus() throws Exception {
+		Department department = department("Oncology");
+		doctor("Active Doctor", department);
+		Doctor retired = doctor("Retired Doctor", department, DoctorStatus.INACTIVE);
+
+		get("/api/admin/doctors?departmentId=" + department.getId() + "&status=INACTIVE", admin)
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.content", hasSize(1)))
+				.andExpect(jsonPath("$.content[0].id").value(retired.getId()));
+	}
+
+	@Test
+	void refusesAnOverlongOrUnsafeProfile() throws Exception {
+		String url = "/api/admin/doctors/" + doctor("Sophia Chen", department("Cardiology")).getId();
+
+		putJson(url, """
+				{"experienceYears": 10, "specialty": "%s"}
+				""".formatted("x".repeat(101)), admin)
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors.specialty").value("Specialty must be at most 100 characters"));
+
+		putJson(url, """
+				{"experienceYears": 10, "avatarUrl": "/%s"}
+				""".formatted("x".repeat(255)), admin)
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors.avatarUrl").value("Avatar URL must be at most 255 characters"));
+
+		// The admin page puts this straight in an <img>, so a script URL must not get that far.
+		putJson(url, """
+				{"experienceYears": 10, "avatarUrl": "javascript:alert(1)"}
+				""", admin)
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors.avatarUrl").value("Avatar URL must start with / or http://"));
+
+		putJson(url, """
+				{"experienceYears": 10, "avatarUrl": "/images/doctor_2.jpg"}
+				""", admin)
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.avatarUrl").value("/images/doctor_2.jpg"));
+	}
+
+	/** Every test class writes to the same database, so only the change each action makes is
+	 *  stable enough to assert. */
+	@Test
+	void theStatTilesFollowWhatTheAdminDoes() throws Exception {
+		long total = stat("total");
+		long active = stat("active");
+		long available = stat("available");
+		long onLeave = stat("onLeave");
+		long pending = stat("pendingRequests");
+
+		Doctor doctor = doctor("Stat Doctor", department("Oncology"));
+		assertThat(stat("total")).isEqualTo(total + 1);
+		assertThat(stat("active")).isEqualTo(active + 1);
+		assertThat(stat("available")).isEqualTo(available + 1);
+
+		patchJson("/api/admin/doctors/" + doctor.getId() + "/availability", """
+				{"availability": "ON_LEAVE"}
+				""", admin).andExpect(status().isOk());
+		assertThat(stat("onLeave")).isEqualTo(onLeave + 1);
+		assertThat(stat("available")).isEqualTo(available);
+
+		register(uniqueEmail(), PASSWORD, Role.DOCTOR).andExpect(status().isCreated());
+		assertThat(stat("pendingRequests")).isEqualTo(pending + 1);
+	}
+
+	private long stat(String field) throws Exception {
+		String body = get("/api/admin/doctors/stats", admin)
+				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+		return ((Number) JsonPath.read(body, "$." + field)).longValue();
+	}
 }
+
