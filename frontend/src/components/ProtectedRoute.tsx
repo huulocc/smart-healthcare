@@ -1,17 +1,13 @@
 import type { ReactNode } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/useAuth';
 
-const ProtectedRoute = ({ children }: { children: ReactNode }) => {
-  const { isAuthenticated } = useAuth();
-  const location = useLocation();
+import RequireRole from './RequireRole';
 
-  if (!isAuthenticated) {
-    // Remember where the user wanted to go, so Login can send them back there.
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
-  }
-
-  return <>{children}</>;
-};
+/**
+ * Signed in, any role. RequireRole without a role is exactly that, and going through it
+ * keeps one rule for waiting while the account resolves after a refresh.
+ */
+const ProtectedRoute = ({ children }: { children: ReactNode }) => (
+  <RequireRole>{children}</RequireRole>
+);
 
 export default ProtectedRoute;

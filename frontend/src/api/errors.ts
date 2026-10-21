@@ -14,6 +14,9 @@ export interface ApiError {
 }
 
 const GENERIC_MESSAGE = 'Something went wrong. Please try again.';
+// Spring Security answers an authenticated non-admin with a bare 403 and no body at all,
+// so without this the screen would show "Something went wrong" for a permissions problem.
+const FORBIDDEN_MESSAGE = 'You do not have permission to do this.';
 const UNREACHABLE_MESSAGE = 'The server is not responding. Please check that the backend is running and try again.';
 
 export function toApiError(error: unknown): ApiError {
@@ -29,7 +32,7 @@ export function toApiError(error: unknown): ApiError {
 
   return {
     status: response.status,
-    message: data?.detail ?? GENERIC_MESSAGE,
+    message: data?.detail ?? (response.status === 403 ? FORBIDDEN_MESSAGE : GENERIC_MESSAGE),
     fieldErrors: data?.errors ?? {},
   };
 }

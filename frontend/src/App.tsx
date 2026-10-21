@@ -4,6 +4,7 @@ import MainLayout from './layouts/MainLayout';
 import AuthLayout from './layouts/AuthLayout';
 import AuthProvider from './context/AuthProvider';
 import ProtectedRoute from './components/ProtectedRoute';
+import RequireRole from './components/RequireRole';
 import Home from './pages/Home/Home';
 import Departments from './pages/Departments/Departments';
 import Doctors from './pages/Doctors/Doctors';
@@ -36,7 +37,7 @@ function App() {
     <Route path="/verify-email" element={<AuthLayout><VerifyEmail /></AuthLayout>} />
     <Route path="/profile" element={<ProtectedRoute><PublicPage><Profile /></PublicPage></ProtectedRoute>} />
     <Route path="/profile/change-password" element={<ProtectedRoute><PublicPage><ChangePassword /></PublicPage></ProtectedRoute>} />
-    <Route path="/admin" element={<AdminLayout />}>
+    <Route path="/admin" element={<RequireRole role="ADMIN"><AdminLayout /></RequireRole>}>
       <Route index element={<AdminDashboard />} />
       <Route path="patients" element={<AdminManagementPage type="patients" />} />
       <Route path="doctors" element={<AdminManagementPage type="doctors" />} />

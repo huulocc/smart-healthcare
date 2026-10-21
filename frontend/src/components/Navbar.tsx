@@ -4,7 +4,7 @@ import { useAuth } from '../context/useAuth';
 import styles from './Navbar.module.css';
 
 const Navbar = () => {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, role, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -30,6 +30,7 @@ const Navbar = () => {
             <li><Link to="/">Home</Link></li>
             <li><Link to="/departments">Departments</Link></li>
             <li><Link to="/doctors">Doctors</Link></li>
+            {role === 'ADMIN' && <li><Link to="/admin">Admin</Link></li>}
           </ul>
         </nav>
 
