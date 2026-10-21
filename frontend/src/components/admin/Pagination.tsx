@@ -1,7 +1,10 @@
 import type { PageResponse } from '../../api/adminTypes';
 
 interface Props {
-  page: Pick<PageResponse<unknown>, 'page' | 'size' | 'totalElements' | 'totalPages'>;
+  page: Pick<
+    PageResponse<unknown>,
+    'page' | 'size' | 'totalElements' | 'totalPages'
+  >;
   onPage: (page: number) => void;
 }
 
@@ -9,8 +12,14 @@ interface Props {
 const WINDOW = 5;
 
 const pageNumbers = (current: number, total: number) => {
-  const first = Math.max(0, Math.min(current - Math.floor(WINDOW / 2), total - WINDOW));
-  return Array.from({ length: Math.min(WINDOW, total) }, (_, index) => first + index);
+  const first = Math.max(
+    0,
+    Math.min(current - Math.floor(WINDOW / 2), total - WINDOW),
+  );
+  return Array.from(
+    { length: Math.min(WINDOW, total) },
+    (_, index) => first + index,
+  );
 };
 
 /** Reads a PageResponse straight off the API, so the counts are the server's, not a guess. */
@@ -22,11 +31,16 @@ const Pagination = ({ page, onPage }: Props) => {
   return (
     <div className="admin-pagination">
       <span>
-        Showing {from} to {to} of {totalElements} {totalElements === 1 ? 'record' : 'records'}
+        Showing {from} to {to} of {totalElements}{' '}
+        {totalElements === 1 ? 'record' : 'records'}
       </span>
       {totalPages > 1 && (
         <div className="admin-pager">
-          <button type="button" onClick={() => onPage(current - 1)} disabled={current === 0}>
+          <button
+            type="button"
+            onClick={() => onPage(current - 1)}
+            disabled={current === 0}
+          >
             &lsaquo;
           </button>
           {pageNumbers(current, totalPages).map((number) => (

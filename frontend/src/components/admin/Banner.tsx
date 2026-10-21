@@ -10,7 +10,10 @@ interface Props {
  * sends without naming one, or the sentence after a save went through.
  */
 const Banner = ({ tone, children }: Props) => (
-  <p className={`${styles.banner} ${styles[tone]}`} role={tone === 'error' ? 'alert' : 'status'}>
+  <p
+    className={`${styles.banner} ${styles[tone]}`}
+    role={tone === 'error' ? 'alert' : 'status'}
+  >
     {children}
   </p>
 );

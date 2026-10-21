@@ -13,7 +13,13 @@ import {
   Users,
 } from 'lucide-react';
 import { startTransition } from 'react';
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import {
+  Link,
+  NavLink,
+  Outlet,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom';
 
 import { useAuth } from '../context/useAuth';
 
@@ -122,7 +128,11 @@ const AdminLayout = () => {
             <UserCircle />
             Profile
           </Link>
-          <button className="admin-nav-item" type="button" onClick={handleLogout}>
+          <button
+            className="admin-nav-item"
+            type="button"
+            onClick={handleLogout}
+          >
             <LogOut />
             Logout
           </button>

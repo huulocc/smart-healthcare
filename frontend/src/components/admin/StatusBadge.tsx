@@ -35,7 +35,9 @@ export const labelOf = (value: Known) => LABELS[value]?.label ?? value;
 const StatusBadge = ({ value }: { value: Known }) => {
   const known = LABELS[value];
   return (
-    <span className={`admin-badge ${known?.tone ?? 'neutral'}`}>{known?.label ?? value}</span>
+    <span className={`admin-badge ${known?.tone ?? 'neutral'}`}>
+      {known?.label ?? value}
+    </span>
   );
 };
 

@@ -23,7 +23,10 @@ export interface AsyncResult<T> {
  * function on every render, and the effect would never stop. `deps` is what decides when to
  * fetch again -- list every filter and page number the call reads.
  */
-export function useAsync<T>(load: () => Promise<T>, deps: unknown[]): AsyncResult<T> {
+export function useAsync<T>(
+  load: () => Promise<T>,
+  deps: unknown[],
+): AsyncResult<T> {
   const [state, setState] = useState<AsyncState<T>>({ status: 'loading' });
   const [attempt, setAttempt] = useState(0);
 
@@ -41,7 +44,8 @@ export function useAsync<T>(load: () => Promise<T>, deps: unknown[]): AsyncResul
         if (!ignore) setState({ status: 'ready', data });
       },
       (error) => {
-        if (!ignore) setState({ status: 'error', message: toApiError(error).message });
+        if (!ignore)
+          setState({ status: 'error', message: toApiError(error).message });
       },
     );
 
@@ -52,7 +56,10 @@ export function useAsync<T>(load: () => Promise<T>, deps: unknown[]): AsyncResul
   }, [attempt, ...deps]);
 
   const reload = useCallback(() => setAttempt((count) => count + 1), []);
-  const setData = useCallback((data: T) => setState({ status: 'ready', data }), []);
+  const setData = useCallback(
+    (data: T) => setState({ status: 'ready', data }),
+    [],
+  );
 
   return { state, reload, setData };
 }

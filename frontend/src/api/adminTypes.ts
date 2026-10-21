@@ -3,7 +3,8 @@
  * one there and this file has to follow, because nothing checks them against each other.
  */
 
-export type Availability = 'AVAILABLE' | 'IN_CONSULTATION' | 'ON_LEAVE' | 'OFF_DUTY';
+export type Availability =
+  'AVAILABLE' | 'IN_CONSULTATION' | 'ON_LEAVE' | 'OFF_DUTY';
 export type DoctorStatus = 'ACTIVE' | 'INACTIVE';
 export type DepartmentStatus = 'ACTIVE' | 'INACTIVE';
 /** No BOOKED: a booked hour comes from an appointment, which the backend does not have yet. */

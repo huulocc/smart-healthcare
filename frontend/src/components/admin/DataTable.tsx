@@ -31,7 +31,10 @@ function DataTable<T>({ columns, rows, rowKey, empty }: Props<T>) {
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} style={{ textAlign: 'center', height: 120 }}>
+              <td
+                colSpan={columns.length}
+                style={{ textAlign: 'center', height: 120 }}
+              >
                 {empty}
               </td>
             </tr>

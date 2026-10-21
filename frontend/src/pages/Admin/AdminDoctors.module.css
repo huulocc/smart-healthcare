@@ -1,0 +1,32 @@
+.initials {
+  display: grid;
+  place-items: center;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+}
+
+.actions button {
+  height: 30px;
+  padding: 0 10px;
+  font-size: 11px;
+}
+
+.actions svg {
+  width: 13px;
+}
+
+.banner {
+  padding: 14px 18px 0;
+}
+
+.confirm {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.6;
+}

@@ -29,7 +29,9 @@ const Modal = ({ title, onClose, children, footer }: Props) => {
     document.body.style.overflow = 'hidden';
 
     // Move the keyboard into the dialog, to the first thing worth typing in.
-    panel.current?.querySelector<HTMLElement>('input, select, textarea, button')?.focus();
+    panel.current
+      ?.querySelector<HTMLElement>('input, select, textarea, button')
+      ?.focus();
 
     return () => {
       document.removeEventListener('keydown', onKeyDown);
@@ -40,11 +42,25 @@ const Modal = ({ title, onClose, children, footer }: Props) => {
   return (
     // The backdrop closes on a click, but only on itself: a click inside the panel bubbles
     // up to here too, and would otherwise close the dialog the user is typing in.
-    <div className={styles.backdrop} onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <div className={styles.panel} role="dialog" aria-modal="true" aria-label={title} ref={panel}>
+    <div
+      className={styles.backdrop}
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <div
+        className={styles.panel}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        ref={panel}
+      >
         <header className={styles.head}>
           <h2 className={styles.title}>{title}</h2>
-          <button type="button" className={styles.close} onClick={onClose} aria-label="Close">
+          <button
+            type="button"
+            className={styles.close}
+            onClick={onClose}
+            aria-label="Close"
+          >
             <X size={18} />
           </button>
         </header>

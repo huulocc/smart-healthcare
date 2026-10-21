@@ -40,8 +40,12 @@ export interface DoctorQuery {
   size?: number;
 }
 
-export async function listDoctors(query: DoctorQuery = {}): Promise<PageResponse<Doctor>> {
-  const { data } = await apiClient.get<PageResponse<Doctor>>(`/admin/doctors${params(query)}`);
+export async function listDoctors(
+  query: DoctorQuery = {},
+): Promise<PageResponse<Doctor>> {
+  const { data } = await apiClient.get<PageResponse<Doctor>>(
+    `/admin/doctors${params(query)}`,
+  );
   return data;
 }
 
@@ -63,21 +67,36 @@ export interface UpdateDoctorPayload {
   avatarUrl: string;
 }
 
-export async function updateDoctor(id: number, payload: UpdateDoctorPayload): Promise<Doctor> {
+export async function updateDoctor(
+  id: number,
+  payload: UpdateDoctorPayload,
+): Promise<Doctor> {
   const { data } = await apiClient.put<Doctor>(`/admin/doctors/${id}`, payload);
   return data;
 }
 
-export async function updateDoctorAvailability(id: number, availability: string): Promise<Doctor> {
-  const { data } = await apiClient.patch<Doctor>(`/admin/doctors/${id}/availability`, {
-    availability,
-  });
+export async function updateDoctorAvailability(
+  id: number,
+  availability: string,
+): Promise<Doctor> {
+  const { data } = await apiClient.patch<Doctor>(
+    `/admin/doctors/${id}/availability`,
+    {
+      availability,
+    },
+  );
   return data;
 }
 
 /** INACTIVE also forces OFF_DUTY, ends any headship and takes the DOCTOR role away. */
-export async function updateDoctorStatus(id: number, status: DoctorStatus): Promise<Doctor> {
-  const { data } = await apiClient.patch<Doctor>(`/admin/doctors/${id}/status`, { status });
+export async function updateDoctorStatus(
+  id: number,
+  status: DoctorStatus,
+): Promise<Doctor> {
+  const { data } = await apiClient.patch<Doctor>(
+    `/admin/doctors/${id}/status`,
+    { status },
+  );
   return data;
 }
 
@@ -127,7 +146,10 @@ export async function createDepartment(payload: {
   name: string;
   description: string;
 }): Promise<Department> {
-  const { data } = await apiClient.post<Department>('/admin/departments', payload);
+  const { data } = await apiClient.post<Department>(
+    '/admin/departments',
+    payload,
+  );
   return data;
 }
 
@@ -143,7 +165,10 @@ export async function updateDepartment(
   id: number,
   payload: UpdateDepartmentPayload,
 ): Promise<Department> {
-  const { data } = await apiClient.put<Department>(`/admin/departments/${id}`, payload);
+  const { data } = await apiClient.put<Department>(
+    `/admin/departments/${id}`,
+    payload,
+  );
   return data;
 }
 
@@ -174,7 +199,10 @@ export interface SlotPayload {
   shiftType: string;
 }
 
-export async function addSlot(doctorId: number, payload: SlotPayload): Promise<ScheduleSlot> {
+export async function addSlot(
+  doctorId: number,
+  payload: SlotPayload,
+): Promise<ScheduleSlot> {
   const { data } = await apiClient.post<ScheduleSlot>(
     `/admin/doctors/${doctorId}/schedules`,
     payload,
@@ -182,8 +210,14 @@ export async function addSlot(doctorId: number, payload: SlotPayload): Promise<S
   return data;
 }
 
-export async function updateSlot(slotId: number, payload: SlotPayload): Promise<ScheduleSlot> {
-  const { data } = await apiClient.put<ScheduleSlot>(`/admin/schedules/${slotId}`, payload);
+export async function updateSlot(
+  slotId: number,
+  payload: SlotPayload,
+): Promise<ScheduleSlot> {
+  const { data } = await apiClient.put<ScheduleSlot>(
+    `/admin/schedules/${slotId}`,
+    payload,
+  );
   return data;
 }
 

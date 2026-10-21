@@ -8,6 +8,8 @@ import AdminLayout from './layouts/AdminLayout';
 import AuthLayout from './layouts/AuthLayout';
 import MainLayout from './layouts/MainLayout';
 import AdminDashboard from './pages/Admin/AdminDashboard';
+import AdminDoctorRequests from './pages/Admin/AdminDoctorRequests';
+import AdminDoctors from './pages/Admin/AdminDoctors';
 import ComingSoon from './pages/Admin/ComingSoon';
 import AuthPage from './pages/Auth/AuthPage';
 import ChangePassword from './pages/ChangePassword/ChangePassword';
@@ -52,6 +54,8 @@ function App() {
 
           <Route path="/admin" element={<RequireRole role="ADMIN"><AdminLayout /></RequireRole>}>
             <Route index element={<AdminDashboard />} />
+            <Route path="doctors" element={<AdminDoctors />} />
+            <Route path="doctor-requests" element={<AdminDoctorRequests />} />
             <Route path="patients" element={<ComingSoon title="Patients" note={soon.patients} />} />
             <Route path="appointments" element={<ComingSoon title="Appointments" note={soon.appointments} />} />
             <Route path="payments" element={<ComingSoon title="Payments & Billing" note={soon.payments} />} />

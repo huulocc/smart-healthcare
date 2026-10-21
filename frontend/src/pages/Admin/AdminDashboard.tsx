@@ -1,10 +1,26 @@
 import { format } from 'date-fns';
-import { CalendarX, CircleCheck, Stethoscope, UserCheck, UserPlus } from 'lucide-react';
+import {
+  CalendarX,
+  CircleCheck,
+  Stethoscope,
+  UserCheck,
+  UserPlus,
+} from 'lucide-react';
 import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
 
-import { getDoctorStats, listDepartments, listDoctorRequests, listDoctors } from '../../api/adminApi';
-import type { Department, Doctor, DoctorRequest, DoctorStats } from '../../api/adminTypes';
+import {
+  getDoctorStats,
+  listDepartments,
+  listDoctorRequests,
+  listDoctors,
+} from '../../api/adminApi';
+import type {
+  Department,
+  Doctor,
+  DoctorRequest,
+  DoctorStats,
+} from '../../api/adminTypes';
 import AsyncSection from '../../components/admin/AsyncSection';
 import StatTiles from '../../components/admin/StatTiles';
 import StatusBadge from '../../components/admin/StatusBadge';
@@ -61,10 +77,30 @@ const AdminDashboard = () => {
           <>
             <StatTiles
               tiles={[
-                { label: 'Total Doctors', value: stats.total, icon: Stethoscope, tone: 'blue' },
-                { label: 'Active', value: stats.active, icon: CircleCheck, tone: 'green' },
-                { label: 'Available Now', value: stats.available, icon: UserCheck, tone: 'blue' },
-                { label: 'On Leave', value: stats.onLeave, icon: CalendarX, tone: 'orange' },
+                {
+                  label: 'Total Doctors',
+                  value: stats.total,
+                  icon: Stethoscope,
+                  tone: 'blue',
+                },
+                {
+                  label: 'Active',
+                  value: stats.active,
+                  icon: CircleCheck,
+                  tone: 'green',
+                },
+                {
+                  label: 'Available Now',
+                  value: stats.available,
+                  icon: UserCheck,
+                  tone: 'blue',
+                },
+                {
+                  label: 'On Leave',
+                  value: stats.onLeave,
+                  icon: CalendarX,
+                  tone: 'orange',
+                },
                 {
                   label: 'Pending Requests',
                   value: stats.pendingRequests,
@@ -78,11 +114,17 @@ const AdminDashboard = () => {
               <section className="admin-card">
                 <div className="admin-card-head">
                   <div>
-                    <div className="admin-card-title">Doctors by department</div>
+                    <div className="admin-card-title">
+                      Doctors by department
+                    </div>
                     <div className="admin-card-subtitle">
                       {departments.length}{' '}
                       {departments.length === 1 ? 'department' : 'departments'},{' '}
-                      {departments.filter((one) => one.status === 'ACTIVE').length} active
+                      {
+                        departments.filter((one) => one.status === 'ACTIVE')
+                          .length
+                      }{' '}
+                      active
                     </div>
                   </div>
                   <Link to="/admin/departments" className={styles.cardLink}>
@@ -102,11 +144,17 @@ const AdminDashboard = () => {
                           </span>
                           <span>
                             {department.activeDoctors}{' '}
-                            {department.activeDoctors === 1 ? 'doctor' : 'doctors'}
+                            {department.activeDoctors === 1
+                              ? 'doctor'
+                              : 'doctors'}
                           </span>
                         </div>
                         <div className="admin-progressbar">
-                          <span style={{ width: `${barWidth(department, departments)}%` }} />
+                          <span
+                            style={{
+                              width: `${barWidth(department, departments)}%`,
+                            }}
+                          />
                         </div>
                         <div className={styles.head}>
                           {department.headDoctor === null
@@ -123,7 +171,9 @@ const AdminDashboard = () => {
                 <div className="admin-card-head">
                   <div>
                     <div className="admin-card-title">Waiting for approval</div>
-                    <div className="admin-card-subtitle">Longest waiting first</div>
+                    <div className="admin-card-subtitle">
+                      Longest waiting first
+                    </div>
                   </div>
                   <Link to="/admin/doctor-requests" className={styles.cardLink}>
                     Review all ({requests.total})
@@ -140,7 +190,9 @@ const AdminDashboard = () => {
                           <small>{request.email}</small>
                         </div>
                         {!request.emailVerified && (
-                          <span className="admin-badge warning">Not activated</span>
+                          <span className="admin-badge warning">
+                            Not activated
+                          </span>
                         )}
                       </div>
                     ))
@@ -154,7 +206,8 @@ const AdminDashboard = () => {
                 <div>
                   <div className="admin-card-title">Doctors on leave</div>
                   <div className="admin-card-subtitle">
-                    {stats.onLeave} in total{stats.onLeave > onLeave.length && ', showing 5'}
+                    {stats.onLeave} in total
+                    {stats.onLeave > onLeave.length && ', showing 5'}
                   </div>
                 </div>
                 <Link to="/admin/doctors" className={styles.cardLink}>
@@ -169,7 +222,9 @@ const AdminDashboard = () => {
                     <div className={styles.row} key={doctor.id}>
                       <div>
                         <strong>{doctor.fullName}</strong>
-                        <small>{doctor.department?.name ?? 'No department'}</small>
+                        <small>
+                          {doctor.department?.name ?? 'No department'}
+                        </small>
                       </div>
                       <StatusBadge value={doctor.availability} />
                     </div>
