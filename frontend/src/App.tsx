@@ -9,7 +9,9 @@ import AuthLayout from './layouts/AuthLayout';
 import MainLayout from './layouts/MainLayout';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import AdminDoctorRequests from './pages/Admin/AdminDoctorRequests';
+import AdminDepartments from './pages/Admin/AdminDepartments';
 import AdminDoctors from './pages/Admin/AdminDoctors';
+import AdminSchedules from './pages/Admin/AdminSchedules';
 import ComingSoon from './pages/Admin/ComingSoon';
 import AuthPage from './pages/Auth/AuthPage';
 import ChangePassword from './pages/ChangePassword/ChangePassword';
@@ -41,29 +43,135 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          <Route path="/" element={<PublicPage><Home /></PublicPage>} />
-          <Route path="/departments" element={<PublicPage><Departments /></PublicPage>} />
-          <Route path="/doctors" element={<PublicPage><Doctors /></PublicPage>} />
-          <Route path="/login" element={<AuthLayout><AuthPage /></AuthLayout>} />
-          <Route path="/register" element={<AuthLayout><AuthPage /></AuthLayout>} />
-          <Route path="/forgot-password" element={<AuthLayout><ForgotPassword /></AuthLayout>} />
-          <Route path="/reset-password" element={<AuthLayout><ResetPassword /></AuthLayout>} />
-          <Route path="/verify-email" element={<AuthLayout><VerifyEmail /></AuthLayout>} />
-          <Route path="/profile" element={<ProtectedRoute><PublicPage><Profile /></PublicPage></ProtectedRoute>} />
-          <Route path="/profile/change-password" element={<ProtectedRoute><PublicPage><ChangePassword /></PublicPage></ProtectedRoute>} />
+          <Route
+            path="/"
+            element={
+              <PublicPage>
+                <Home />
+              </PublicPage>
+            }
+          />
+          <Route
+            path="/departments"
+            element={
+              <PublicPage>
+                <Departments />
+              </PublicPage>
+            }
+          />
+          <Route
+            path="/doctors"
+            element={
+              <PublicPage>
+                <Doctors />
+              </PublicPage>
+            }
+          />
+          <Route
+            path="/login"
+            element={
+              <AuthLayout>
+                <AuthPage />
+              </AuthLayout>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <AuthLayout>
+                <AuthPage />
+              </AuthLayout>
+            }
+          />
+          <Route
+            path="/forgot-password"
+            element={
+              <AuthLayout>
+                <ForgotPassword />
+              </AuthLayout>
+            }
+          />
+          <Route
+            path="/reset-password"
+            element={
+              <AuthLayout>
+                <ResetPassword />
+              </AuthLayout>
+            }
+          />
+          <Route
+            path="/verify-email"
+            element={
+              <AuthLayout>
+                <VerifyEmail />
+              </AuthLayout>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <PublicPage>
+                  <Profile />
+                </PublicPage>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile/change-password"
+            element={
+              <ProtectedRoute>
+                <PublicPage>
+                  <ChangePassword />
+                </PublicPage>
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/admin" element={<RequireRole role="ADMIN"><AdminLayout /></RequireRole>}>
+          <Route
+            path="/admin"
+            element={
+              <RequireRole role="ADMIN">
+                <AdminLayout />
+              </RequireRole>
+            }
+          >
             <Route index element={<AdminDashboard />} />
             <Route path="doctors" element={<AdminDoctors />} />
             <Route path="doctor-requests" element={<AdminDoctorRequests />} />
-            <Route path="patients" element={<ComingSoon title="Patients" note={soon.patients} />} />
-            <Route path="appointments" element={<ComingSoon title="Appointments" note={soon.appointments} />} />
-            <Route path="payments" element={<ComingSoon title="Payments & Billing" note={soon.payments} />} />
-            <Route path="ai-consultation" element={<ComingSoon title="AI Consultation" note={soon.ai} />} />
+            <Route path="departments" element={<AdminDepartments />} />
+            <Route path="schedules" element={<AdminSchedules />} />
+            <Route
+              path="patients"
+              element={<ComingSoon title="Patients" note={soon.patients} />}
+            />
+            <Route
+              path="appointments"
+              element={
+                <ComingSoon title="Appointments" note={soon.appointments} />
+              }
+            />
+            <Route
+              path="payments"
+              element={
+                <ComingSoon title="Payments & Billing" note={soon.payments} />
+              }
+            />
+            <Route
+              path="ai-consultation"
+              element={<ComingSoon title="AI Consultation" note={soon.ai} />}
+            />
             <Route path="*" element={<NotFound inAdmin />} />
           </Route>
 
-          <Route path="*" element={<PublicPage><NotFound /></PublicPage>} />
+          <Route
+            path="*"
+            element={
+              <PublicPage>
+                <NotFound />
+              </PublicPage>
+            }
+          />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

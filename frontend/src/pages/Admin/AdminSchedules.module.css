@@ -1,0 +1,103 @@
+.doctorCell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+
+.doctorCell strong {
+  font-size: 11px;
+  color: var(--text-main);
+}
+
+.doctorCell small {
+  font-size: 10px;
+  color: var(--text-light);
+}
+
+.dayCell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Clickable chips, rather than the plain blocks the mock drew: a shift is a thing you edit. */
+.chip {
+  border: 0;
+  border-radius: 5px;
+  padding: 4px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  text-align: left;
+  background: #dbeafe;
+  color: #0369a1;
+}
+
+.chip:hover {
+  filter: brightness(0.95);
+}
+
+.work {
+  background: #dbeafe;
+  color: #0369a1;
+}
+
+.break {
+  background: #fef3c7;
+  color: #a16207;
+}
+
+.leave {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* Stays faint until the cell is hovered, so an empty week does not look like a form. */
+.add {
+  align-self: flex-start;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1px dashed var(--border);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-light);
+  opacity: 0;
+}
+
+.dayCell:hover .add,
+.add:focus-visible {
+  opacity: 1;
+}
+
+.times {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* The two fields sit side by side, so neither gets the stacked top margin. */
+.times > * + * {
+  margin-top: 0;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.delete {
+  margin-right: auto;
+  color: var(--error);
+}
+
+.empty {
+  margin: 0;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-light);
+  font-size: 13px;
+}
