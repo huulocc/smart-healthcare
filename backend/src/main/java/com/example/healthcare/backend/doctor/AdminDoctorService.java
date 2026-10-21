@@ -104,6 +104,9 @@ public class AdminDoctorService {
 	public DoctorResponse updateStatus(Long id, DoctorStatus status) {
 		Doctor doctor = findDoctor(id);
 		doctor.setStatus(status);
+		// The role travels in the JWT, so a deactivated doctor would keep ROLE_DOCTOR until their
+		// token expired. Moving the account back to PATIENT closes that from the next login on.
+		doctor.getUser().setRole(status == DoctorStatus.INACTIVE ? Role.PATIENT : Role.DOCTOR);
 		if (status == DoctorStatus.INACTIVE) {
 			doctor.setAvailability(Availability.OFF_DUTY);
 			clearHeadPositions(doctor);

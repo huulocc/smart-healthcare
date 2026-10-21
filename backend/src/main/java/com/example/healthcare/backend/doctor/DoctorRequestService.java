@@ -25,7 +25,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class DoctorRequestService {
 
-	// Longest waiting first.
+	// Longest waiting first. A request is raised at sign-up and never re-raised, so the
+	// account's own createdAt is also when it started waiting.
 	private static final Sort OLDEST_FIRST = Sort.by("createdAt").and(Sort.by("id"));
 
 	private final UserRepository userRepository;

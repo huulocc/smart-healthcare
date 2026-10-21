@@ -49,7 +49,8 @@ public class Doctor {
 	@Column(nullable = false, unique = true, length = 16)
 	private String doctorCode;
 
-	// Null between approval and the admin assigning a department.
+	// Approval always sets one -- ApproveDoctorRequest.departmentId is required. This only
+	// becomes null if an admin later unassigns the doctor through PUT /api/admin/doctors/{id}.
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "department_id")
 	private Department department;

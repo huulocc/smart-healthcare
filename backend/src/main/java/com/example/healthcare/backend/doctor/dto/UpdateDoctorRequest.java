@@ -3,6 +3,7 @@ package com.example.healthcare.backend.doctor.dto;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record UpdateDoctorRequest(
@@ -19,6 +20,10 @@ public record UpdateDoctorRequest(
 		@Max(value = 70, message = "Experience must be at most 70 years")
 		Integer experienceYears,
 
+		// The admin page renders this straight into an <img>, so only a path inside the app or a
+		// plain http(s) address is accepted -- "javascript:..." never reaches the browser.
 		@Size(max = 255, message = "Avatar URL must be at most 255 characters")
+		@Pattern(regexp = "^$|^/.*$|^https?://.+$",
+				message = "Avatar URL must start with / or http://")
 		String avatarUrl) {
 }
