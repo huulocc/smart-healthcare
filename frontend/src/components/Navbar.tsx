@@ -5,7 +5,7 @@ import { useAuth } from '../context/useAuth';
 import styles from './Navbar.module.css';
 
 const Navbar = () => {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, role, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -48,6 +48,12 @@ const Navbar = () => {
             <li>
               <NavLink to="/my-appointments">My appointments</NavLink>
             </li>
+            {/* The only way into the admin area: there is no link to it anywhere else. */}
+            {role === 'ADMIN' && (
+              <li>
+                <NavLink to="/admin">Admin</NavLink>
+              </li>
+            )}
           </ul>
         </nav>
 

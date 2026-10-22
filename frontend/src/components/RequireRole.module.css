@@ -1,0 +1,42 @@
+.panel {
+  display: flex;
+  min-height: 60vh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px 16px;
+  text-align: center;
+}
+
+.spinner {
+  color: var(--primary);
+  animation: spin 1s linear infinite;
+}
+
+.errorIcon {
+  color: var(--error);
+}
+
+.heading {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.text {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.link {
+  margin-top: 8px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

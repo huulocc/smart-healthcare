@@ -2,9 +2,12 @@ package com.example.healthcare.backend.doctor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.ResultActions;
@@ -136,6 +139,57 @@ class DoctorRequestApiTest extends AdminApiTestSupport {
 		String patient = registerAndLogin(uniqueEmail());
 		get(PENDING, patient).andExpect(status().isForbidden());
 		postJson("/api/admin/doctor-requests/1/reject", "", patient).andExpect(status().isForbidden());
+	}
+
+	@Test
+	void showsTheLongestWaitingFirstAndPages() throws Exception {
+		String first = requestToBeADoctor();
+		String second = requestToBeADoctor();
+
+		String body = get(PENDING, admin)
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.content[0].registeredAt").exists())
+				.andReturn().getResponse().getContentAsString();
+		List<String> emails = JsonPath.read(body, "$.content[*].email");
+		assertThat(emails.indexOf(first)).isLessThan(emails.indexOf(second));
+
+		// One row per page, starting from the same end of the list.
+		get("/api/admin/doctor-requests?size=1", admin)
+				.andExpect(jsonPath("$.content", hasSize(1)))
+				.andExpect(jsonPath("$.size").value(1))
+				.andExpect(jsonPath("$.content[0].email").value(emails.get(0)));
+	}
+
+	@Test
+	void validatesTheApprovalForm() throws Exception {
+		String email = requestToBeADoctor();
+		String url = "/api/admin/doctor-requests/"
+				+ userRepository.findByEmail(email).orElseThrow().getId() + "/approve";
+
+		postJson(url, """
+				{"specialty": "General", "experienceYears": 5}
+				""", admin)
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors.departmentId").value("Please select a department"));
+
+		// Validation runs before the service, so the department id here never has to exist.
+		postJson(url, """
+				{"departmentId": 1, "experienceYears": -1}
+				""", admin)
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors.experienceYears").value("Experience cannot be negative"));
+
+		postJson(url, """
+				{"departmentId": 1, "experienceYears": 71}
+				""", admin)
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors.experienceYears").value("Experience must be at most 70 years"));
+
+		postJson(url, """
+				{"departmentId": 1, "experienceYears": null}
+				""", admin)
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors.experienceYears").value("Please enter the years of experience"));
 	}
 
 	/** Signs up asking to be a doctor and opens the activation link, like a real applicant. */

@@ -1,0 +1,17 @@
+.banner {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.error {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.success {
+  background: #dcfce7;
+  color: #15803d;
+}

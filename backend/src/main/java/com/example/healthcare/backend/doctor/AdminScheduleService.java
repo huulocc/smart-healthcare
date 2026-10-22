@@ -63,7 +63,10 @@ public class AdminScheduleService {
 
 	@Transactional(readOnly = true)
 	public List<ScheduleSlotResponse> forDoctor(Long doctorId) {
-		findDoctor(doctorId);
+		// Only the 404 is wanted here: the doctor row itself is never read.
+		if (!doctorRepository.existsById(doctorId)) {
+			throw new ApiException(HttpStatus.NOT_FOUND, "Doctor not found");
+		}
 		return scheduleRepository.findByDoctorIdOrderByDayOfWeekAscStartTimeAsc(doctorId).stream()
 				.map(ScheduleSlotResponse::from)
 				.toList();
@@ -72,6 +75,7 @@ public class AdminScheduleService {
 	@Transactional
 	public ScheduleSlotResponse add(Long doctorId, ScheduleSlotRequest request) {
 		Doctor doctor = findDoctor(doctorId);
+		requireActive(doctor);
 		requireEndAfterStart(request);
 
 		List<Slot> day = otherSlots(doctorId, request.dayOfWeek(), null);
@@ -87,6 +91,7 @@ public class AdminScheduleService {
 	@Transactional
 	public ScheduleSlotResponse update(Long slotId, ScheduleSlotRequest request) {
 		DoctorSchedule slot = findSlot(slotId);
+		requireActive(slot.getDoctor());
 		requireEndAfterStart(request);
 		Long doctorId = slot.getDoctor().getId();
 
@@ -143,6 +148,15 @@ public class AdminScheduleService {
 			}
 		}
 		return slots;
+	}
+
+	/** The board shows active doctors only, so a shift written against an inactive one would
+	 *  silently vanish. Deleting stays open: an admin still has to be able to clear an old week. */
+	private static void requireActive(Doctor doctor) {
+		if (doctor.getStatus() == DoctorStatus.INACTIVE) {
+			throw new ApiException(HttpStatus.CONFLICT,
+					"Activate this doctor before editing their schedule", "doctorId");
+		}
 	}
 
 	private static void requireEndAfterStart(ScheduleSlotRequest request) {

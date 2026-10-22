@@ -1,42 +1,56 @@
 import type { ReactNode } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import MainLayout from './layouts/MainLayout';
-import AuthLayout from './layouts/AuthLayout';
-import AuthProvider from './context/AuthProvider';
+
 import ProtectedRoute from './components/ProtectedRoute';
-import Home from './pages/Home/Home';
-import Departments from './pages/Departments/Departments';
-import Doctors from './pages/Doctors/Doctors';
+import RequireRole from './components/RequireRole';
+// The public 404 belongs with the booking and doctor-details screens, so it keeps their look.
+// The admin area has its own, which renders inside the admin shell.
+import { NotFound as PublicNotFound } from './components/healthcare/HealthcareUI';
+import AppointmentProvider from './context/AppointmentContext';
+import AuthProvider from './context/AuthProvider';
+import AdminLayout from './layouts/AdminLayout';
+import AuthLayout from './layouts/AuthLayout';
+import DoctorLayout from './layouts/DoctorLayout';
+import MainLayout from './layouts/MainLayout';
+import AdminDashboard from './pages/Admin/AdminDashboard';
+import AdminDepartments from './pages/Admin/AdminDepartments';
+import AdminDoctorRequests from './pages/Admin/AdminDoctorRequests';
+import AdminDoctors from './pages/Admin/AdminDoctors';
+import AdminSchedules from './pages/Admin/AdminSchedules';
+import ComingSoon from './pages/Admin/ComingSoon';
+import AppointmentDetails from './pages/Appointments/AppointmentDetails';
+import Appointments from './pages/Appointments/Appointments';
 import AuthPage from './pages/Auth/AuthPage';
-import Profile from './pages/Profile/Profile';
+import Booking from './pages/Booking/Booking';
+import BookingResult from './pages/Booking/BookingResult';
 import ChangePassword from './pages/ChangePassword/ChangePassword';
+import DepartmentDetails from './pages/DepartmentDetails/DepartmentDetails';
+import Departments from './pages/Departments/Departments';
+import DoctorProfile from './pages/Doctor/DoctorProfile';
+import DoctorSchedule from './pages/Doctor/DoctorSchedule';
+import DoctorWorkspace from './pages/Doctor/DoctorWorkspace';
+import DoctorDetails from './pages/DoctorDetails/DoctorDetails';
+import Doctors from './pages/Doctors/Doctors';
 import ForgotPassword from './pages/ForgotPassword/ForgotPassword';
+import Home from './pages/Home/Home';
+import NotFound from './pages/NotFound/NotFound';
+import Profile from './pages/Profile/Profile';
 import ResetPassword from './pages/ResetPassword/ResetPassword';
 import VerifyEmail from './pages/VerifyEmail/VerifyEmail';
-import AdminLayout from './components/admin/AdminLayout';
-import AdminDashboard from './components/admin/AdminDashboard';
-import AdminManagementPage from './components/admin/AdminManagementPage';
-import AdminSchedules from './components/admin/AdminSchedules';
-import AdminAccounts from './components/admin/AdminAccounts';
-import AdminReports from './components/admin/AdminReports';
-import AdminSettings from './components/admin/AdminSettings';
-import AdminNotifications from './components/admin/AdminNotifications';
-import AppointmentProvider from './context/AppointmentContext';
-import DoctorDetails from './pages/DoctorDetails/DoctorDetails';
-import Booking from './pages/Booking/Booking';
-import Appointments from './pages/Appointments/Appointments';
-import AppointmentDetails from './pages/Appointments/AppointmentDetails';
-import DoctorWorkspace from './pages/Doctor/DoctorWorkspace';
-import { NotFound } from './components/healthcare/HealthcareUI';
-import DepartmentDetails from './pages/DepartmentDetails/DepartmentDetails';
-import BookingResult from './pages/Booking/BookingResult';
-import DoctorLayout from './layouts/DoctorLayout';
-import DoctorSchedule from './pages/Doctor/DoctorSchedule';
-import DoctorProfile from './pages/Doctor/DoctorProfile';
 
 function PublicPage({ children }: { children: ReactNode }) {
   return <MainLayout>{children}</MainLayout>;
 }
+
+// Routed but unbuilt. Keeping the paths means the sidebar links and anyone's bookmarks still
+// land somewhere that explains itself, and swapping in the real screen is a one-line change.
+const soon = {
+  patients: 'Patients will appear here once the patient records API exists.',
+  appointments:
+    'Booking has its own screens for patients and doctors. An admin view over every appointment still needs an API of its own.',
+  payments: 'Payments follow booking: there is nothing to bill against yet.',
+  ai: 'The AI chat widget runs on the RAG service, which does not record consultations yet.',
+};
 
 function App() {
   return (
@@ -61,6 +75,14 @@ function App() {
               }
             />
             <Route
+              path="/departments/:id"
+              element={
+                <PublicPage>
+                  <DepartmentDetails />
+                </PublicPage>
+              }
+            />
+            <Route
               path="/doctors"
               element={
                 <PublicPage>
@@ -73,14 +95,6 @@ function App() {
               element={
                 <PublicPage>
                   <DoctorDetails />
-                </PublicPage>
-              }
-            />
-            <Route
-              path="/departments/:id"
-              element={
-                <PublicPage>
-                  <DepartmentDetails />
                 </PublicPage>
               }
             />
@@ -129,6 +143,7 @@ function App() {
                 </PublicPage>
               }
             />
+
             <Route path="/doctor" element={<DoctorLayout />}>
               <Route index element={<DoctorWorkspace />} />
               <Route path="appointments" element={<DoctorWorkspace />} />
@@ -136,6 +151,7 @@ function App() {
               <Route path="schedule" element={<DoctorSchedule />} />
               <Route path="profile" element={<DoctorProfile />} />
             </Route>
+
             <Route
               path="/login"
               element={
@@ -196,43 +212,48 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route path="/admin" element={<AdminLayout />}>
+
+            <Route
+              path="/admin"
+              element={
+                <RequireRole role="ADMIN">
+                  <AdminLayout />
+                </RequireRole>
+              }
+            >
               <Route index element={<AdminDashboard />} />
+              <Route path="doctors" element={<AdminDoctors />} />
+              <Route path="doctor-requests" element={<AdminDoctorRequests />} />
+              <Route path="departments" element={<AdminDepartments />} />
+              <Route path="schedules" element={<AdminSchedules />} />
               <Route
                 path="patients"
-                element={<AdminManagementPage type="patients" />}
-              />
-              <Route
-                path="doctors"
-                element={<AdminManagementPage type="doctors" />}
-              />
-              <Route
-                path="departments"
-                element={<AdminManagementPage type="departments" />}
+                element={<ComingSoon title="Patients" note={soon.patients} />}
               />
               <Route
                 path="appointments"
-                element={<AdminManagementPage type="appointments" />}
+                element={
+                  <ComingSoon title="Appointments" note={soon.appointments} />
+                }
               />
-              <Route path="schedules" element={<AdminSchedules />} />
               <Route
                 path="payments"
-                element={<AdminManagementPage type="payments" />}
+                element={
+                  <ComingSoon title="Payments & Billing" note={soon.payments} />
+                }
               />
               <Route
                 path="ai-consultation"
-                element={<AdminManagementPage type="ai" />}
+                element={<ComingSoon title="AI Consultation" note={soon.ai} />}
               />
-              <Route path="users" element={<AdminAccounts />} />
-              <Route path="reports" element={<AdminReports />} />
-              <Route path="notifications" element={<AdminNotifications />} />
-              <Route path="settings" element={<AdminSettings />} />
+              <Route path="*" element={<NotFound inAdmin />} />
             </Route>
+
             <Route
               path="*"
               element={
                 <PublicPage>
-                  <NotFound />
+                  <PublicNotFound />
                 </PublicPage>
               }
             />
