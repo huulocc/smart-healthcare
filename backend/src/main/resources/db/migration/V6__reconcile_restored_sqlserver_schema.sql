@@ -38,9 +38,13 @@
 -- V2. A fresh database declares no default on used_at at all, so the lookup finds nothing
 -- and COALESCE turns the whole batch into an empty one.
 --
--- GO rather than semicolons: Flyway hands SQL Server one statement at a time, and a
--- variable does not survive between statements, so the DECLARE and the EXEC have to be
--- submitted together as one batch.
+-- The GO is a batch boundary, not a statement separator. Flyway splits SQL Server
+-- migrations on GO rather than on semicolons -- flyway-sqlserver's SQLServerParser returns
+-- Delimiter.GO as its default -- so everything above it is submitted as one batch and
+-- everything below it as another. That is what this needs: the dropped default has to be
+-- gone from the metadata before the ALTER COLUMN below is compiled, and keeping the
+-- variable inside its own batch says so plainly. It also means a semicolon here does not
+-- end a statement, which is why the DECLARE and the EXEC can sit together at all.
 DECLARE @drop_used_at_defaults nvarchar(max);
 SELECT @drop_used_at_defaults = COALESCE(STRING_AGG(
            N'ALTER TABLE ' + QUOTENAME(OBJECT_NAME(d.parent_object_id))

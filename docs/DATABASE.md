@@ -83,6 +83,13 @@ every database — and a later migration then has no name to drop. That is not
 hypothetical: it is exactly what blocked V6 on the first attempt, and why V6 has
 to look one up through `sys.default_constraints`.
 
+One thing worth knowing before editing any of these files: **Flyway splits SQL
+Server migrations on `GO`, not on semicolons.** `flyway-sqlserver`'s
+`SQLServerParser` returns `Delimiter.GO` as its default, so a file with no `GO`
+in it is sent as a single batch. That is also why these migrations can be checked
+by running them through `sqlcmd`, which batches the same way — the test is
+faithful rather than approximate.
+
 ## 4. The circular foreign key, which turned out to be fine
 
 `departments.head_doctor_id → doctors(id) ON DELETE SET NULL` and
