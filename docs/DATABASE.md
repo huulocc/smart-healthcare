@@ -149,6 +149,15 @@ were: the rows that have a `used_at` sit minutes after a `created_at` recorded a
 `+00:00`, and the application writes `Instant`, never local time. The three
 existing values still mean the same moment afterwards.
 
+### One trap in the baseline description
+
+`spring.flyway.baseline-description` must not contain an apostrophe. Flyway
+inlines it into the `INSERT` that seeds the history table instead of binding it
+as a parameter, so `the team's backup` closes the string literal early and
+start-up dies on `Incorrect syntax near 's'` — reported as a Flyway script
+failure with no statement attached, which is a slow thing to track down. The
+description reads "the shared SQL Server backup" for that reason alone.
+
 ### The cost of baselining
 
 A non-empty database that is **not** the team's one — a half-built experiment
