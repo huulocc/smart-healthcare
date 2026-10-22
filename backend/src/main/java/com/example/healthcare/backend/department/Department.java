@@ -66,8 +66,10 @@ public class Department {
 	// There is deliberately no List<Doctor> here: every screen wants a count ("18"), and a
 	// mapped collection would load 18 entities to call size(). Use DoctorRepository.countByDepartmentId.
 
-	/** The code for a department, once it has an id. MySQL cannot compute this itself: a
-	 *  generated column may not reference an AUTO_INCREMENT column. */
+	/** The code for a department, once it has an id. Derived in Java rather than by the
+	 *  database: SQL Server would take a PERSISTED computed column over the identity
+	 *  column, where MySQL refused one over AUTO_INCREMENT, but the V3 seed writes these
+	 *  codes and V5 rewrites them, so one Java definition keeps all three in step. */
 	public static String codeFor(Long id) {
 		return "DEP-%03d".formatted(id);
 	}

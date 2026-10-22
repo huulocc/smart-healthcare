@@ -38,7 +38,8 @@ public class Doctor {
 
 	// Lazy works here because this is the owning (foreign key) side of the 1:1.
 	// Nothing in the schema stops this pointing at a user whose role is still PATIENT --
-	// MySQL has no cross-table CHECK -- so the approval service has to enforce that.
+	// SQL Server has no cross-table CHECK either -- so the approval service has to
+	// enforce that.
 	@OneToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "user_id", nullable = false, unique = true)
 	private User user;
@@ -80,8 +81,10 @@ public class Doctor {
 	@Column(nullable = false)
 	private Instant updatedAt;
 
-	/** The code for a doctor, once it has an id. MySQL cannot compute this itself: a
-	 *  generated column may not reference an AUTO_INCREMENT column. Codes therefore
+	/** The code for a doctor, once it has an id. Derived in Java rather than by the
+	 *  database: SQL Server would take a PERSISTED computed column over the identity
+	 *  column, where MySQL refused one over AUTO_INCREMENT, but the V4 seed writes these
+	 *  codes and V5 rewrites them, so one Java definition keeps all three in step. Codes
 	 *  track the primary key and are not gap-free -- DR-00317 is an identifier, not a count. */
 	public static String codeFor(Long id) {
 		return "DR-%05d".formatted(id);

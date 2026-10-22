@@ -15,9 +15,10 @@ import com.example.healthcare.backend.user.Role;
 import com.example.healthcare.backend.user.User;
 
 /**
- * For the /api/admin tests. H2 has none of the MySQL seed data, so every test builds the
- * departments and doctors it needs, with a random tag in each name: the tests share one
- * database, which is why they look rows up by tag instead of counting totals.
+ * For the /api/admin tests. H2 has none of the seed data the migrations insert, so every
+ * test builds the departments and doctors it needs, with a random tag in each name: the
+ * tests share one database, which is why they look rows up by tag instead of counting
+ * totals.
  */
 public abstract class AdminApiTestSupport extends ApiTestSupport {
 

@@ -31,7 +31,7 @@ import lombok.Setter;
  * this template over the month, which needs no extra rows.
  */
 @Entity
-// Declared here as well as in V2 so the H2 test schema has the same key as MySQL.
+// Declared here as well as in V2 so the H2 test schema has the same key as SQL Server.
 // AdminScheduleService rejects a clash before it gets this far.
 @Table(name = "doctor_schedules", uniqueConstraints = @UniqueConstraint(
 		name = "uk_doctor_schedules_slot", columnNames = { "doctor_id", "day_of_week", "start_time" }))

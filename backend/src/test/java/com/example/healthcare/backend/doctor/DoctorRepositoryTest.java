@@ -23,7 +23,7 @@ import com.example.healthcare.backend.user.User;
 import com.example.healthcare.backend.user.UserRepository;
 
 /**
- * The migrations are MySQL-only and do not run here, so this covers the other half: that
+ * The migrations are SQL Server-only and do not run here, so this covers the other half: that
  * the new entities map cleanly and that every custom query actually parses. A typo in
  * DoctorRepository.search() would otherwise not surface until an admin screen existed.
  */
