@@ -45,8 +45,9 @@ public class AdminDepartmentService {
 	@Transactional
 	public DepartmentResponse create(CreateDepartmentRequest request) {
 		String name = request.name().trim();
-		// The MySQL collation already ignores case here; this check is what makes that an
-		// answer the form can show instead of a database error.
+		// The database collation already ignores case here -- SQL Server's default,
+		// SQL_Latin1_General_CP1_CI_AS, is case-insensitive just as MySQL's was -- so this
+		// check is what makes that an answer the form can show instead of a database error.
 		if (departmentRepository.existsByNameIgnoreCase(name)) {
 			throw new ApiException(HttpStatus.CONFLICT, "A department with this name already exists", "name");
 		}

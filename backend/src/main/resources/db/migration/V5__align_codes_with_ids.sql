@@ -6,15 +6,16 @@
 -- unique key. After this, "code is a function of the id" holds for every row, so a new
 -- code can never collide with an old one.
 --
--- Two passes through a temporary code, because MySQL checks unique keys row by row during
--- a multi-row UPDATE: going straight to the final codes could collide mid-update whenever
--- one row's target is another row's current code.
+-- Two passes through a temporary code, as on MySQL. SQL Server maintains a unique index
+-- row by row within a single UPDATE rather than checking only the finished set, so going
+-- straight to the final codes can still report a duplicate mid-statement whenever one
+-- row's target is another row's current code.
 --
--- GREATEST(n, CHAR_LENGTH(id)) instead of a fixed width: LPAD cuts a longer string down to
--- the given length, while Java's %05d just widens.
+-- FORMAT(id, 'D5') is Java's %05d exactly: it pads to five digits and widens past them
+-- rather than truncating, which is what the LPAD/GREATEST pair had to spell out on MySQL.
 
-UPDATE `doctors`     SET `doctor_code` = CONCAT('TMP-', `id`);
-UPDATE `doctors`     SET `doctor_code` = CONCAT('DR-',  LPAD(`id`, GREATEST(5, CHAR_LENGTH(`id`)), '0'));
+UPDATE [doctors]     SET [doctor_code] = CONCAT('TMP-', [id]);
+UPDATE [doctors]     SET [doctor_code] = CONCAT('DR-',  FORMAT([id], 'D5'));
 
-UPDATE `departments` SET `dept_code`   = CONCAT('TMP-', `id`);
-UPDATE `departments` SET `dept_code`   = CONCAT('DEP-', LPAD(`id`, GREATEST(3, CHAR_LENGTH(`id`)), '0'));
+UPDATE [departments] SET [dept_code]   = CONCAT('TMP-', [id]);
+UPDATE [departments] SET [dept_code]   = CONCAT('DEP-', FORMAT([id], 'D3'));

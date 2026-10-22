@@ -1,6 +1,6 @@
 # AI Usage & Human Review — Accounts: Auth and Profile
 
-**Project:** Smart Healthcare — `frontend/` (React 19 + TypeScript + Vite) and `backend/` (Spring Boot 4.1 + Java 21 + MySQL)
+**Project:** Smart Healthcare — `frontend/` (React 19 + TypeScript + Vite) and `backend/` (Spring Boot 4.1 + Java 21 + SQL Server)
 **Author:** Tran Quoc Huy (GitHub: `LotusTranQuocHuy`)
 **Branches / PRs:**
 - `feature/UI-auth-and-profile` → PR #3 (merged into `main` by `huulocc`), then English translation, login error state, this document
@@ -144,11 +144,13 @@ Other files: `docker-compose.yml` (MySQL 8.4), `backend/pom.xml`, `application.p
 
 **First time only:** copy `backend/.env.example` to `backend/.env` and set `JWT_SECRET` (the backend does not start without it). There is no demo account any more — create one with Sign Up.
 
-**Start everything** (Docker Desktop must be running), each command in its own terminal, starting from the repo root:
+**Start everything**, each command in its own terminal, starting from the repo root. The
+database is a SQL Server instance installed on the machine, not a container — see
+[DATABASE.md](DATABASE.md) for the one-time setup it needs:
 
 | What | Windows (PowerShell) | macOS / Linux |
 |---|---|---|
-| MySQL | `docker compose up -d` | `docker compose up -d` |
+| SQL Server | starts with Windows; otherwise `net start MSSQL$<INSTANCE>` | n/a — see [DATABASE.md](DATABASE.md) |
 | Backend (API on port 8080, or your `SERVER_PORT`) | `cd backend; .\mvnw.cmd spring-boot:run` | `cd backend && ./mvnw spring-boot:run` |
 | Frontend (app on http://localhost:5173) | `cd frontend; npm install; npm run dev` | `cd frontend && npm install && npm run dev` |
 
@@ -157,7 +159,7 @@ Other files: `docker-compose.yml` (MySQL 8.4), `backend/pom.xml`, `application.p
 | A | Sign up | `/register` → submit empty, then fill all fields | Errors under each field; then "Your account has been created" on Log In |
 | B | Wrong password | Log In with your email + `wrongpass` | Red banner "Invalid email or password." |
 | C | Protected page | Logged out → open `/profile` | Redirected to Log In; after login you land on Profile |
-| D | Edit profile | Profile → Edit Profile → change data → Save → press F5 | Success banner; data is still there after reload (saved in MySQL) |
+| D | Edit profile | Profile → Edit Profile → change data → Save → press F5 | Success banner; data is still there after reload (saved in SQL Server) |
 | E | Email conflict | Edit Profile → use another account's email | Error under the Email field |
 | F | Change password | Wrong current password, then a valid change | Error under Current Password; then back to Profile with a notice |
 | G | Forgot password | Log In → Forgot password? → email → open the link from Gmail (or the backend console) → new password | "Check your email" → "Password Reset Successful" → log in |
