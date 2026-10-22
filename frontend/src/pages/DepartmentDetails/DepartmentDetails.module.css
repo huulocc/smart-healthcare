@@ -1,0 +1,13 @@
+@import '../../components/healthcare/Healthcare.module.css';
+.doctorSection {
+  padding-top: 2rem;
+  scroll-margin-top: 96px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+  gap: 2rem;
+}
+.heading p {
+  max-width: 720px;
+}

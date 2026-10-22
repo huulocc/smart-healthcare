@@ -8,6 +8,12 @@
   align-items: flex-end;
 }
 
+/* Keep the assistant out of booking controls; the chat remains available below the footer. */
+.inlineWidget { position: static; align-self: flex-end; margin: 0 1.5rem 1rem; }
+.inlineWidget .greetingBubble { display: none; }
+.inlineWidget .chatWindow { position: fixed; right: 1rem; bottom: 6rem; max-height: calc(100dvh - 8rem); }
+
+
 /* Launcher Styles */
 .launcherWrapper {
   display: flex;

@@ -73,19 +73,19 @@ cd backend && ./mvnw test
 ```
 
 ```bash
-cd frontend && npx tsc -b && npx vite build
+cd frontend && npx tsc -b && npx vite build && npx eslint . --max-warnings 0
 ```
 
 `backend/admin-api.http` (VS Code REST Client) exercises every admin endpoint by hand. Run
 the `login` request first; the rest reuse its token.
 
-> **`npm run lint` does not work, and this is not new.** The project has ESLint 9 installed but
-> configured through `.eslintrc.cjs`, which ESLint 9 no longer reads -- it wants a flat
-> `eslint.config.js`. Migrating it is its own task, and it would surface pre-existing warnings
-> across files other people are working in. `tsc -b` is the gate in the meantime.
+> Linting was broken for most of this work -- ESLint 9 with an `.eslintrc.cjs` it no longer
+> reads -- so `tsc -b` was the gate instead. PR #7 added a flat `eslint.config.js` and it runs
+> clean again. The old `.eslintrc.cjs` is still in the tree and is now dead: ESLint ignores it
+> when the flat config exists. Worth deleting, but not in a branch about the admin page.
 >
-> The scripts in `package.json` also call `pnpm`, which is not installed on every machine
-> here; `npm run dev` and the `npx` commands above work either way.
+> The scripts in `package.json` call `pnpm`, which is not installed on every machine here;
+> `npm run dev` and the `npx` commands above work either way.
 
 ---
 

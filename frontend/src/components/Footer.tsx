@@ -29,8 +29,8 @@ const Footer = () => {
             <h4>Doctors</h4>
             <ul>
               <li><Link to="/login">Doctor Login</Link></li>
-              <li><Link to="/dashboard">Dashboard</Link></li>
-              <li><Link to="/appointments">Appointments</Link></li>
+              <li><Link to="/doctor">Dashboard (demo)</Link></li>
+              <li><Link to="/doctor/appointments">Appointments (demo)</Link></li>
             </ul>
           </div>
           

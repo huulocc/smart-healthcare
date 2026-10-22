@@ -1,0 +1,82 @@
+@import '../../components/healthcare/Healthcare.module.css';
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-bottom: 1.2rem;
+  font-size: 0.75rem;
+  text-transform: capitalize;
+}
+.legend span {
+  padding: 0.3rem 0.6rem;
+  border-radius: 5px;
+}
+.scheduleGrid {
+  display: grid;
+  grid-template-columns: repeat(var(--day-count), minmax(0, 1fr));
+  gap: 0.5rem;
+}
+.day {
+  min-width: 0;
+}
+.day h2 {
+  font-size: 0.72rem;
+  padding: 0.6rem 0;
+  text-align: center;
+  white-space: normal;
+}
+.scheduleSlot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.65rem 0.2rem;
+  width: 100%;
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.75rem;
+}
+.scheduleSlot small {
+  font-size: 0.65rem;
+  text-transform: capitalize;
+}
+.available {
+  background: #f0faf6;
+  color: #176849;
+}
+.booked {
+  background: #eaf5fc;
+  color: #02638e;
+}
+.blocked {
+  background: #fff4dc;
+  color: #805208;
+}
+.past {
+  background: #f1f5f9;
+  color: #64748b;
+}
+.scheduleSlot:disabled {
+  cursor: not-allowed;
+}
+@media (max-width: 767px) {
+  .scheduleGrid {
+    display: block;
+  }
+  .day {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 1.2rem;
+  }
+  .day h2 {
+    grid-column: 1 / -1;
+    font-size: 0.95rem;
+    text-align: left;
+  }
+  .scheduleSlot {
+    margin: 0;
+    min-height: 52px;
+  }
+}

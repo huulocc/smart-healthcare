@@ -1,10 +1,12 @@
-import { startTransition } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { startTransition, useState } from 'react';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Menu, X } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
 import styles from './Navbar.module.css';
 
 const Navbar = () => {
   const { isAuthenticated, role, logout } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -25,27 +27,68 @@ const Navbar = () => {
           </Link>
         </div>
 
-        <nav className={styles.nav}>
+        <nav
+          id="main-navigation"
+          aria-label="Main navigation"
+          className={`${styles.nav} ${menuOpen ? styles.open : ''}`}
+          onClick={() => setMenuOpen(false)}
+        >
           <ul className={styles.navList}>
-            <li><Link to="/">Home</Link></li>
-            <li><Link to="/departments">Departments</Link></li>
-            <li><Link to="/doctors">Doctors</Link></li>
-            {role === 'ADMIN' && <li><Link to="/admin">Admin</Link></li>}
+            <li>
+              <NavLink to="/" end>
+                Home
+              </NavLink>
+            </li>
+            <li>
+              <NavLink to="/departments">Departments</NavLink>
+            </li>
+            <li>
+              <NavLink to="/doctors">Doctors</NavLink>
+            </li>
+            <li>
+              <NavLink to="/my-appointments">My appointments</NavLink>
+            </li>
+            {/* The only way into the admin area: there is no link to it anywhere else. */}
+            {role === 'ADMIN' && (
+              <li>
+                <NavLink to="/admin">Admin</NavLink>
+              </li>
+            )}
           </ul>
         </nav>
 
         <div className={styles.actions}>
+          <button
+            type="button"
+            className={styles.menuButton}
+            aria-label={menuOpen ? 'Close navigation' : 'Open navigation'}
+            aria-expanded={menuOpen}
+            aria-controls="main-navigation"
+            onClick={() => setMenuOpen(!menuOpen)}
+          >
+            {menuOpen ? <X size={21} /> : <Menu size={21} />}
+          </button>
           {isAuthenticated ? (
             <>
-              <Link to="/profile" className={styles.loginBtn}>Profile</Link>
-              <button type="button" onClick={handleLogout} className={`${styles.registerBtn} ${styles.logoutBtn}`}>
+              <Link to="/profile" className={styles.loginBtn}>
+                Profile
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className={`${styles.registerBtn} ${styles.logoutBtn}`}
+              >
                 Log Out
               </button>
             </>
           ) : (
             <>
-              <Link to="/login" className={styles.loginBtn}>Log In</Link>
-              <Link to="/register" className={styles.registerBtn}>Sign Up</Link>
+              <Link to="/login" className={styles.loginBtn}>
+                Log In
+              </Link>
+              <Link to="/register" className={styles.registerBtn}>
+                Sign Up
+              </Link>
             </>
           )}
         </div>
