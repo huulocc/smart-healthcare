@@ -1,8 +1,7 @@
-import { useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import Button from '../../components/Button';
 import {
-  DemoNotice,
   Modal,
   Page,
 } from '../../components/healthcare/HealthcareUI';
@@ -13,34 +12,174 @@ import {
   formatDate,
   TIMES,
 } from '../../data/appointmentDemo';
+import {
+  addDoctorAvailabilityException,
+  deleteDoctorAvailabilityException,
+  getDoctorAvailability,
+  getDoctorAvailabilityExceptions,
+  getDoctorAppointments,
+  type AvailabilityExceptionItem,
+  type Slot,
+  type AppointmentConfirmation,
+} from '../../api/bookingApi';
+import { getMyProfile } from '../../api/userApi';
 import styles from './DoctorSchedule.module.css';
 
 export default function DoctorSchedule() {
-  const { getSlotStatus, setAvailability, appointments } = useAppointments();
+  const { doctors } = useAppointments();
+  const [doctorId, setDoctorId] = useState<number>(1);
   const [offset, setOffset] = useState(0);
   const [view, setView] = useState('Week');
   const [selected, setSelected] = useState<{
     date: string;
     time: string;
   } | null>(null);
+
+  const [serverSlots, setServerSlots] = useState<Slot[]>([]);
+  const [exceptions, setExceptions] = useState<AvailabilityExceptionItem[]>([]);
+  const [bookedAppointments, setBookedAppointments] = useState<AppointmentConfirmation[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+
+  const today = dateKey();
+  const maxDate = addDays(today, 29);
+
+  // Identify current doctor
+  useEffect(() => {
+    getMyProfile()
+      .then((u) => {
+        const match = doctors.find(
+          (d) => d.name.toLowerCase() === u.fullName.toLowerCase(),
+        );
+        if (match) setDoctorId(match.id);
+      })
+      .catch(() => {});
+  }, [doctors]);
+
+  const loadScheduleData = (docId: number) => {
+    setLoading(true);
+    Promise.all([
+      getDoctorAvailability(docId, today, maxDate),
+      getDoctorAvailabilityExceptions({ from: today, to: maxDate }),
+      getDoctorAppointments({ view: 'ALL', size: 100 }),
+    ])
+      .then(([avail, exList, appList]) => {
+        setServerSlots(avail.slots || []);
+        setExceptions(exList || []);
+        setBookedAppointments(appList.content || []);
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    if (doctorId) {
+      loadScheduleData(doctorId);
+    }
+  }, [doctorId, today, maxDate]);
+
   const dates = Array.from(
-    { length: Math.min(view === 'Week' ? 7 : 1, 31 - offset) },
-    (_, i) => addDays(dateKey(), offset + i),
+    { length: Math.min(view === 'Week' ? 7 : 1, 30 - offset) },
+    (_, i) => addDays(today, offset + i),
   );
-  const status = selected
-    ? getSlotStatus(1, selected.date, selected.time)
-    : 'available';
-  const booked =
-    selected &&
-    appointments.find(
-      (item) =>
-        item.doctorId === 1 &&
-        item.date === selected.date &&
-        item.time === selected.time &&
-        item.status !== 'CANCELLED',
+
+  const getSlotDetails = (day: string, slotTime: string) => {
+    const normalized = slotTime.length === 5 ? slotTime : slotTime.substring(0, 5);
+
+    // 1. Is there an active booked appointment?
+    const app = bookedAppointments.find(
+      (a) =>
+        a.date === day &&
+        a.startTime.substring(0, 5) === normalized &&
+        a.status !== 'CANCELLED',
     );
+    if (app) return { status: 'booked', appointment: app, exception: null };
+
+    // 2. Is there an availability exception covering this slot?
+    const ex = exceptions.find(
+      (e) =>
+        e.date === day &&
+        e.startTime.substring(0, 5) <= normalized &&
+        e.endTime.substring(0, 5) > normalized,
+    );
+    if (ex) {
+      if (ex.shiftType === 'WORK') return { status: 'available', appointment: null, exception: ex };
+      return { status: 'blocked', appointment: null, exception: ex };
+    }
+
+    // 3. Is it in server available slots?
+    const isAvail = serverSlots.some(
+      (s) => s.date === day && s.startTime.substring(0, 5) === normalized,
+    );
+    if (isAvail) return { status: 'available', appointment: null, exception: null };
+
+    // 4. Past or blocked by regular schedule
+    const instant = new Date(`${day}T${normalized}:00+07:00`).getTime();
+    if (!Number.isFinite(instant) || instant <= Date.now()) {
+      return { status: 'past', appointment: null, exception: null };
+    }
+
+    return { status: 'blocked', appointment: null, exception: null };
+  };
+
+  const selectedSlotInfo = selected ? getSlotDetails(selected.date, selected.time) : null;
+
+  async function handleToggleAvailability() {
+    if (!selected || !selectedSlotInfo) return;
+    setSubmitting(true);
+    setError('');
+
+    try {
+      const normalizedStart = selected.time.length === 5 ? selected.time : selected.time.substring(0, 5);
+      const [h, m] = normalizedStart.split(':').map(Number);
+      const endMinutes = m + 30;
+      const endH = endMinutes >= 60 ? h + 1 : h;
+      const endM = endMinutes >= 60 ? endMinutes - 60 : endMinutes;
+      const normalizedEnd = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+
+      if (selectedSlotInfo.exception) {
+        // Remove exception
+        await deleteDoctorAvailabilityException(selectedSlotInfo.exception.id);
+        setNotice(`Custom availability exception removed for ${selected.time} on ${formatDate(selected.date, true)}.`);
+      } else if (selectedSlotInfo.status === 'available') {
+        // Block available slot by adding a BREAK exception
+        await addDoctorAvailabilityException({
+          date: selected.date,
+          startTime: normalizedStart,
+          endTime: normalizedEnd,
+          shiftType: 'BREAK',
+        });
+        setNotice(`Slot ${selected.time} on ${formatDate(selected.date, true)} is now blocked (break exception).`);
+      } else {
+        // Make slot available by adding WORK exception
+        await addDoctorAvailabilityException({
+          date: selected.date,
+          startTime: normalizedStart,
+          endTime: normalizedEnd,
+          shiftType: 'WORK',
+        });
+        setNotice(`Slot ${selected.time} on ${formatDate(selected.date, true)} is now available (work exception).`);
+      }
+
+      setSelected(null);
+      loadScheduleData(doctorId);
+    } catch (cause: unknown) {
+      let msg = 'Unable to update availability exception.';
+      if (typeof cause === 'object' && cause !== null && 'response' in cause) {
+        const res = (cause as { response?: { data?: { detail?: string; message?: string } } }).response;
+        if (res?.data?.detail) msg = res.data.detail;
+        else if (res?.data?.message) msg = res.data.message;
+      }
+      setError(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <Page
       previewStates
@@ -48,22 +187,23 @@ export default function DoctorSchedule() {
     >
       <div className={styles.heading}>
         <div>
-          <span className={styles.eyebrow}>Doctor workspace preview</span>
+          <span className={styles.eyebrow}>Doctor schedule management</span>
           <h1>My schedule</h1>
           <p>
-            Manage sample availability. Changes also appear in patient booking.
+            Manage live availability and dated exceptions. Changes immediately reflect in patient booking.
           </p>
         </div>
-        <Button to="/book/1" variant="outline">
+        <Button to={`/book/${doctorId}`} variant="outline">
           Preview patient booking
         </Button>
       </div>
-      <DemoNotice />
+
       {notice && (
         <p className={styles.successBanner} role="status">
           {notice}
         </p>
       )}
+
       <section className={styles.card}>
         <div className={styles.sectionHeader}>
           <div className={styles.actions}>
@@ -84,7 +224,7 @@ export default function DoctorSchedule() {
             <Button
               variant="outline"
               size="sm"
-              disabled={offset + (view === 'Week' ? 7 : 1) > 30}
+              disabled={offset + (view === 'Week' ? 7 : 1) >= 30}
               onClick={() => setOffset(offset + (view === 'Week' ? 7 : 1))}
               aria-label="Next period"
             >
@@ -92,13 +232,14 @@ export default function DoctorSchedule() {
             </Button>
             <strong>{formatDate(dates[0], true)}</strong>
           </div>
+
           <div className={styles.actions}>
             {['Week', 'Day'].map((value) => (
               <button
                 type="button"
                 key={value}
                 aria-pressed={view === value}
-                className={`${styles.slotButton} ${view === value ? styles.selected : ''}`}
+                className={`${styles.tab} ${view === value ? styles.active : ''}`}
                 onClick={() => setView(value)}
               >
                 {value}
@@ -106,22 +247,20 @@ export default function DoctorSchedule() {
             ))}
           </div>
         </div>
-        <div className={styles.legend}>
-          {['available', 'booked', 'blocked', 'past'].map((value) => (
-            <span key={value} className={styles[value]}>
-              {value}
-            </span>
-          ))}
-        </div>
-        <div
-          className={styles.scheduleGrid}
-          style={{ '--day-count': dates.length } as React.CSSProperties}
-        >
+
+        {loading && (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+            <Loader2 className="spin" size={28} color="#026AA7" />
+          </div>
+        )}
+
+        <div className={styles.grid}>
           {dates.map((date) => (
             <div key={date} className={styles.day}>
               <h2>{formatDate(date, true)}</h2>
               {TIMES.map((time) => {
-                const value = getSlotStatus(1, date, time);
+                const info = getSlotDetails(date, time);
+                const value = info.status;
                 return (
                   <button
                     type="button"
@@ -143,12 +282,15 @@ export default function DoctorSchedule() {
           ))}
         </div>
       </section>
-      {selected && (
+
+      {selected && selectedSlotInfo && (
         <Modal
           title={
-            status === 'booked'
-              ? 'Booked appointment'
-              : 'Edit availability · Demo'
+            selectedSlotInfo.status === 'booked'
+              ? 'Booked clinical appointment'
+              : selectedSlotInfo.exception
+                ? 'Availability Exception'
+                : 'Edit date availability'
           }
           onClose={() => setSelected(null)}
         >
@@ -156,60 +298,56 @@ export default function DoctorSchedule() {
             {formatDate(selected.date)} at {selected.time} (UTC+7)
           </p>
           <p>
-            Current status: <strong>{status}</strong>
+            Current status: <strong>{selectedSlotInfo.status}</strong>
+            {selectedSlotInfo.exception && (
+              <span> ({selectedSlotInfo.exception.shiftType} override)</span>
+            )}
           </p>
-          {status === 'booked' ? (
+
+          {selectedSlotInfo.status === 'booked' ? (
             <>
               <p>
-                This slot belongs to an appointment and cannot be made available
-                directly.
+                This slot belongs to a confirmed clinical appointment and cannot be modified directly.
               </p>
-              {booked && (
-                <Button to={`/doctor/appointments/${booked.id}`}>
-                  View appointment
-                </Button>
+              {selectedSlotInfo.appointment && (
+                <div style={{ marginTop: '1rem' }}>
+                  <p><strong>Patient:</strong> {selectedSlotInfo.appointment.patientName}</p>
+                  <p><strong>Code:</strong> {selectedSlotInfo.appointment.appointmentCode}</p>
+                  <Button
+                    to={`/doctor/appointments/${selectedSlotInfo.appointment.id}`}
+                    style={{ marginTop: '0.5rem' }}
+                  >
+                    View appointment details
+                  </Button>
+                </div>
               )}
             </>
           ) : (
             <>
               <p>
-                {status === 'available'
-                  ? 'Block this slot so it cannot be selected in patient booking.'
-                  : 'Make this slot available for demo bookings.'}
+                {selectedSlotInfo.exception
+                  ? `An availability override (${selectedSlotInfo.exception.shiftType}) is set for this time. Would you like to remove this override?`
+                  : selectedSlotInfo.status === 'available'
+                    ? 'Block this slot by adding a BREAK exception so patients cannot book it?'
+                    : 'Make this slot available by adding a dated WORK exception?'}
               </p>
+
               {error && (
                 <p className={styles.errorBanner} role="alert">
                   {error}
                 </p>
               )}
-              <div className={styles.actions}>
-                <Button variant="outline" onClick={() => setSelected(null)}>
+
+              <div className={styles.actions} style={{ marginTop: '1.5rem' }}>
+                <Button variant="outline" onClick={() => setSelected(null)} disabled={submitting}>
                   Cancel
                 </Button>
-                <Button
-                  onClick={() => {
-                    try {
-                      setAvailability(
-                        selected.date,
-                        selected.time,
-                        status !== 'available',
-                      );
-                      setNotice(
-                        `Demo slot ${selected.time} on ${formatDate(selected.date, true)} is now ${status === 'available' ? 'blocked' : 'available'}.`,
-                      );
-                      setSelected(null);
-                    } catch (cause) {
-                      setError(
-                        cause instanceof Error
-                          ? cause.message
-                          : 'Unable to save.',
-                      );
-                    }
-                  }}
-                >
-                  {status === 'available'
-                    ? 'Block this slot & save'
-                    : 'Make available & save'}
+                <Button onClick={handleToggleAvailability} loading={submitting}>
+                  {selectedSlotInfo.exception
+                    ? 'Remove exception'
+                    : selectedSlotInfo.status === 'available'
+                      ? 'Block slot (Add Break)'
+                      : 'Make available (Add Work)'}
                 </Button>
               </div>
             </>

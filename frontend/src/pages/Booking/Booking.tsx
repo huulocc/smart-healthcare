@@ -11,14 +11,13 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  CreditCard,
-  Landmark,
+  CheckCircle2,
   MapPin,
+  ShieldCheck,
 } from 'lucide-react';
 import Button from '../../components/Button';
 import AvailabilityPicker from '../../components/healthcare/AvailabilityPicker';
 import {
-  DemoNotice,
   DoctorSummary,
   FeeSummary,
   NotFound,
@@ -29,9 +28,10 @@ import { dateKey, formatDate } from '../../data/appointmentDemo';
 import type {
   BookingDraft,
   PatientDetails,
-  PaymentOutcome,
 } from '../../data/appointmentDemo';
-import { patientSchema } from '../../schemas/bookingSchemas';
+import { getDobLimits, patientSchema } from '../../schemas/bookingSchemas';
+import { getStoredToken } from '../../api/client';
+import { getMyProfile } from '../../api/userApi';
 import styles from './Booking.module.css';
 
 export default function Booking() {
@@ -45,14 +45,12 @@ function BookingFlow({ doctorId }: { doctorId: number }) {
     doctors,
     appointments,
     drafts,
-    results,
     saveDraft,
-    confirm,
-    getSlotStatus,
-    setAvailability,
+    createRealBooking,
   } = useAppointments();
   const doctor = doctors.find((item) => item.id === doctorId);
   const saved = drafts[doctorId];
+
   const draft = useMemo<BookingDraft>(
     () =>
       saved ?? {
@@ -61,26 +59,29 @@ function BookingFlow({ doctorId }: { doctorId: number }) {
         time: '',
         patient: null,
         paymentMethod: 'DEMO_CARD',
-        key: '',
+        key: crypto.randomUUID(),
       },
     [saved, doctorId],
   );
-  const step = pathname.endsWith('/payment')
+
+  const step = pathname.endsWith('/payment') || pathname.endsWith('/review')
     ? 2
     : pathname.endsWith('/details')
       ? 1
       : 0;
+
   const navigate = useNavigate();
-  const [outcome, setOutcome] = useState<PaymentOutcome>('SUCCESS');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
+  const [profileLoaded, setProfileLoaded] = useState(false);
+
   const {
     register,
     handleSubmit,
     getValues,
+    setValue,
     watch,
     formState: { errors },
   } = useForm<PatientDetails>({
@@ -95,16 +96,34 @@ function BookingFlow({ doctorId }: { doctorId: number }) {
       consent: false,
     },
   });
+
+  // Pre-fill profile for logged in patients if booking for myself
+  useEffect(() => {
+    const token = getStoredToken();
+    if (!token || profileLoaded || saved?.patient?.patientName) return;
+
+    getMyProfile()
+      .then((user) => {
+        setProfileLoaded(true);
+        if (user) {
+          setValue('patientName', user.fullName || '');
+          setValue('email', user.email || '');
+          setValue('phone', user.phone || '');
+          if (user.dob) {
+            setValue('dob', user.dob);
+          }
+        }
+      })
+      .catch(() => {
+        setProfileLoaded(true);
+      });
+  }, [profileLoaded, saved, setValue]);
+
   useEffect(() => {
     heading.current?.focus();
     setError('');
   }, [pathname]);
-  useEffect(
-    () => () => {
-      if (timer.current) clearTimeout(timer.current);
-    },
-    [],
-  );
+
   useEffect(() => {
     if (step !== 1) return;
     const subscription = watch((patient) =>
@@ -112,83 +131,93 @@ function BookingFlow({ doctorId }: { doctorId: number }) {
     );
     return () => subscription.unsubscribe();
   }, [step, watch, saveDraft, draft]);
+
   if (!doctor) return <NotFound title="Doctor not found" />;
-  const previous = results.find(
-    (item) => item.draft.key === draft.key && item.outcome === 'SUCCESS',
-  );
-  if (step > 0 && previous)
-    return <Navigate to={`/booking/result/${previous.id}`} replace />;
-  if (step > 0 && (!saved || !draft.time))
+
+  // Enforce selection of slot before details
+  if (step > 0 && (!saved || !draft.time)) {
     return (
       <Navigate
         to={`/book/${doctorId}`}
         replace
         state={{
-          notice:
-            'Please choose a date and time before continuing. Demo drafts reset on a full reload.',
+          notice: 'Please choose an available date and time before continuing.',
         }}
       />
     );
-  if (step === 2 && !patientSchema.safeParse(draft.patient).success)
+  }
+
+  // Enforce details before review
+  if (step === 2 && !patientSchema.safeParse(draft.patient).success) {
     return (
       <Navigate
         to={`/book/${doctorId}/details`}
         replace
         state={{
-          notice:
-            'Please complete the patient details before reviewing payment.',
+          notice: 'Please complete patient details before confirming.',
         }}
       />
     );
+  }
+
   function update(changes: Partial<BookingDraft>) {
     saveDraft({ ...draft, ...changes });
   }
-  function submitPayment() {
+
+  async function submitBooking() {
     if (submittingRef.current) return;
-    if (getSlotStatus(doctorId, draft.date, draft.time) !== 'available') {
-      navigate(`/book/${doctorId}`, {
+
+    const token = getStoredToken();
+    if (!token) {
+      navigate('/login', {
         state: {
-          notice:
-            'This time is no longer available. Please choose another slot.',
+          from: pathname,
+          notice: 'Please log in to complete your appointment booking.',
         },
       });
       return;
     }
+
     submittingRef.current = true;
     setSubmitting(true);
     setError('');
-    timer.current = setTimeout(() => {
-      try {
-        const result = confirm(doctorId, outcome);
-        navigate(`/booking/result/${result.id}`);
-      } catch (cause) {
-        setError(
-          cause instanceof Error
-            ? cause.message
-            : 'Unable to complete the demo.',
-        );
-      } finally {
-        submittingRef.current = false;
-        setSubmitting(false);
+
+    try {
+      const idempotencyKey = draft.key || crypto.randomUUID();
+      const confirmation = await createRealBooking(doctorId, idempotencyKey);
+      navigate(`/booking/result/${confirmation.id}`, { replace: true });
+    } catch (cause: unknown) {
+      let message = 'Unable to complete booking. Please try again.';
+      if (typeof cause === 'object' && cause !== null && 'response' in cause) {
+        const res = (cause as { response?: { data?: { detail?: string; message?: string } } }).response;
+        if (res?.data?.detail) message = res.data.detail;
+        else if (res?.data?.message) message = res.data.message;
+      } else if (cause instanceof Error) {
+        message = cause.message;
       }
-    }, 650);
+      setError(message);
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+    }
   }
+
+  const { min: minDob, max: maxDob } = getDobLimits();
+
   const field = (
     name: 'patientName' | 'email' | 'phone' | 'dob',
     label: string,
     type: string,
-    required = true,
   ) => (
     <label className={styles.field} htmlFor={`booking-${name}`}>
-      {label}
-      {required ? ' *' : ' (optional)'}
+      {label} *
       <input
         id={`booking-${name}`}
         type={type}
         {...register(name)}
         aria-invalid={Boolean(errors[name])}
         aria-describedby={errors[name] ? `${name}-error` : undefined}
-        {...(name === 'dob' ? { max: dateKey() } : {})}
+        {...(name === 'dob' ? { min: minDob, max: maxDob } : {})}
       />
       {errors[name] && (
         <span className={styles.error} id={`${name}-error`}>
@@ -214,17 +243,18 @@ function BookingFlow({ doctorId }: { doctorId: number }) {
           <h1 ref={heading} tabIndex={-1}>
             Book an appointment
           </h1>
-          <p>Choose a time that works for you.</p>
+          <p>Choose an available time that works for you.</p>
         </div>
       </div>
-      <DemoNotice />
+
       {(state as { notice?: string } | null)?.notice && (
         <div className={styles.errorBanner} role="status">
           {(state as { notice: string }).notice}
         </div>
       )}
+
       <ol className={styles.steps}>
-        {['Date & time', 'Patient details', 'Review & deposit'].map(
+        {['Date & time', 'Patient details', 'Review & confirm'].map(
           (label, index) => (
             <li
               key={label}
@@ -239,6 +269,7 @@ function BookingFlow({ doctorId }: { doctorId: number }) {
           ),
         )}
       </ol>
+
       <div className={styles.twoColumn}>
         <div className={styles.card}>
           {step === 0 && (
@@ -259,12 +290,20 @@ function BookingFlow({ doctorId }: { doctorId: number }) {
                   Doctor profile
                 </Button>
                 <Button
-                  disabled={
-                    !draft.time ||
-                    getSlotStatus(doctor.id, draft.date, draft.time) !==
-                      'available'
-                  }
-                  onClick={() => navigate(`/book/${doctorId}/details`)}
+                  disabled={!draft.time}
+                  onClick={() => {
+                    const token = getStoredToken();
+                    if (!token) {
+                      navigate('/login', {
+                        state: {
+                          from: `/book/${doctorId}/details`,
+                          notice: 'Please log in to continue booking your appointment.',
+                        },
+                      });
+                    } else {
+                      navigate(`/book/${doctorId}/details`);
+                    }
+                  }}
                 >
                   Continue
                   <ArrowRight size={16} />
@@ -272,10 +311,11 @@ function BookingFlow({ doctorId }: { doctorId: number }) {
               </div>
             </>
           )}
+
           {step === 1 && (
             <>
               <h2>Patient details</h2>
-              <p>Demo booking — no real appointment will be created.</p>
+              <p>Please enter attendee information for the clinical appointment.</p>
               <form
                 className={styles.form}
                 noValidate
@@ -305,25 +345,28 @@ function BookingFlow({ doctorId }: { doctorId: number }) {
                     </label>
                   </div>
                 </fieldset>
+
                 <div className={styles.formRow}>
                   {field('patientName', 'Full name', 'text')}
-                  {field('email', 'Email', 'email')}
+                  {field('email', 'Email address', 'email')}
                 </div>
+
                 <div className={styles.formRow}>
-                  {field('phone', 'Phone number', 'tel')}
-                  {field('dob', 'Date of birth', 'date', false)}
+                  {field('phone', 'Phone number (Vietnam: 09... / +84...)', 'tel')}
+                  {field('dob', 'Date of birth', 'date')}
                 </div>
+
                 <label className={styles.field} htmlFor="booking-reason">
-                  Reason for visit (optional)
+                  Reason for visit *
                   <textarea
                     id="booking-reason"
                     {...register('reason')}
                     aria-invalid={Boolean(errors.reason)}
                     aria-describedby="reason-help"
-                    placeholder="Share only what you are comfortable sharing…"
+                    placeholder="Briefly describe your symptoms or reason for consultation…"
                   />
                   <small id="reason-help">
-                    Up to 500 characters. Please use sample information.
+                    Up to 500 characters.
                   </small>
                   {errors.reason && (
                     <span className={styles.error}>
@@ -331,6 +374,7 @@ function BookingFlow({ doctorId }: { doctorId: number }) {
                     </span>
                   )}
                 </label>
+
                 <label className={styles.checkbox}>
                   <input
                     type="checkbox"
@@ -339,8 +383,7 @@ function BookingFlow({ doctorId }: { doctorId: number }) {
                     aria-describedby="consent-error"
                   />
                   <span>
-                    I agree to this demo booking. I understand that no real care
-                    is scheduled and my entries reset on reload.
+                    I confirm that the provided information is accurate and agree to clinic booking terms.
                   </span>
                 </label>
                 {errors.consent && (
@@ -348,6 +391,7 @@ function BookingFlow({ doctorId }: { doctorId: number }) {
                     {errors.consent.message}
                   </span>
                 )}
+
                 <hr className={styles.divider} />
                 <div className={`${styles.actions} ${styles.spread}`}>
                   <Button
@@ -362,19 +406,20 @@ function BookingFlow({ doctorId }: { doctorId: number }) {
                     Back
                   </Button>
                   <Button type="submit">
-                    Continue to payment
+                    Continue to review
                     <ArrowRight size={16} />
                   </Button>
                 </div>
               </form>
             </>
           )}
+
           {step === 2 && (
             <>
               <div className={styles.sectionHeader}>
                 <div>
                   <h2>Review your appointment</h2>
-                  <p>Check the details before confirming.</p>
+                  <p>Verify information before final confirmation.</p>
                 </div>
                 <Button
                   to={`/book/${doctorId}/details`}
@@ -384,27 +429,32 @@ function BookingFlow({ doctorId }: { doctorId: number }) {
                   Edit details
                 </Button>
               </div>
+
               <dl className={styles.detailGrid}>
                 <div>
                   <dt>Patient</dt>
                   <dd>{draft.patient?.patientName}</dd>
                 </div>
                 <div>
+                  <dt>Booking for</dt>
+                  <dd>{draft.patient?.bookingFor === 'myself' ? 'Self' : 'Other person'}</dd>
+                </div>
+                <div>
                   <dt>Email</dt>
-                  <dd>
-                    {draft.patient?.email.replace(/^(.{2}).*(@.*)$/, '$1•••$2')}
-                  </dd>
+                  <dd>{draft.patient?.email}</dd>
                 </div>
                 <div>
                   <dt>Phone</dt>
-                  <dd>
-                    ••••{draft.patient?.phone.replace(/\D/g, '').slice(-4)}
-                  </dd>
+                  <dd>{draft.patient?.phone}</dd>
+                </div>
+                <div>
+                  <dt>Date of birth</dt>
+                  <dd>{draft.patient?.dob}</dd>
                 </div>
                 <div>
                   <dt>Date & time</dt>
                   <dd>
-                    {formatDate(draft.date, true)} · {draft.time}
+                    {formatDate(draft.date, true)} · {draft.time} (UTC+7)
                   </dd>
                 </div>
                 {draft.patient?.reason && (
@@ -414,89 +464,41 @@ function BookingFlow({ doctorId }: { doctorId: number }) {
                   </div>
                 )}
               </dl>
+
               <Button to={`/book/${doctorId}`} variant="ghost" size="sm">
                 Edit date & time
               </Button>
+
               <hr className={styles.divider} />
-              <h2>Deposit payment · Demo</h2>
-              <p className={styles.help}>
-                This is a simulated payment. No money will be charged.
-              </p>
-              <div className={styles.form} style={{ marginTop: '1rem' }}>
-                <label className={styles.paymentOption}>
-                  <input
-                    type="radio"
-                    name="payment"
-                    checked={draft.paymentMethod === 'DEMO_CARD'}
-                    onChange={() => update({ paymentMethod: 'DEMO_CARD' })}
-                  />
-                  <CreditCard size={21} />
-                  <span>
-                    <strong>Demo card payment</strong>
-                    <small>
-                      Simulation only. No card details are requested.
-                    </small>
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '16px', backgroundColor: '#F0FDF4', borderRadius: '8px', border: '1px solid #BBF7D0', marginBottom: '1.5rem' }}>
+                <ShieldCheck size={24} color="#16A34A" style={{ flexShrink: 0, marginTop: '2px' }} />
+                <div>
+                  <strong style={{ display: 'block', color: '#166534', marginBottom: '4px' }}>
+                    Immediate Confirmation Policy
+                  </strong>
+                  <span style={{ fontSize: '0.9rem', color: '#15803D', lineHeight: 1.4 }}>
+                    Your appointment is confirmed immediately upon booking. No upfront deposit or online payment is collected at this stage. Consultation fees are settled directly at the clinic.
                   </span>
-                </label>
-                <label className={styles.paymentOption}>
-                  <input
-                    type="radio"
-                    name="payment"
-                    checked={draft.paymentMethod === 'DEMO_BANK'}
-                    onChange={() => update({ paymentMethod: 'DEMO_BANK' })}
-                  />
-                  <Landmark size={21} />
-                  <span>
-                    <strong>Demo bank transfer</strong>
-                    <small>No real transfer or QR payment.</small>
-                  </span>
-                </label>
-                <details className={styles.demoControls}>
-                  <summary>Demo controls · Test payment states</summary>
-                  <label className={styles.field}>
-                    Mock outcome
-                    <select
-                      disabled={submitting}
-                      value={outcome}
-                      onChange={(event) =>
-                        setOutcome(event.target.value as PaymentOutcome)
-                      }
-                    >
-                      {[
-                        'SUCCESS',
-                        'PENDING',
-                        'FAILED',
-                        'CANCELLED',
-                        'EXPIRED',
-                      ].map((value) => (
-                        <option key={value}>{value}</option>
-                      ))}
-                    </select>
-                  </label>
-                  {doctorId === 1 && (
+                </div>
+              </div>
+
+              {error && (
+                <div className={styles.errorBanner} role="alert" style={{ marginBottom: '1rem' }}>
+                  <p><strong>Unable to confirm booking:</strong> {error}</p>
+                  {error.toLowerCase().includes('unavailable') && (
                     <Button
-                      type="button"
+                      to={`/book/${doctorId}`}
                       variant="outline"
                       size="sm"
-                      disabled={submitting}
-                      onClick={() => {
-                        setAvailability(draft.date, draft.time, false);
-                        setError(
-                          'This time is no longer available. Choose another time before confirming.',
-                        );
-                      }}
+                      style={{ marginTop: '8px' }}
                     >
-                      Simulate slot conflict
+                      Choose another time slot
                     </Button>
                   )}
-                </details>
-              </div>
-              {error && (
-                <p className={styles.errorBanner} role="alert">
-                  {error}
-                </p>
+                </div>
               )}
-              <hr className={styles.divider} />
+
               <div className={`${styles.actions} ${styles.spread}`}>
                 <Button
                   disabled={submitting}
@@ -506,13 +508,15 @@ function BookingFlow({ doctorId }: { doctorId: number }) {
                   <ArrowLeft size={16} />
                   Back
                 </Button>
-                <Button onClick={submitPayment} loading={submitting}>
-                  {submitting ? 'Processing demo…' : 'Confirm demo payment'}
+                <Button onClick={submitBooking} loading={submitting}>
+                  <CheckCircle2 size={16} />
+                  {submitting ? 'Confirming appointment…' : 'Confirm appointment'}
                 </Button>
               </div>
             </>
           )}
         </div>
+
         <aside className={`${styles.card} ${styles.aside}`}>
           <h2>Your appointment</h2>
           <hr className={styles.divider} />
@@ -521,7 +525,7 @@ function BookingFlow({ doctorId }: { doctorId: number }) {
           <div className={styles.fact}>
             <MapPin />
             <div>
-              <small>Demo in-person consultation</small>
+              <small>In-person consultation</small>
               <strong>Smart Healthcare Clinic · Room {doctor.room}</strong>
             </div>
           </div>

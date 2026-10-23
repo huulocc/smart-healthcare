@@ -562,7 +562,12 @@
   color: #087454;
   background: #e9f9f0;
 }
-.cancelled {
+.pending {
+  color: #8c5a06;
+  background: #fff5db;
+}
+.cancelled,
+.no_show {
   color: #a53d37;
   background: #fff0ef;
 }

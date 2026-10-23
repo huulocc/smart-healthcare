@@ -1,31 +1,68 @@
-import { useState } from 'react';
-import { CalendarDays, Clock3, MapPin, Plus } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { CalendarDays, Clock3, MapPin, Plus, Loader2 } from 'lucide-react';
 import Button from '../../components/Button';
 import {
-  DemoNotice,
   EmptyState,
   Page,
   StatusBadge,
 } from '../../components/healthcare/HealthcareUI';
 import { useAppointments } from '../../context/AppointmentContext';
 import { formatDate } from '../../data/appointmentDemo';
+import {
+  getMyAppointments,
+  type AppointmentConfirmation,
+} from '../../api/bookingApi';
+import { getStoredToken } from '../../api/client';
 import styles from '../../components/healthcare/Healthcare.module.css';
 
 export default function Appointments() {
-  const { appointments: allAppointments, doctors } = useAppointments();
-  const appointments = allAppointments.filter(
-    (item) => item.source === 'booking',
-  );
+  const { doctors } = useAppointments();
+  const [appointments, setAppointments] = useState<AppointmentConfirmation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState('Upcoming');
   const tabs = ['Upcoming', 'Completed', 'Cancelled', 'All'];
+
+  const fetchAppointments = () => {
+    const token = getStoredToken();
+    if (!token) {
+      setLoading(false);
+      setAppointments([]);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    getMyAppointments({ view: 'ALL', size: 100 })
+      .then((res) => {
+        setAppointments(res.content || []);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setLoading(false);
+        setError(
+          err.response?.status === 401
+            ? 'Please log in to view your appointments.'
+            : 'Unable to load appointments.',
+        );
+      });
+  };
+
+  useEffect(() => {
+    fetchAppointments();
+  }, []);
+
   const matches = (status: string, value: string) =>
     value === 'All' ||
     (value === 'Upcoming'
-      ? status === 'CONFIRMED' || status === 'IN_PROGRESS'
+      ? status === 'CONFIRMED' || status === 'PENDING' || status === 'IN_PROGRESS'
       : status.toLowerCase() === value.toLowerCase());
+
   const filtered = appointments
     .filter((item) => matches(item.status, tab))
-    .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
+    .sort((a, b) => `${a.date}${a.startTime}`.localeCompare(`${b.date}${b.startTime}`));
+
   return (
     <Page crumbs={[{ label: 'My appointments' }]}>
       <div className={styles.heading}>
@@ -39,7 +76,7 @@ export default function Appointments() {
           Book an appointment
         </Button>
       </div>
-      <DemoNotice />
+
       <div
         className={styles.tabs}
         role="tablist"
@@ -60,13 +97,22 @@ export default function Appointments() {
           </button>
         ))}
       </div>
+
       <div
         id="appointment-results"
         role="tabpanel"
         aria-labelledby={`tab-${tab}`}
         className={styles.stack}
       >
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '3rem' }}>
+            <Loader2 className="spin" size={32} color="#026AA7" />
+          </div>
+        ) : error ? (
+          <div className={styles.errorBanner} role="alert">
+            {error}
+          </div>
+        ) : filtered.length === 0 ? (
           <EmptyState
             title={
               appointments.length === 0
@@ -75,7 +121,7 @@ export default function Appointments() {
             }
             description={
               appointments.length === 0
-                ? 'Find a doctor and choose a time. Demo bookings created during this session will appear here.'
+                ? 'Find a doctor and choose an available time. Appointments booked with our clinic will appear here.'
                 : 'Appointments with this status will appear here.'
             }
           >
@@ -83,7 +129,15 @@ export default function Appointments() {
           </EmptyState>
         ) : (
           filtered.map((item) => {
-            const doctor = doctors.find((value) => value.id === item.doctorId)!;
+            const doctor =
+              doctors.find((value) => value.id === item.doctor.id) || {
+                id: item.doctor.id,
+                name: item.doctor.name,
+                specialty: item.doctor.specialty,
+                department: item.doctor.departmentName ?? 'Cardiology',
+                room: `${item.doctor.id + 2}0${item.doctor.id}`,
+              };
+
             return (
               <article
                 key={item.id}
@@ -104,13 +158,13 @@ export default function Appointments() {
                     <StatusBadge status={item.status} />
                   </div>
                   <p>
-                    {doctor.specialty} · {item.patientName}
+                    {doctor.specialty} · {item.patientName} (Code: {item.appointmentCode})
                   </p>
                   <div className={styles.appointmentMeta}>
                     <CalendarDays />
                     {formatDate(item.date, true)}
                     <Clock3 />
-                    {item.time} (UTC+7)
+                    {item.startTime.substring(0, 5)} (UTC+7)
                     <MapPin />
                     Room {doctor.room}
                   </div>

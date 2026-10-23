@@ -2,10 +2,20 @@ import { DEPARTMENTS, DOCTORS } from './mockData';
 
 /** Explicit UI fixtures. No medical credentials, live prices, or real schedules. */
 export type AppointmentStatus =
-  'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  | 'PENDING'
+  | 'CONFIRMED'
+  | 'IN_PROGRESS'
+  | 'COMPLETED'
+  | 'CANCELLED'
+  | 'NO_SHOW';
+
 export type PaymentMethod = 'DEMO_CARD' | 'DEMO_BANK';
 export type PaymentOutcome =
-  'SUCCESS' | 'PENDING' | 'FAILED' | 'CANCELLED' | 'EXPIRED';
+  | 'SUCCESS'
+  | 'PENDING'
+  | 'FAILED'
+  | 'CANCELLED'
+  | 'EXPIRED';
 export interface PatientDetails {
   bookingFor: 'myself' | 'someone';
   patientName: string;

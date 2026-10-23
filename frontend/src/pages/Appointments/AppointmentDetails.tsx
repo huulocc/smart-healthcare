@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import {
   CalendarDays,
   CheckCircle2,
-  CreditCard,
-  Download,
+    Download,
+  Loader2,
   MapPin,
   RefreshCw,
   X,
@@ -12,7 +12,6 @@ import {
 import Button from '../../components/Button';
 import AvailabilityPicker from '../../components/healthcare/AvailabilityPicker';
 import {
-  DemoNotice,
   DoctorSummary,
   FeeSummary,
   Modal,
@@ -21,39 +20,84 @@ import {
   StatusBadge,
 } from '../../components/healthcare/HealthcareUI';
 import { useAppointments } from '../../context/AppointmentContext';
-import { dateKey, formatDate, money } from '../../data/appointmentDemo';
+import { dateKey, formatDate } from '../../data/appointmentDemo';
+import {
+  cancelAppointment,
+  cancelDoctorAppointment,
+  getAppointmentDetails,
+  getAppointmentHistory,
+  getDoctorAppointmentDetails,
+  rescheduleAppointment,
+  rescheduleDoctorAppointment,
+  updateDoctorAppointmentNotes,
+  updateDoctorAppointmentStatus,
+  type AppointmentConfirmation,
+  type AppointmentHistoryItem,
+} from '../../api/bookingApi';
 import styles from '../../components/healthcare/Healthcare.module.css';
 
 export default function AppointmentDetails() {
   const { id } = useParams();
   const location = useLocation();
   const isDoctor = location.pathname.startsWith('/doctor/');
-  const {
-    appointments,
-    doctors,
-    cancel,
-    reschedule,
-    pay,
-    setStatus,
-    getSlotStatus,
-  } = useAppointments();
-  const appointment = appointments.find(
-    (item) =>
-      item.id === id &&
-      (isDoctor ? item.doctorId === 1 : item.source === 'booking'),
-  );
-  const doctor = doctors.find((item) => item.id === appointment?.doctorId);
-  const [modal, setModal] = useState<
-    'cancel' | 'reschedule' | 'pay' | 'complete' | null
-  >(null);
+  const { doctors, refresh } = useAppointments();
+
+  const [appointment, setAppointment] = useState<AppointmentConfirmation | null>(null);
+  const [history, setHistory] = useState<AppointmentHistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+
+  const [modal, setModal] = useState<'cancel' | 'reschedule' | 'complete' | 'notes' | null>(null);
+  const [cancelReason, setCancelReason] = useState('Unable to attend at scheduled time');
   const [date, setDate] = useState(dateKey());
   const [time, setTime] = useState('');
-  const [notes, setNotes] = useState(appointment?.notes ?? '');
+  const [notes, setNotes] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState(
     (location.state as { notice?: string } | null)?.notice ?? '',
   );
-  if (!appointment || !doctor)
+
+  const loadData = () => {
+    if (!id) return;
+    setLoading(true);
+    setLoadError(false);
+
+    const fetchDetail = isDoctor
+      ? getDoctorAppointmentDetails(id)
+      : getAppointmentDetails(id);
+
+    fetchDetail
+      .then((data) => {
+        setAppointment(data);
+        setNotes(data.notes ?? '');
+        setLoading(false);
+        // Load history
+        getAppointmentHistory(id)
+          .then((hist) => setHistory(hist.content || []))
+          .catch(() => {});
+      })
+      .catch(() => {
+        setLoadError(true);
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [id, isDoctor]);
+
+  if (loading) {
+    return (
+      <Page crumbs={[{ label: 'Appointment details' }]}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '4rem' }}>
+          <Loader2 className="spin" size={36} color="#026AA7" />
+        </div>
+      </Page>
+    );
+  }
+
+  if (loadError || !appointment) {
     return (
       <NotFound
         title="Appointment not found"
@@ -61,24 +105,135 @@ export default function AppointmentDetails() {
         label="Back to appointments"
       />
     );
-  const canManage =
-    appointment.status === 'CONFIRMED' &&
-    new Date(`${appointment.date}T${appointment.time}:00+07:00`).getTime() >
-      Date.now();
-  function act(action: () => void, message: string) {
+  }
+
+  const doctor = doctors.find((item) => item.id === appointment.doctor.id) || {
+    id: appointment.doctor.id,
+    name: appointment.doctor.name,
+    specialty: appointment.doctor.specialty,
+    department: appointment.doctor.departmentName ?? 'Cardiology',
+    rating: '4.9',
+    reviews: 120,
+    image: appointment.doctor.avatarUrl || '/images/doctor_1.jpg',
+    fee: 100,
+    room: `${appointment.doctor.id + 2}0${appointment.doctor.id}`,
+    languages: 'English, Vietnamese',
+    about: '',
+    expertise: '',
+  };
+
+  const appointmentInstant = new Date(
+    `${appointment.date}T${appointment.startTime.substring(0, 5)}:00+07:00`,
+  ).getTime();
+  const isFuture = appointmentInstant > Date.now();
+  const canCancel =
+    (appointment.status === 'CONFIRMED' || appointment.status === 'PENDING') && isFuture;
+  const canReschedule = appointment.status === 'CONFIRMED' && isFuture;
+
+  async function handleCancel() {
+    setSubmitting(true);
+    setError('');
     try {
-      action();
-      setError('');
-      setNotice(message);
+      if (isDoctor) {
+        await cancelDoctorAppointment(appointment!.id, cancelReason);
+      } else {
+        await cancelAppointment(appointment!.id, cancelReason);
+      }
+      setNotice('Appointment cancelled successfully. Time slot has been released.');
       setModal(null);
-    } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : 'Unable to update this appointment.',
-      );
+      loadData();
+      refresh();
+    } catch (cause: unknown) {
+      let msg = 'Failed to cancel appointment.';
+      if (typeof cause === 'object' && cause !== null && 'response' in cause) {
+        const res = (cause as { response?: { data?: { detail?: string; message?: string } } }).response;
+        if (res?.data?.detail) msg = res.data.detail;
+        else if (res?.data?.message) msg = res.data.message;
+      }
+      setError(msg);
+    } finally {
+      setSubmitting(false);
     }
   }
+
+  async function handleReschedule() {
+    if (!time) {
+      setError('Please choose a valid time slot.');
+      return;
+    }
+    setSubmitting(true);
+    setError('');
+    try {
+      if (isDoctor) {
+        await rescheduleDoctorAppointment(appointment!.id, date, time);
+      } else {
+        await rescheduleAppointment(appointment!.id, date, time);
+      }
+      setNotice('Appointment rescheduled successfully.');
+      setModal(null);
+      loadData();
+      refresh();
+    } catch (cause: unknown) {
+      let msg = 'Failed to reschedule appointment.';
+      if (typeof cause === 'object' && cause !== null && 'response' in cause) {
+        const res = (cause as { response?: { data?: { detail?: string; message?: string } } }).response;
+        if (res?.data?.detail) msg = res.data.detail;
+        else if (res?.data?.message) msg = res.data.message;
+      }
+      setError(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleStatusChange(newStatus: 'IN_PROGRESS' | 'COMPLETED', statusNotes?: string) {
+    setSubmitting(true);
+    setError('');
+    try {
+      await updateDoctorAppointmentStatus(appointment!.id, newStatus, statusNotes);
+      setNotice(
+        newStatus === 'IN_PROGRESS'
+          ? 'Consultation started.'
+          : 'Consultation marked as completed.',
+      );
+      setModal(null);
+      loadData();
+      refresh();
+    } catch (cause: unknown) {
+      let msg = 'Failed to update consultation status.';
+      if (typeof cause === 'object' && cause !== null && 'response' in cause) {
+        const res = (cause as { response?: { data?: { detail?: string; message?: string } } }).response;
+        if (res?.data?.detail) msg = res.data.detail;
+        else if (res?.data?.message) msg = res.data.message;
+      }
+      setError(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleSaveNotes() {
+    setSubmitting(true);
+    setError('');
+    try {
+      await updateDoctorAppointmentNotes(appointment!.id, notes);
+      setNotice('Consultation notes updated successfully.');
+      setModal(null);
+      loadData();
+      refresh();
+    } catch (cause: unknown) {
+      let msg = 'Failed to update notes.';
+      if (typeof cause === 'object' && cause !== null && 'response' in cause) {
+        const res = (cause as { response?: { data?: { detail?: string; message?: string } } }).response;
+        if (res?.data?.detail) msg = res.data.detail;
+        else if (res?.data?.message) msg = res.data.message;
+      }
+      setError(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   function open(value: typeof modal) {
     setError('');
     setModal(value);
@@ -87,9 +242,12 @@ export default function AppointmentDetails() {
       setTime('');
     }
   }
+
   function downloadCalendar() {
     if (!appointment || !doctor) return;
-    const start = new Date(`${appointment.date}T${appointment.time}:00+07:00`);
+    const start = new Date(
+      `${appointment.date}T${appointment.startTime.substring(0, 5)}:00+07:00`,
+    );
     const stamp = (value: Date) =>
       value
         .toISOString()
@@ -98,15 +256,15 @@ export default function AppointmentDetails() {
     const content = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
-      'PRODID:-//Smart Healthcare//UI Demo//EN',
+      'PRODID:-//Smart Healthcare//Hospital Booking//EN',
       'BEGIN:VEVENT',
-      `UID:${appointment.id}@smart-healthcare.demo`,
+      `UID:${appointment.appointmentCode}@smart-healthcare.com`,
       `DTSTAMP:${stamp(new Date())}`,
       `DTSTART:${stamp(start)}`,
       `DTEND:${stamp(new Date(start.getTime() + 1800000))}`,
-      `SUMMARY:Demo consultation - ${doctor.name}`,
+      `SUMMARY:Medical consultation - ${doctor.name}`,
       `LOCATION:Smart Healthcare Clinic - Room ${doctor.room}`,
-      'DESCRIPTION:UI demo only. No real appointment has been booked.',
+      `DESCRIPTION:Appointment Code: ${appointment.appointmentCode}. Patient: ${appointment.patientName}.`,
       'END:VEVENT',
       'END:VCALENDAR',
     ].join('\r\n');
@@ -115,10 +273,11 @@ export default function AppointmentDetails() {
     );
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${appointment.id}.ics`;
+    link.download = `${appointment.appointmentCode}.ics`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
+
   return (
     <Page
       crumbs={[
@@ -133,7 +292,7 @@ export default function AppointmentDetails() {
         <div>
           <span className={styles.eyebrow}>Appointment overview</span>
           <h1>Appointment details</h1>
-          <p>Everything you need for your visit, in one place.</p>
+          <p>Clinical visit information and scheduling.</p>
         </div>
         {appointment.status !== 'CANCELLED' && (
           <Button variant="outline" onClick={downloadCalendar}>
@@ -142,37 +301,43 @@ export default function AppointmentDetails() {
           </Button>
         )}
       </div>
-      <DemoNotice />
+
       {notice && (
         <div className={styles.successBanner} role="status">
           <CheckCircle2 size={20} />
           {notice}
         </div>
       )}
+
       {error && !modal && (
         <div className={styles.errorBanner} role="alert">
           {error}
         </div>
       )}
+
       <div className={styles.twoColumn}>
         <div className={styles.stack}>
           <section className={styles.card}>
             <div className={styles.detailHeader}>
               <div>
                 <h2>In-person consultation</h2>
-                <p>Reference: {appointment.id}</p>
+                <p>Reference Code: <strong>{appointment.appointmentCode}</strong></p>
               </div>
               <StatusBadge status={appointment.status} />
             </div>
+
             <DoctorSummary doctor={doctor} />
             <hr className={styles.divider} />
+
             <div className={styles.facts}>
               <div className={styles.fact}>
                 <CalendarDays />
                 <div>
                   <small>Date & time</small>
                   <strong>{formatDate(appointment.date)}</strong>
-                  <strong>{appointment.time} · 30 minutes (UTC+7)</strong>
+                  <strong>
+                    {appointment.startTime.substring(0, 5)} - {appointment.endTime.substring(0, 5)} · 30 minutes (UTC+7)
+                  </strong>
                 </div>
               </div>
               <div className={styles.fact}>
@@ -186,16 +351,39 @@ export default function AppointmentDetails() {
                 </div>
               </div>
             </div>
+
             <hr className={styles.divider} />
             <h2>Patient information</h2>
             <dl className={styles.detailGrid} style={{ marginTop: '1.2rem' }}>
               <div>
-                <dt>Patient full name</dt>
+                <dt>Attendee name</dt>
                 <dd>{appointment.patientName}</dd>
+              </div>
+              <div>
+                <dt>Booking for</dt>
+                <dd>{appointment.bookingFor === 'myself' ? 'Self' : 'Other person'}</dd>
               </div>
               <div>
                 <dt>Phone number</dt>
                 <dd>{appointment.phone}</dd>
+              </div>
+              <div>
+                <dt>Email</dt>
+                <dd>{appointment.email}</dd>
+              </div>
+              <div>
+                <dt>Date of birth</dt>
+                <dd>{appointment.dob}</dd>
+              </div>
+              <div>
+                <dt>Consent timestamp</dt>
+                <dd>
+                  {appointment.consentAt
+                    ? new Date(appointment.consentAt).toLocaleString('en-GB', {
+                        timeZone: 'Asia/Ho_Chi_Minh',
+                      }) + ' (UTC+7)'
+                    : 'Recorded'}
+                </dd>
               </div>
               <div className={styles.fullSpan}>
                 <dt>Reason for visit</dt>
@@ -203,21 +391,25 @@ export default function AppointmentDetails() {
               </div>
               {appointment.notes && (
                 <div className={styles.fullSpan}>
-                  <dt>Consultation notes · Demo</dt>
-                  <dd>{appointment.notes}</dd>
+                  <dt>Consultation notes</dt>
+                  <dd style={{ whiteSpace: 'pre-wrap' }}>{appointment.notes}</dd>
+                </div>
+              )}
+              {appointment.cancellationReason && (
+                <div className={styles.fullSpan}>
+                  <dt style={{ color: '#DC2626' }}>Cancellation reason</dt>
+                  <dd style={{ color: '#B91C1C' }}>{appointment.cancellationReason}</dd>
                 </div>
               )}
             </dl>
-            {(canManage ||
-              (isDoctor && appointment.status === 'CONFIRMED')) && (
+
+            {/* Actions for Patient */}
+            {!isDoctor && canCancel && (
               <>
                 <hr className={styles.divider} />
                 <div className={styles.actions}>
-                  {!isDoctor && (
-                    <Button
-                      variant="outline"
-                      onClick={() => open('reschedule')}
-                    >
+                  {canReschedule && (
+                    <Button variant="outline" onClick={() => open('reschedule')}>
                       <RefreshCw size={16} />
                       Reschedule
                     </Button>
@@ -229,125 +421,103 @@ export default function AppointmentDetails() {
                 </div>
               </>
             )}
-            {isDoctor && appointment.status === 'CONFIRMED' && (
+
+            {/* Actions for Doctor */}
+            {isDoctor && (
               <>
                 <hr className={styles.divider} />
-                <Button
-                  onClick={() =>
-                    act(
-                      () => setStatus(appointment.id, 'IN_PROGRESS'),
-                      'Demo consultation started.',
-                    )
-                  }
-                >
-                  Start consultation
-                </Button>
-              </>
-            )}
-            {isDoctor && appointment.status === 'IN_PROGRESS' && (
-              <>
-                <hr className={styles.divider} />
-                <label className={styles.field}>
-                  Consultation notes (optional)
-                  <textarea
-                    value={notes}
-                    maxLength={2000}
-                    onChange={(event) => setNotes(event.target.value)}
-                    placeholder="Add sample consultation notes…"
-                  />
-                </label>
-                <div className={styles.actions} style={{ marginTop: '1rem' }}>
-                  <Button onClick={() => open('complete')}>
-                    <CheckCircle2 size={17} />
-                    Complete consultation
-                  </Button>
+                <div className={styles.actions}>
+                  {appointment.status === 'CONFIRMED' && (
+                    <>
+                      <Button onClick={() => handleStatusChange('IN_PROGRESS')}>
+                        Start consultation
+                      </Button>
+                      <Button variant="ghost" onClick={() => open('cancel')}>
+                        <X size={16} />
+                        Cancel appointment
+                      </Button>
+                    </>
+                  )}
+                  {appointment.status === 'IN_PROGRESS' && (
+                    <>
+                      <Button onClick={() => open('complete')}>
+                        <CheckCircle2 size={17} />
+                        Complete consultation
+                      </Button>
+                      <Button variant="outline" onClick={() => open('notes')}>
+                        Update notes
+                      </Button>
+                    </>
+                  )}
+                  {appointment.status === 'COMPLETED' && (
+                    <Button variant="outline" onClick={() => open('notes')}>
+                      Edit consultation notes
+                    </Button>
+                  )}
                 </div>
               </>
             )}
           </section>
+
+          {/* Audit trail / History */}
           <section className={styles.card}>
-            <h2>Before your visit</h2>
+            <h2>Lifecycle History</h2>
             <p className={styles.help}>
-              Please arrive 15 minutes early. Bring your identification,
-              previous medical records, and a list of medications you take.
+              Audit record of appointment state transitions.
             </p>
             <hr className={styles.divider} />
-            <h3>Appointment status</h3>
-            <ol className={styles.timeline} style={{ marginTop: '1rem' }}>
-              <li>
-                <strong>Demo booking created</strong>
-                <small>
-                  {new Date(appointment.createdAt).toLocaleString('en-GB', {
-                    timeZone: 'Asia/Ho_Chi_Minh',
-                  })}{' '}
-                  (UTC+7)
-                </small>
-              </li>
-              <li>
-                <strong>
-                  {appointment.paymentStatus === 'PAID'
-                    ? 'Simulated payment complete'
-                    : appointment.paymentStatus === 'REFUND_PENDING'
-                      ? 'Simulated refund pending'
-                      : 'Payment due at clinic'}
-                </strong>
-                <small>
-                  {appointment.paymentStatus === 'REFUND_PENDING'
-                    ? 'Demo state only; no refund will be processed.'
-                    : `${money(appointment.deposit)} deposit · No real transaction`}
-                </small>
-              </li>
-              <li>
-                <strong>
-                  {appointment.status === 'CANCELLED'
-                    ? 'Appointment cancelled'
-                    : appointment.status === 'COMPLETED'
-                      ? 'Consultation completed'
-                      : appointment.status === 'IN_PROGRESS'
-                        ? 'Consultation in progress'
-                        : 'Appointment confirmed'}
-                </strong>
-                <small>
-                  {formatDate(appointment.date, true)} at {appointment.time}{' '}
-                  (UTC+7)
-                </small>
-              </li>
-            </ol>
+            {history.length === 0 ? (
+              <ol className={styles.timeline} style={{ marginTop: '1rem' }}>
+                <li>
+                  <strong>Appointment created</strong>
+                  <small>
+                    {new Date(appointment.createdAt).toLocaleString('en-GB', {
+                      timeZone: 'Asia/Ho_Chi_Minh',
+                    })}{' '}
+                    (UTC+7)
+                  </small>
+                </li>
+                <li>
+                  <strong>Status: {appointment.status}</strong>
+                  <small>
+                    {formatDate(appointment.date, true)} at {appointment.startTime.substring(0, 5)} (UTC+7)
+                  </small>
+                </li>
+              </ol>
+            ) : (
+              <ol className={styles.timeline} style={{ marginTop: '1rem' }}>
+                {history.map((h) => (
+                  <li key={h.id}>
+                    <strong>Action: {h.action} · Status: {h.status}</strong>
+                    <small>
+                      {new Date(h.occurredAt).toLocaleString('en-GB', {
+                        timeZone: 'Asia/Ho_Chi_Minh',
+                      })}{' '}
+                      (UTC+7)
+                      {h.notes ? ` · Note: ${h.notes}` : ''}
+                      {h.cancellationReason ? ` · Reason: ${h.cancellationReason}` : ''}
+                    </small>
+                  </li>
+                ))}
+              </ol>
+            )}
           </section>
         </div>
+
         <aside className={`${styles.card} ${styles.aside}`}>
-          <h2>Payment summary</h2>
-          <FeeSummary fee={appointment.fee} />
+          <h2>Policy & Billing</h2>
+          <FeeSummary fee={doctor.fee} />
           <div className={styles.scheduleRow}>
-            <strong>Method</strong>
-            <span>
-              {appointment.paymentMethod === 'DEMO_CARD'
-                ? 'Demo card'
-                : 'Demo bank transfer'}
-            </span>
+            <strong>Payment policy</strong>
+            <span>Direct at clinic</span>
           </div>
           <div className={styles.scheduleRow}>
             <strong>Status</strong>
-            <span>
-              {appointment.paymentStatus === 'PAID'
-                ? 'Paid · Demo'
-                : appointment.paymentStatus === 'REFUND_PENDING'
-                  ? 'Refund pending · Demo'
-                  : appointment.status === 'CANCELLED'
-                    ? 'No payment due'
-                    : 'Unpaid'}
-            </span>
+            <span>{appointment.status}</span>
           </div>
-          {appointment.paymentStatus === 'UNPAID' &&
-            appointment.status !== 'CANCELLED' &&
-            !isDoctor && (
-              <div style={{ marginTop: '1.3rem' }}>
-                <Button onClick={() => open('pay')} fullWidth>
-                  <CreditCard size={17} />
-                  Simulate payment
-                </Button>
-              </div>
-            )}
+          <div style={{ marginTop: '1rem', fontSize: '0.85rem', color: '#64748B' }}>
+            No online pre-payment is collected. Fees are paid in person upon check-in at the clinic desk.
+          </div>
           <hr className={styles.divider} />
           <Button
             to={isDoctor ? '/doctor/appointments' : '/my-appointments'}
@@ -358,44 +528,45 @@ export default function AppointmentDetails() {
           </Button>
         </aside>
       </div>
+
+      {/* Modals */}
       {modal && (
         <Modal
           title={
             modal === 'cancel'
               ? 'Cancel this appointment?'
-              : modal === 'pay'
-                ? 'Simulate online payment'
-                : modal === 'complete'
-                  ? 'Complete this consultation?'
+              : modal === 'complete'
+                ? 'Complete this consultation?'
+                : modal === 'notes'
+                  ? 'Consultation Notes'
                   : 'Reschedule appointment'
           }
           onClose={() => setModal(null)}
         >
-          {modal === 'complete' && (
-            <p>
-              Mark this demo consultation as completed and save the sample
-              notes? This updates the dashboard.
-            </p>
-          )}
           {modal === 'cancel' && (
             <>
               <p>
                 Your slot on {formatDate(appointment.date, true)} at{' '}
-                {appointment.time} will be released.
+                {appointment.startTime.substring(0, 5)} will be released back to the clinic schedule.
               </p>
-              {appointment.paymentStatus === 'PAID' && (
-                <p className={styles.help}>
-                  The simulated payment will be marked as refund pending. No
-                  real refund is processed.
-                </p>
-              )}
+              <label className={styles.field} style={{ marginTop: '1rem' }}>
+                Reason for cancellation *
+                <input
+                  type="text"
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="Enter reason..."
+                  maxLength={255}
+                />
+              </label>
             </>
           )}
+
           {modal === 'reschedule' && (
             <AvailabilityPicker
               doctorId={doctor.id}
-              appointments={appointments}
-              excludeId={appointment.id}
+              appointments={[]}
+              excludeId={String(appointment.id)}
               date={date}
               time={time}
               onChange={(day, slot) => {
@@ -404,77 +575,77 @@ export default function AppointmentDetails() {
               }}
             />
           )}
-          {modal === 'pay' && (
+
+          {modal === 'complete' && (
             <>
               <p>
-                Confirm a demo payment of{' '}
-                <strong>{money(appointment.fee)}</strong> for this consultation.
+                Mark consultation as completed? You can record clinical notes below.
               </p>
-              <p className={styles.help}>
-                This action only updates the UI. No card information is
-                collected and no money is charged.
-              </p>
+              <label className={styles.field} style={{ marginTop: '1rem' }}>
+                Consultation notes
+                <textarea
+                  value={notes}
+                  maxLength={500}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Document consultation findings and recommendations…"
+                />
+              </label>
             </>
           )}
+
+          {modal === 'notes' && (
+            <label className={styles.field} style={{ marginTop: '1rem' }}>
+              Consultation notes
+              <textarea
+                value={notes}
+                maxLength={500}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Document consultation findings and recommendations…"
+              />
+            </label>
+          )}
+
           {error && (
-            <p className={styles.errorBanner} role="alert">
+            <p className={styles.errorBanner} role="alert" style={{ marginTop: '1rem' }}>
               {error}
             </p>
           )}
+
           <hr className={styles.divider} />
           <div className={`${styles.actions} ${styles.spread}`}>
-            <Button variant="outline" onClick={() => setModal(null)}>
+            <Button variant="outline" onClick={() => setModal(null)} disabled={submitting}>
               {modal === 'cancel' ? 'Keep appointment' : 'Go back'}
             </Button>
-            {modal === 'cancel' ? (
+
+            {modal === 'cancel' && (
               <Button
                 className={styles.dangerButton}
-                onClick={() =>
-                  act(
-                    () => cancel(appointment.id),
-                    'Demo appointment cancelled. The time slot has been released.',
-                  )
-                }
+                onClick={handleCancel}
+                loading={submitting}
               >
                 Yes, cancel appointment
               </Button>
-            ) : modal === 'pay' ? (
+            )}
+
+            {modal === 'reschedule' && (
               <Button
-                onClick={() =>
-                  act(
-                    () => pay(appointment.id),
-                    'Simulated payment successful. No money was charged.',
-                  )
-                }
-              >
-                Confirm demo payment
-              </Button>
-            ) : modal === 'complete' ? (
-              <Button
-                onClick={() =>
-                  act(
-                    () => setStatus(appointment.id, 'COMPLETED', notes.trim()),
-                    'Demo consultation marked as completed.',
-                  )
-                }
-              >
-                Yes, mark completed
-              </Button>
-            ) : (
-              <Button
-                disabled={
-                  !time ||
-                  getSlotStatus(doctor.id, date, time, appointment.id) !==
-                    'available'
-                }
-                onClick={() =>
-                  act(
-                    () => reschedule(appointment.id, date, time),
-                    'Your demo appointment has been rescheduled.',
-                  )
-                }
+                disabled={!time || submitting}
+                onClick={handleReschedule}
+                loading={submitting}
               >
                 Confirm new time
+              </Button>
+            )}
+
+            {modal === 'complete' && (
+              <Button onClick={() => handleStatusChange('COMPLETED', notes)} loading={submitting}>
+                Yes, mark completed
+              </Button>
+            )}
+
+            {modal === 'notes' && (
+              <Button onClick={handleSaveNotes} loading={submitting}>
+                Save notes
               </Button>
             )}
           </div>
