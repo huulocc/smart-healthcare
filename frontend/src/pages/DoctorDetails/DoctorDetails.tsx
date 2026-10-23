@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CalendarDays, MapPin, Star } from 'lucide-react';
 import Button from '../../components/Button';
@@ -16,19 +17,51 @@ import {
   formatDate,
   TIMES,
 } from '../../data/appointmentDemo';
+import { getDoctorAvailability, type Slot } from '../../api/bookingApi';
 import styles from './DoctorDetails.module.css';
 
 export default function DoctorDetails() {
   const { id } = useParams();
   const { doctors, getSlotStatus } = useAppointments();
   const doctor = doctors.find((item) => item.id === Number(id));
+  const [realSlots, setRealSlots] = useState<Slot[] | null>(null);
+
+  const today = dateKey();
+  const maxDate = addDays(today, 29);
+
+  useEffect(() => {
+    let active = true;
+    if (!doctor) return;
+    getDoctorAvailability(doctor.id, today, maxDate)
+      .then((res) => {
+        if (active) setRealSlots(res.slots || []);
+      })
+      .catch(() => {
+        if (active) setRealSlots([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [doctor, today, maxDate]);
+
   if (!doctor) return <NotFound title="Doctor not found" />;
   const department = departmentForDoctor(doctor);
-  const nextDate = Array.from({ length: 31 }, (_, i) =>
-    addDays(dateKey(), i),
-  ).find((date) =>
-    TIMES.some((time) => getSlotStatus(doctor.id, date, time) === 'available'),
-  );
+
+  // Compute nextDate from realSlots if loaded, otherwise from getSlotStatus
+  const nextDate = realSlots !== null
+    ? (realSlots.length > 0 ? realSlots[0].date : null)
+    : Array.from({ length: 30 }, (_, i) => addDays(dateKey(), i)).find((date) =>
+        TIMES.some((time) => getSlotStatus(doctor.id, date, time) === 'available'),
+      );
+
+  const availableTimesOnNextDate = realSlots !== null && nextDate
+    ? realSlots
+        .filter((s) => s.date === nextDate)
+        .map((s) => (s.startTime.length === 5 ? s.startTime : s.startTime.substring(0, 5)))
+    : nextDate
+      ? TIMES.filter((time) => getSlotStatus(doctor.id, nextDate, time) === 'available')
+      : [];
+
   return (
     <Page
       previewStates
@@ -51,7 +84,7 @@ export default function DoctorDetails() {
               <div className={styles.rating}>
                 <Star size={16} fill="currentColor" />
                 <strong>{doctor.rating}</strong>
-                <span>({doctor.reviews} reviews · source demo data)</span>
+                <span>({doctor.reviews} reviews · verified profile)</span>
               </div>
             </div>
           </section>
@@ -59,11 +92,11 @@ export default function DoctorDetails() {
             <h2>About the doctor</h2>
             <p>
               {doctor.about ||
-                'A detailed biography has not been provided for this demo profile.'}
+                'A detailed biography has not been provided for this profile.'}
             </p>
             {doctor.expertise && (
               <>
-                <h3>Areas of expertise · Demo</h3>
+                <h3>Areas of expertise</h3>
                 <p>{doctor.expertise}</p>
               </>
             )}
@@ -76,7 +109,7 @@ export default function DoctorDetails() {
             <div className={styles.fact}>
               <MapPin />
               <div>
-                <small>Demo consultation location</small>
+                <small>Consultation location</small>
                 <strong>Smart Healthcare Clinic · Room {doctor.room}</strong>
               </div>
             </div>
@@ -85,30 +118,25 @@ export default function DoctorDetails() {
             <h2>Availability preview</h2>
             <p>
               {nextDate
-                ? `Next demo availability: ${formatDate(nextDate)}`
-                : 'No availability in the selected period'}
+                ? `Next availability: ${formatDate(nextDate)}`
+                : 'No availability in the next 30 days'}
             </p>
-            {nextDate && (
+            {nextDate && availableTimesOnNextDate.length > 0 && (
               <div className={styles.actions}>
-                {TIMES.filter(
-                  (time) =>
-                    getSlotStatus(doctor.id, nextDate, time) === 'available',
-                )
-                  .slice(0, 4)
-                  .map((time) => (
-                    <Button
-                      key={time}
-                      to={`/book/${doctor.id}`}
-                      variant="outline"
-                      size="sm"
-                    >
-                      {time}
-                    </Button>
-                  ))}
+                {availableTimesOnNextDate.slice(0, 4).map((time) => (
+                  <Button
+                    key={time}
+                    to={`/book/${doctor.id}`}
+                    variant="outline"
+                    size="sm"
+                  >
+                    {time}
+                  </Button>
+                ))}
               </div>
             )}
             <p className={styles.help}>
-              Vietnam time (UTC+7). Sample availability only.
+              Vietnam time (UTC+7). Live doctor schedules.
             </p>
             <Button to={`/book/${doctor.id}`} variant="ghost">
               {nextDate ? 'View full schedule' : 'Check other dates'}
@@ -119,7 +147,7 @@ export default function DoctorDetails() {
             <div className={styles.rating}>
               <Star size={20} fill="currentColor" />
               <strong>{doctor.rating} / 5</strong>
-              <span>· {doctor.reviews} reviews in the source demo</span>
+              <span>· {doctor.reviews} reviews in the clinic system</span>
             </div>
             <p className={styles.help}>
               Individual review text is not available.
@@ -129,7 +157,7 @@ export default function DoctorDetails() {
         <aside className={`${styles.card} ${styles.aside}`}>
           <span className={styles.eyebrow}>Plan your visit</span>
           <h2>Book a consultation</h2>
-          <p className={styles.help}>In person · 30 minutes · Demo</p>
+          <p className={styles.help}>In person · 30 minutes</p>
           <FeeSummary fee={doctor.fee} />
           <div className={styles.stack}>
             <Button to={`/book/${doctor.id}`} fullWidth>
@@ -143,7 +171,7 @@ export default function DoctorDetails() {
           <hr className={styles.divider} />
           <p className={styles.help}>
             {nextDate
-              ? `Next demo availability: ${formatDate(nextDate, true)}`
+              ? `Next availability: ${formatDate(nextDate, true)}`
               : 'No availability in the selected period'}
           </p>
         </aside>

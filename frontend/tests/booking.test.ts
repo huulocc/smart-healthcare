@@ -12,12 +12,12 @@ import {
 import { patientSchema } from '../src/schemas/bookingSchemas';
 
 const patient = {
-  bookingFor: 'myself',
+  bookingFor: 'myself' as const,
   patientName: 'Nguyễn Demo',
   email: 'demo@example.test',
   phone: '+84 900 000 000',
-  dob: '',
-  reason: '',
+  dob: '2000-01-01',
+  reason: 'General consultation',
   consent: true,
 };
 
@@ -27,7 +27,7 @@ test('product date keys remain correct across UTC midnight and month/year bounda
   assert.equal(addDays('2028-02-28', 1), '2028-02-29');
 });
 
-test('patient schema accepts Vietnamese names and an optional reason', () => {
+test('patient schema accepts Vietnamese names and a valid reason', () => {
   assert.equal(patientSchema.safeParse(patient).success, true);
   assert.equal(
     patientSchema.parse({ ...patient, patientName: '  Nguyễn Demo  ' })
@@ -43,6 +43,8 @@ test('invalid contact data and missing consent cannot reach payment', () => {
     { phone: '1234' },
     { phone: '1234567890123456' },
     { consent: false },
+    { dob: '' },
+    { reason: '   ' },
   ]) {
     assert.equal(
       patientSchema.safeParse({ ...patient, ...changes }).success,

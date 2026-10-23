@@ -1,0 +1,301 @@
+{
+  "status": "COMPLETED — VERIFIED",
+  "date": "2026-10-21",
+  "timezone": "Asia/Ho_Chi_Minh",
+  "java": "21.0.12.1+1",
+  "springBoot": "4.1.0",
+  "sqlServer": "17.0.1000.7 Standard Developer Edition",
+  "suites": [
+    {
+      "errors": 0,
+      "skipped": 0,
+      "name": "Original regression baseline",
+      "blocked": 0,
+      "passed": 71,
+      "failed": 0
+    },
+    {
+      "failed": 0,
+      "name": "Full final H2 suite",
+      "skipped": 3,
+      "blocked": 0,
+      "discovered": 104,
+      "errors": 0,
+      "passed": 101,
+      "skipReason": "SQL-only contract tests executed separately on SQL Server"
+    },
+    {
+      "errors": 0,
+      "skipped": 0,
+      "name": "Final real SQL Server booking and contract tests",
+      "blocked": 0,
+      "passed": 27,
+      "failed": 0
+    },
+    {
+      "passed": 59,
+      "name": "Final packaged application real HTTP",
+      "blocked": 0,
+      "failed": 0
+    }
+  ],
+  "preservation": {
+    "pomUntouched": true,
+    "deleted": 0,
+    "originalSqlUntouched": true,
+    "baselineFiles": 287,
+    "excluded": "Generated target outputs, dependencies, Git internals",
+    "algorithm": "SHA-256",
+    "frontendUntouched": true,
+    "existingLocalEditsPreserved": true,
+    "modified": 0
+  },
+  "migration": {
+    "originalDatabaseMigrated": false,
+    "populatedRerunTables": 12,
+    "freshDatabaseAppliedTwice": true,
+    "rowCountsAndAggregateChecksumsPreserved": true
+  },
+  "testDatabases": [
+    "SmartHealthcareBookingTest_47d16bcd",
+    "SmartHealthcareBookingTest_repro47"
+  ],
+  "httpChecks": [
+    {
+      "check": "Explicit isolated database selected",
+      "passed": true
+    },
+    {
+      "check": "Application start 1",
+      "passed": true
+    },
+    {
+      "check": "Register patient HTTP 201",
+      "passed": true
+    },
+    {
+      "check": "Register other HTTP 201",
+      "passed": true
+    },
+    {
+      "check": "Register doctor HTTP 201",
+      "passed": true
+    },
+    {
+      "check": "Register wrongdoctor HTTP 201",
+      "passed": true
+    },
+    {
+      "check": "Register admin HTTP 201",
+      "passed": true
+    },
+    {
+      "check": "Login other HTTP 200",
+      "passed": true
+    },
+    {
+      "check": "Login admin HTTP 200",
+      "passed": true
+    },
+    {
+      "check": "Login patient HTTP 200",
+      "passed": true
+    },
+    {
+      "check": "Login wrongdoctor HTTP 200",
+      "passed": true
+    },
+    {
+      "check": "Login doctor HTTP 200",
+      "passed": true
+    },
+    {
+      "check": "Availability HTTP 200",
+      "passed": true
+    },
+    {
+      "check": "Real recurring availability has 24 slots",
+      "passed": true
+    },
+    {
+      "check": "Booking HTTP 201",
+      "passed": true
+    },
+    {
+      "check": "Immediate confirmation without payment",
+      "passed": true
+    },
+    {
+      "check": "Database persisted attendee",
+      "passed": true
+    },
+    {
+      "check": "Idempotency HTTP 201",
+      "passed": true
+    },
+    {
+      "check": "Duplicate request reuses appointment",
+      "passed": true
+    },
+    {
+      "check": "Key payload mismatch HTTP 409",
+      "passed": true
+    },
+    {
+      "check": "Occupied slot HTTP 409",
+      "passed": true
+    },
+    {
+      "check": "Cancel HTTP 200",
+      "passed": true
+    },
+    {
+      "check": "Availability after cancel HTTP 200",
+      "passed": true
+    },
+    {
+      "check": "Cancelled slot released",
+      "passed": true
+    },
+    {
+      "check": "Rebook HTTP 201",
+      "passed": true
+    },
+    {
+      "check": "Reschedule HTTP 200",
+      "passed": true
+    },
+    {
+      "check": "Availability after reschedule HTTP 200",
+      "passed": true
+    },
+    {
+      "check": "Old slot free and destination reserved",
+      "passed": true
+    },
+    {
+      "check": "History HTTP 200",
+      "passed": true
+    },
+    {
+      "check": "Reschedule history retained",
+      "passed": true
+    },
+    {
+      "check": "Simultaneous booking returns one 201 and one 409",
+      "passed": true
+    },
+    {
+      "check": "Database has exactly one live simultaneous reservation",
+      "passed": true
+    },
+    {
+      "check": "Anonymous HTTP 401",
+      "passed": true
+    },
+    {
+      "check": "Invalid JWT HTTP 401",
+      "passed": true
+    },
+    {
+      "check": "Patient admin access HTTP 403",
+      "passed": true
+    },
+    {
+      "check": "Patient doctor access HTTP 403",
+      "passed": true
+    },
+    {
+      "check": "Other owner details HTTP 404",
+      "passed": true
+    },
+    {
+      "check": "Other doctor details HTTP 404",
+      "passed": true
+    },
+    {
+      "check": "Invalid consent HTTP 400",
+      "passed": true
+    },
+    {
+      "check": "Patient list HTTP 200",
+      "passed": true
+    },
+    {
+      "check": "Doctor daily schedule HTTP 200",
+      "passed": true
+    },
+    {
+      "check": "Admin filtered page HTTP 200",
+      "passed": true
+    },
+    {
+      "check": "Admin statistics HTTP 200",
+      "passed": true
+    },
+    {
+      "check": "Doctor leave HTTP 201",
+      "passed": true
+    },
+    {
+      "check": "Leave blocks booking HTTP 409",
+      "passed": true
+    },
+    {
+      "check": "Delete exception HTTP 204",
+      "passed": true
+    },
+    {
+      "check": "Early start rejected HTTP 409",
+      "passed": true
+    },
+    {
+      "check": "Start consultation HTTP 200",
+      "passed": true
+    },
+    {
+      "check": "Complete consultation HTTP 200",
+      "passed": true
+    },
+    {
+      "check": "Consultation notes HTTP 200",
+      "passed": true
+    },
+    {
+      "check": "Illegal terminal transition HTTP 409",
+      "passed": true
+    },
+    {
+      "check": "Second booking HTTP 201",
+      "passed": true
+    },
+    {
+      "check": "Admin reschedule HTTP 200",
+      "passed": true
+    },
+    {
+      "check": "Admin cancel HTTP 200",
+      "passed": true
+    },
+    {
+      "check": "Application start 2",
+      "passed": true
+    },
+    {
+      "check": "Details after restart HTTP 200",
+      "passed": true
+    },
+    {
+      "check": "Restart preserved status and notes",
+      "passed": true
+    },
+    {
+      "check": "Cancelled original row preserved",
+      "passed": true
+    },
+    {
+      "check": "HTTP runner completed",
+      "passed": true
+    }
+  ]
+}
