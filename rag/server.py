@@ -15,7 +15,7 @@ target only, with no edit to the React code.
 import json
 import time
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
@@ -26,6 +26,7 @@ from generate import answer as generate_answer
 from generate import answer_stream
 from llm import describe, embed
 from retrieve import retrieve
+from triage import ToolError, recommend
 
 MAX_QUESTION_CHARS = 500
 
@@ -57,6 +58,20 @@ class Source(BaseModel):
 class ChatResponse(BaseModel):
     answer: str
     sources: list[Source]
+    elapsed_seconds: float
+
+
+class TriageResponse(BaseModel):
+    urgency: str
+    department_id: int | None
+    department_name: str | None
+    doctor_id: int | None
+    doctor_name: str | None
+    reason: str
+    safety_message: str
+    source_ids: list[str]
+    sources: list[Source]
+    tools_called: list[str]
     elapsed_seconds: float
 
 
@@ -134,6 +149,33 @@ def _source_payload(hits):
         }
         for hit in hits
     ]
+
+
+@app.post("/api/chat/triage", response_model=TriageResponse)
+def triage(request: ChatRequest, authorization: str | None = Header(default=None)):
+    """Symptom-to-department recommendation using live, authenticated clinic data."""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Sign in to use department guidance.")
+    question = request.question.strip()
+    if not question:
+        raise HTTPException(status_code=400, detail="Question is empty.")
+    started = time.time()
+    try:
+        hits = retrieve(question, k=config.TOP_K)
+        decision, used_tools, department_name, doctor_name = recommend(question, hits, authorization[7:])
+    except ToolError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ModelError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return TriageResponse(
+        **decision.model_dump(),
+        department_name=department_name,
+        doctor_name=doctor_name,
+        sources=[Source(**source) for source in _source_payload(hits)
+                 if source["section"] in decision.source_ids],
+        tools_called=used_tools,
+        elapsed_seconds=round(time.time() - started, 1),
+    )
 
 
 @app.post("/api/chat/stream")

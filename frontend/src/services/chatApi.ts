@@ -4,6 +4,8 @@
  * Calls relative paths only, so the same code works whether the request is
  * proxied to the Python service (now) or handled by Spring Boot (later).
  */
+import { getStoredToken } from '../api/client';
+
 
 export interface ChatSource {
   section: string;
@@ -17,6 +19,42 @@ export interface ChatReply {
   answer: string;
   sources: ChatSource[];
   elapsed_seconds: number;
+}
+
+export interface TriageReply {
+  urgency: 'routine' | 'soon' | 'emergency' | 'uncertain';
+  department_id: number | null;
+  department_name: string | null;
+  doctor_id: number | null;
+  doctor_name: string | null;
+  reason: string;
+  safety_message: string;
+  source_ids: string[];
+  sources: ChatSource[];
+  tools_called: string[];
+  elapsed_seconds: number;
+}
+
+export async function requestDepartmentGuidance(question: string): Promise<TriageReply> {
+  const token = getStoredToken();
+  if (!token) throw new ChatError('Sign in to get department guidance.');
+  let response: Response;
+  try {
+    response = await fetch('/api/chat/triage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ question }),
+    });
+  } catch {
+    throw new ChatError('Could not reach the assistant. Please try again.');
+  }
+  if (response.status === 401 || response.status === 403) {
+    throw new ChatError('Your session has expired. Sign in again for department guidance.');
+  }
+  if (!response.ok) {
+    throw new ChatError('Department guidance is unavailable right now. Please try again.');
+  }
+  return (await response.json()) as TriageReply;
 }
 
 export interface HealthStatus {

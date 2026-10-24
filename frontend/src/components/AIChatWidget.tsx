@@ -3,8 +3,10 @@ import styles from './AIChatWidget.module.css';
 import {
   ChatError,
   checkChatHealth,
+  requestDepartmentGuidance,
   streamChatMessage,
   type ChatSource,
+  type TriageReply,
 } from '../services/chatApi';
 
 /** What the assistant is doing, driven by real stream events rather than a timer. */
@@ -23,6 +25,7 @@ interface Message {
   timestamp: Date;
   sources?: ChatSource[];
   isError?: boolean;
+  triage?: TriageReply;
 }
 
 const AIChatWidget = ({ inline = false }: { inline?: boolean }) => {
@@ -30,12 +33,13 @@ const AIChatWidget = ({ inline = false }: { inline?: boolean }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: 'Hello, and thank you for visiting Smart Healthcare. I can answer questions about the asthma information leaflet.',
+      text: 'I can answer questions from patient leaflets or suggest a department based on your symptoms. Sign in for department guidance.',
       sender: 'bot',
       timestamp: new Date()
     }
   ]);
   const [inputValue, setInputValue] = useState('');
+  const [guidanceMode, setGuidanceMode] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [pending, setPending] = useState<Pending | null>(null);
   const [waitedSeconds, setWaitedSeconds] = useState(0);
@@ -86,6 +90,19 @@ const AIChatWidget = ({ inline = false }: { inline?: boolean }) => {
     let capturedSources: ChatSource[] = [];
 
     try {
+      if (guidanceMode) {
+        const triage = await requestDepartmentGuidance(question);
+        setMessages(prev => [...prev, {
+          id: `${Date.now()}-triage`,
+          text: triage.reason,
+          sender: 'bot',
+          timestamp: new Date(),
+          sources: triage.sources,
+          triage,
+        }]);
+        setIsOffline(false);
+        return;
+      }
       const full = await streamChatMessage(question, {
         onSources: sources => {
           capturedSources = sources;
@@ -131,7 +148,7 @@ const AIChatWidget = ({ inline = false }: { inline?: boolean }) => {
     Array.from(new Map(sources.map(s => [s.section, s])).values());
 
   const phaseLabel = (p: Pending) => {
-    if (p.phase === 'searching') return 'Searching the leaflets';
+    if (p.phase === 'searching') return guidanceMode ? 'Checking clinic information' : 'Searching the leaflets';
     if (p.phase === 'reading') {
       return `Reading ${p.sources.length} section${p.sources.length === 1 ? '' : 's'}`;
     }
@@ -187,7 +204,17 @@ const AIChatWidget = ({ inline = false }: { inline?: boolean }) => {
                 {msg.sender === 'bot' && <div className={styles.msgAvatar}>AI</div>}
                 <div className={styles.messageContent}>
                   <div className={`${styles.bubble} ${msg.isError ? styles.errorBubble : ''}`}>
-                    {msg.text}
+                    {msg.triage ? (
+                      <div className={styles.guidanceResult}>
+                        <strong>{msg.triage.urgency === 'emergency'
+                          ? 'Seek urgent care'
+                          : msg.triage.department_name ?? 'Department unclear'}</strong>
+                        {msg.triage.doctor_name && <span>Doctor: {msg.triage.doctor_name}</span>}
+                        <span>{msg.triage.reason}</span>
+                        <span>{msg.triage.safety_message}</span>
+                        <small>Guidance only; a clinician should assess your symptoms.</small>
+                      </div>
+                    ) : msg.text}
                   </div>
                   {msg.sources && msg.sources.length > 0 && renderSources(msg.sources)}
                   <div className={styles.time}>{msg.sender === 'bot' ? 'Virtual Agent' : 'You'} - {formatTime(msg.timestamp)}</div>
@@ -225,11 +252,17 @@ const AIChatWidget = ({ inline = false }: { inline?: boolean }) => {
             <div ref={messagesEndRef} />
           </div>
 
+          <div className={styles.guidanceModes} role="group" aria-label="Assistant mode">
+            <button type="button" aria-pressed={!guidanceMode} disabled={isSending}
+              onClick={() => setGuidanceMode(false)}>Ask about leaflets</button>
+            <button type="button" aria-pressed={guidanceMode} disabled={isSending}
+              onClick={() => setGuidanceMode(true)}>Suggest a department</button>
+          </div>
           <form className={styles.inputArea} onSubmit={handleSendMessage}>
             <input
               type="text"
               className={styles.input}
-              placeholder={isSending ? 'Waiting for an answer...' : 'Type your message'}
+              placeholder={isSending ? 'Waiting for an answer...' : guidanceMode ? 'Describe your symptoms' : 'Type your message'}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               // Enter is how people expect to send a chat message; relying on
