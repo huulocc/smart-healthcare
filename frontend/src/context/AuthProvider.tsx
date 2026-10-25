@@ -44,17 +44,19 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = useCallback(
-    async (email: string, password: string, rememberMe = false) => {
+    async (email: string, password: string, rememberMe = false): Promise<User> => {
       const { accessToken, user } = await loginRequest(email, password, rememberMe);
       keepSession(accessToken, user, rememberMe);
+      return user;
     },
     [keepSession],
   );
 
   const loginWithGoogle = useCallback(
-    async (credential: string, rememberMe = false) => {
+    async (credential: string, rememberMe = false): Promise<User> => {
       const { accessToken, user } = await googleLoginRequest(credential, rememberMe);
       keepSession(accessToken, user, rememberMe);
+      return user;
     },
     [keepSession],
   );

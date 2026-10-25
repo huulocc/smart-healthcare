@@ -1,16 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import Button from '../../components/Button';
 import {
   Modal,
   Page,
 } from '../../components/healthcare/HealthcareUI';
-import { useAppointments } from '../../context/AppointmentContext';
 import {
   addDays,
   dateKey,
   formatDate,
-  TIMES,
 } from '../../data/appointmentDemo';
 import {
   addDoctorAvailabilityException,
@@ -18,16 +16,26 @@ import {
   getDoctorAvailability,
   getDoctorAvailabilityExceptions,
   getDoctorAppointments,
+  getDoctorMe,
+  getDoctorSchedules,
   type AvailabilityExceptionItem,
   type Slot,
   type AppointmentConfirmation,
+  type DoctorProfile,
+  type DoctorWeeklyScheduleSlot,
 } from '../../api/bookingApi';
-import { getMyProfile } from '../../api/userApi';
 import styles from './DoctorSchedule.module.css';
 
+// Default half-hour slots spanning standard medical clinic hours
+const DEFAULT_GRID_TIMES = [
+  '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
+  '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
+  '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
+  '17:00', '17:30',
+];
+
 export default function DoctorSchedule() {
-  const { doctors } = useAppointments();
-  const [doctorId, setDoctorId] = useState<number>(1);
+  const [doctor, setDoctor] = useState<DoctorProfile | null>(null);
   const [offset, setOffset] = useState(0);
   const [view, setView] = useState('Week');
   const [selected, setSelected] = useState<{
@@ -36,6 +44,7 @@ export default function DoctorSchedule() {
   } | null>(null);
 
   const [serverSlots, setServerSlots] = useState<Slot[]>([]);
+  const [weeklySchedules, setWeeklySchedules] = useState<DoctorWeeklyScheduleSlot[]>([]);
   const [exceptions, setExceptions] = useState<AvailabilityExceptionItem[]>([]);
   const [bookedAppointments, setBookedAppointments] = useState<AppointmentConfirmation[]>([]);
   const [loading, setLoading] = useState(false);
@@ -46,29 +55,37 @@ export default function DoctorSchedule() {
   const today = dateKey();
   const maxDate = addDays(today, 29);
 
-  // Identify current doctor
+  // 1. Load authenticated doctor identity
   useEffect(() => {
-    getMyProfile()
-      .then((u) => {
-        const match = doctors.find(
-          (d) => d.name.toLowerCase() === u.fullName.toLowerCase(),
-        );
-        if (match) setDoctorId(match.id);
+    let active = true;
+    getDoctorMe()
+      .then((data) => {
+        if (active) setDoctor(data);
       })
-      .catch(() => {});
-  }, [doctors]);
+      .catch(() => {
+        if (active) {
+          setError('Unable to load doctor profile. Please ensure you are logged in as a registered doctor.');
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
+  // 2. Load schedule, exceptions, availability, and booked appointments
   const loadScheduleData = (docId: number) => {
     setLoading(true);
     Promise.all([
       getDoctorAvailability(docId, today, maxDate),
       getDoctorAvailabilityExceptions({ from: today, to: maxDate }),
       getDoctorAppointments({ view: 'ALL', size: 100 }),
+      getDoctorSchedules().catch(() => [] as DoctorWeeklyScheduleSlot[]),
     ])
-      .then(([avail, exList, appList]) => {
+      .then(([avail, exList, appList, scheds]) => {
         setServerSlots(avail.slots || []);
         setExceptions(exList || []);
         setBookedAppointments(appList.content || []);
+        setWeeklySchedules(scheds || []);
         setLoading(false);
       })
       .catch(() => {
@@ -77,10 +94,32 @@ export default function DoctorSchedule() {
   };
 
   useEffect(() => {
-    if (doctorId) {
-      loadScheduleData(doctorId);
+    if (doctor) {
+      loadScheduleData(doctor.id);
     }
-  }, [doctorId, today, maxDate]);
+  }, [doctor, today, maxDate]);
+
+  // Construct dynamic times grid
+  const timeSlots = useMemo(() => {
+    const timesSet = new Set<string>(DEFAULT_GRID_TIMES);
+
+    // Add times from weekly recurring shifts if any outside default grid
+    weeklySchedules.forEach((ws) => {
+      if (ws.startTime) timesSet.add(ws.startTime.substring(0, 5));
+    });
+
+    // Add times from server slots
+    serverSlots.forEach((ss) => {
+      if (ss.startTime) timesSet.add(ss.startTime.substring(0, 5));
+    });
+
+    // Add times from booked appointments
+    bookedAppointments.forEach((ba) => {
+      if (ba.startTime) timesSet.add(ba.startTime.substring(0, 5));
+    });
+
+    return Array.from(timesSet).sort();
+  }, [weeklySchedules, serverSlots, bookedAppointments]);
 
   const dates = Array.from(
     { length: Math.min(view === 'Week' ? 7 : 1, 30 - offset) },
@@ -90,7 +129,7 @@ export default function DoctorSchedule() {
   const getSlotDetails = (day: string, slotTime: string) => {
     const normalized = slotTime.length === 5 ? slotTime : slotTime.substring(0, 5);
 
-    // 1. Is there an active booked appointment?
+    // 1. Is there an active booked clinical appointment? (Highest priority)
     const app = bookedAppointments.find(
       (a) =>
         a.date === day &&
@@ -99,37 +138,45 @@ export default function DoctorSchedule() {
     );
     if (app) return { status: 'booked', appointment: app, exception: null };
 
-    // 2. Is there an availability exception covering this slot?
+    // 2. Is this slot in the past in Asia/Ho_Chi_Minh (UTC+7)?
+    const instant = new Date(`${day}T${normalized}:00+07:00`).getTime();
+    if (!Number.isFinite(instant) || instant <= Date.now()) {
+      return { status: 'past', appointment: null, exception: null };
+    }
+
+    // 3. Is there an availability exception covering this slot?
     const ex = exceptions.find(
       (e) =>
         e.date === day &&
         e.startTime.substring(0, 5) <= normalized &&
         e.endTime.substring(0, 5) > normalized,
     );
-    if (ex) {
-      if (ex.shiftType === 'WORK') return { status: 'available', appointment: null, exception: ex };
+
+    // If an exception explicitly blocks the slot:
+    if (ex && (ex.shiftType === 'BREAK' || ex.shiftType === 'LEAVE')) {
       return { status: 'blocked', appointment: null, exception: ex };
     }
 
-    // 3. Is it in server available slots?
+    // 4. Is it in server available slots returned by AvailabilityEngine?
     const isAvail = serverSlots.some(
       (s) => s.date === day && s.startTime.substring(0, 5) === normalized,
     );
-    if (isAvail) return { status: 'available', appointment: null, exception: null };
-
-    // 4. Past or blocked by regular schedule
-    const instant = new Date(`${day}T${normalized}:00+07:00`).getTime();
-    if (!Number.isFinite(instant) || instant <= Date.now()) {
-      return { status: 'past', appointment: null, exception: null };
+    if (isAvail) {
+      return { status: 'available', appointment: null, exception: ex?.shiftType === 'WORK' ? ex : null };
     }
 
-    return { status: 'blocked', appointment: null, exception: null };
+    // 5. Otherwise, blocked by regular non-working schedule
+    return { status: 'blocked', appointment: null, exception: ex ?? null };
   };
 
   const selectedSlotInfo = selected ? getSlotDetails(selected.date, selected.time) : null;
 
   async function handleToggleAvailability() {
     if (!selected || !selectedSlotInfo) return;
+    if (!doctor) {
+      setError('Doctor profile not loaded. Please refresh or ensure you are logged in as a registered doctor.');
+      return;
+    }
     setSubmitting(true);
     setError('');
 
@@ -166,7 +213,7 @@ export default function DoctorSchedule() {
       }
 
       setSelected(null);
-      loadScheduleData(doctorId);
+      loadScheduleData(doctor.id);
     } catch (cause: unknown) {
       let msg = 'Unable to update availability exception.';
       if (typeof cause === 'object' && cause !== null && 'response' in cause) {
@@ -180,6 +227,8 @@ export default function DoctorSchedule() {
     }
   }
 
+  const doctorId = doctor?.id ?? 1;
+
   return (
     <Page
       previewStates
@@ -187,10 +236,10 @@ export default function DoctorSchedule() {
     >
       <div className={styles.heading}>
         <div>
-          <span className={styles.eyebrow}>Doctor schedule management</span>
+          <span className={styles.eyebrow}>Doctor Schedule Management</span>
           <h1>My schedule</h1>
           <p>
-            Manage live availability and dated exceptions. Changes immediately reflect in patient booking.
+            Manage live availability and dated exceptions for {doctor?.fullName || 'Doctor'}. Changes immediately reflect in patient booking.
           </p>
         </div>
         <Button to={`/book/${doctorId}`} variant="outline">
@@ -258,7 +307,7 @@ export default function DoctorSchedule() {
           {dates.map((date) => (
             <div key={date} className={styles.day}>
               <h2>{formatDate(date, true)}</h2>
-              {TIMES.map((time) => {
+              {timeSlots.map((time) => {
                 const info = getSlotDetails(date, time);
                 const value = info.status;
                 return (
@@ -312,7 +361,7 @@ export default function DoctorSchedule() {
               {selectedSlotInfo.appointment && (
                 <div style={{ marginTop: '1rem' }}>
                   <p><strong>Patient:</strong> {selectedSlotInfo.appointment.patientName}</p>
-                  <p><strong>Code:</strong> {selectedSlotInfo.appointment.appointmentCode}</p>
+                  <p><strong>Reference:</strong> {selectedSlotInfo.appointment.appointmentCode}</p>
                   <Button
                     to={`/doctor/appointments/${selectedSlotInfo.appointment.id}`}
                     style={{ marginTop: '0.5rem' }}
@@ -342,12 +391,14 @@ export default function DoctorSchedule() {
                 <Button variant="outline" onClick={() => setSelected(null)} disabled={submitting}>
                   Cancel
                 </Button>
-                <Button onClick={handleToggleAvailability} loading={submitting}>
-                  {selectedSlotInfo.exception
-                    ? 'Remove exception'
-                    : selectedSlotInfo.status === 'available'
-                      ? 'Block slot (Add Break)'
-                      : 'Make available (Add Work)'}
+                <Button onClick={handleToggleAvailability} disabled={submitting || !doctor}>
+                  {submitting
+                    ? 'Updating...'
+                    : selectedSlotInfo.exception
+                      ? 'Remove exception'
+                      : selectedSlotInfo.status === 'available'
+                        ? 'Block slot (Add Break)'
+                        : 'Make available (Add Work)'}
                 </Button>
               </div>
             </>

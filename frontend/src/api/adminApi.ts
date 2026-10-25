@@ -1,13 +1,33 @@
 import type {
+  AdminDashboardData,
+  AdminNotification,
+  AdminPatient,
+  AdminUser,
+  AiUsageEvent,
+  AiUsageQuery,
+  AiUsageStats,
+  CreateUserPayload,
   Department,
+  DepartmentStats,
   DepartmentStatus,
   Doctor,
+  DoctorPerformance,
   DoctorRequest,
   DoctorStats,
   DoctorStatus,
   DoctorWeek,
+  GoogleAiUsageResponse,
+  NotificationQuery,
   PageResponse,
+  PatientGrowthPoint,
+  PatientQuery,
+  ReportSummary,
   ScheduleSlot,
+  SystemSetting,
+  TrendPoint,
+  UpdatePatientPayload,
+  UpdateUserPayload,
+  UserQuery,
 } from './adminTypes';
 import { apiClient } from './client';
 
@@ -28,7 +48,14 @@ const params = <T extends object>(query: T) => {
   return text === '' ? '' : `?${text}`;
 };
 
-// Doctors
+// ---------------- Admin Overview Dashboard ----------------
+
+export async function getAdminDashboard(): Promise<AdminDashboardData> {
+  const { data } = await apiClient.get<AdminDashboardData>('/admin/dashboard');
+  return data;
+}
+
+// ---------------- Doctors ----------------
 
 export interface DoctorQuery {
   search?: string;
@@ -100,7 +127,7 @@ export async function updateDoctorStatus(
   return data;
 }
 
-// Doctor requests
+// ---------------- Doctor requests ----------------
 
 export async function listDoctorRequests(
   page = 0,
@@ -134,7 +161,7 @@ export async function rejectDoctorRequest(userId: number): Promise<void> {
   await apiClient.post(`/admin/doctor-requests/${userId}/reject`);
 }
 
-// Departments
+// ---------------- Departments ----------------
 
 /** Not paged, by design: there are a handful, and the same list fills every dropdown. */
 export async function listDepartments(): Promise<Department[]> {
@@ -172,7 +199,7 @@ export async function updateDepartment(
   return data;
 }
 
-// Schedules
+// ---------------- Schedules ----------------
 
 export interface ScheduleQuery {
   search?: string;
@@ -224,3 +251,259 @@ export async function updateSlot(
 export async function deleteSlot(slotId: number): Promise<void> {
   await apiClient.delete(`/admin/schedules/${slotId}`);
 }
+
+// ---------------- Patients Management ----------------
+
+export async function listPatients(
+  query: PatientQuery = {},
+): Promise<PageResponse<AdminPatient>> {
+  const { data } = await apiClient.get<PageResponse<AdminPatient>>(
+    `/admin/patients${params(query)}`,
+  );
+  return data;
+}
+
+export async function getPatient(id: number): Promise<AdminPatient> {
+  const { data } = await apiClient.get<AdminPatient>(`/admin/patients/${id}`);
+  return data;
+}
+
+export async function updatePatient(
+  id: number,
+  payload: UpdatePatientPayload,
+): Promise<AdminPatient> {
+  const { data } = await apiClient.put<AdminPatient>(
+    `/admin/patients/${id}`,
+    payload,
+  );
+  return data;
+}
+
+export async function updatePatientStatus(
+  id: number,
+  status: string,
+): Promise<AdminPatient> {
+  const { data } = await apiClient.patch<AdminPatient>(
+    `/admin/patients/${id}/status`,
+    { status },
+  );
+  return data;
+}
+
+export async function getPatientAppointments(
+  id: number,
+  page = 0,
+  size = 20,
+): Promise<PageResponse<any>> {
+  const { data } = await apiClient.get<PageResponse<any>>(
+    `/admin/patients/${id}/appointments${params({ page, size })}`,
+  );
+  return data;
+}
+
+// ---------------- User Accounts Management ----------------
+
+export async function listUsers(
+  query: UserQuery = {},
+): Promise<PageResponse<AdminUser>> {
+  const { data } = await apiClient.get<PageResponse<AdminUser>>(
+    `/admin/users${params(query)}`,
+  );
+  return data;
+}
+
+export async function getUser(id: number): Promise<AdminUser> {
+  const { data } = await apiClient.get<AdminUser>(`/admin/users/${id}`);
+  return data;
+}
+
+export async function createUser(
+  payload: CreateUserPayload,
+): Promise<AdminUser> {
+  const { data } = await apiClient.post<AdminUser>('/admin/users', payload);
+  return data;
+}
+
+export async function updateUser(
+  id: number,
+  payload: UpdateUserPayload,
+): Promise<AdminUser> {
+  const { data } = await apiClient.put<AdminUser>(
+    `/admin/users/${id}`,
+    payload,
+  );
+  return data;
+}
+
+export async function updateUserRole(
+  id: number,
+  role: 'ADMIN' | 'DOCTOR' | 'PATIENT',
+): Promise<AdminUser> {
+  const { data } = await apiClient.patch<AdminUser>(
+    `/admin/users/${id}/role`,
+    { role },
+  );
+  return data;
+}
+
+export async function updateUserStatus(
+  id: number,
+  status: 'ACTIVE' | 'INACTIVE',
+): Promise<AdminUser> {
+  const { data } = await apiClient.patch<AdminUser>(
+    `/admin/users/${id}/status`,
+    { status },
+  );
+  return data;
+}
+
+// ---------------- Reports & Analytics ----------------
+
+export async function getReportSummary(
+  from?: string,
+  to?: string,
+): Promise<ReportSummary> {
+  const { data } = await apiClient.get<ReportSummary>(
+    `/admin/reports/summary${params({ from, to })}`,
+  );
+  return data;
+}
+
+export async function getReportAppointmentsTrend(
+  from?: string,
+  to?: string,
+): Promise<TrendPoint[]> {
+  const { data } = await apiClient.get<TrendPoint[]>(
+    `/admin/reports/appointments-trend${params({ from, to })}`,
+  );
+  return data;
+}
+
+export async function getReportDepartmentStats(
+  from?: string,
+  to?: string,
+): Promise<DepartmentStats[]> {
+  const { data } = await apiClient.get<DepartmentStats[]>(
+    `/admin/reports/departments${params({ from, to })}`,
+  );
+  return data;
+}
+
+export async function getReportDoctorPerformance(
+  from?: string,
+  to?: string,
+): Promise<DoctorPerformance[]> {
+  const { data } = await apiClient.get<DoctorPerformance[]>(
+    `/admin/reports/doctors${params({ from, to })}`,
+  );
+  return data;
+}
+
+export async function getReportPatientGrowth(
+  from?: string,
+  to?: string,
+): Promise<PatientGrowthPoint[]> {
+  const { data } = await apiClient.get<PatientGrowthPoint[]>(
+    `/admin/reports/patient-growth${params({ from, to })}`,
+  );
+  return data;
+}
+
+// ---------------- System Settings ----------------
+
+export async function getSystemSettings(
+  category?: string,
+): Promise<SystemSetting[]> {
+  const { data } = await apiClient.get<SystemSetting[]>(
+    `/admin/settings${params({ category })}`,
+  );
+  return data;
+}
+
+export async function updateSystemSettings(
+  settings: Record<string, string>,
+): Promise<SystemSetting[]> {
+  const { data } = await apiClient.put<SystemSetting[]>(
+    '/admin/settings',
+    settings,
+  );
+  return data;
+}
+
+// ---------------- Admin Notifications ----------------
+
+export async function listAdminNotifications(
+  query: NotificationQuery = {},
+): Promise<PageResponse<AdminNotification>> {
+  const { data } = await apiClient.get<PageResponse<AdminNotification>>(
+    `/admin/notifications${params(query)}`,
+  );
+  return data;
+}
+
+export async function getUnreadNotificationCount(): Promise<{ count: number }> {
+  const { data } = await apiClient.get<{ count: number }>(
+    '/admin/notifications/unread-count',
+  );
+  return data;
+}
+
+export async function markNotificationRead(
+  id: number,
+): Promise<AdminNotification> {
+  const { data } = await apiClient.patch<AdminNotification>(
+    `/admin/notifications/${id}/read`,
+  );
+  return data;
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  await apiClient.post('/admin/notifications/mark-all-read');
+}
+
+// ---------------- AI Usage Telemetry ----------------
+
+export async function getAiUsageStats(
+  from?: string,
+  to?: string,
+): Promise<AiUsageStats> {
+  const { data } = await apiClient.get<AiUsageStats>(
+    `/admin/ai-usage/stats${params({ from, to })}`,
+  );
+  return data;
+}
+
+export async function listAiUsageEvents(
+  query: AiUsageQuery = {},
+): Promise<PageResponse<AiUsageEvent>> {
+  const { data } = await apiClient.get<PageResponse<AiUsageEvent>>(
+    `/admin/ai-usage/events${params(query)}`,
+  );
+  return data;
+}
+
+export async function recordAiTelemetry(
+  event: Record<string, any>,
+): Promise<AiUsageEvent> {
+  const { data } = await apiClient.post<AiUsageEvent>('/ai/telemetry', event);
+  return data;
+}
+
+// ---------------- Official Google Cloud AI Usage ----------------
+
+export async function getGoogleAiUsageMetrics(
+  refresh: boolean = false,
+  from?: string,
+  to?: string,
+): Promise<GoogleAiUsageResponse> {
+  const query: Record<string, any> = {};
+  if (refresh) query.refresh = true;
+  if (from) query.from = from.includes('T') ? from : `${from}T00:00:00Z`;
+  if (to) query.to = to.includes('T') ? to : `${to}T23:59:59Z`;
+
+  const { data } = await apiClient.get<GoogleAiUsageResponse>(
+    `/admin/ai-usage/google${params(query)}`,
+  );
+  return data;
+}
+
