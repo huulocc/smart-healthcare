@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   CalendarDays,
@@ -6,6 +6,8 @@ import {
   Clock3,
   CalendarCheck,
   Loader2,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import Button from '../../components/Button';
 import {
@@ -13,104 +15,166 @@ import {
   Page,
   StatusBadge,
 } from '../../components/healthcare/HealthcareUI';
-import { useAppointments } from '../../context/AppointmentContext';
 import {
   addDays,
   dateKey,
   formatDate,
-  TIMES,
 } from '../../data/appointmentDemo';
 import {
   getDoctorAppointments,
+  getDoctorAvailability,
+  getDoctorMe,
+  getDoctorStatistics,
   type AppointmentConfirmation,
+  type AppointmentStatus,
+  type DoctorProfile,
+  type Slot,
 } from '../../api/bookingApi';
-import { getMyProfile } from '../../api/userApi';
 import styles from './DoctorWorkspace.module.css';
 
 export default function DoctorWorkspace() {
   const { pathname } = useLocation();
-  const { doctors, getSlotStatus } = useAppointments();
+  const dashboard = pathname === '/doctor';
+
+  const [doctor, setDoctor] = useState<DoctorProfile | null>(null);
   const [appointments, setAppointments] = useState<AppointmentConfirmation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [doctorId, setDoctorId] = useState<number>(1);
-  const [doctorName, setDoctorName] = useState<string>('Doctor');
-  const [doctorDept, setDoctorDept] = useState<string>('Clinic');
+  const [todaySlots, setTodaySlots] = useState<Slot[]>([]);
+  const [availableSlotsCount, setAvailableSlotsCount] = useState<number>(0);
+  const [statusCounts, setStatusCounts] = useState<Record<AppointmentStatus, number>>({
+    PENDING: 0,
+    CONFIRMED: 0,
+    IN_PROGRESS: 0,
+    COMPLETED: 0,
+    CANCELLED: 0,
+    NO_SHOW: 0,
+  });
 
+  // Filters & Pagination
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('ALL');
   const [dateFilter, setDateFilter] = useState('');
   const [tab, setTab] = useState('All');
-  const dashboard = pathname === '/doctor';
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
+  const pageSize = 10;
 
+  const todayStr = dateKey();
+  const next7DaysStr = addDays(todayStr, 6);
+
+  // 1. Load authenticated doctor profile
   useEffect(() => {
     let active = true;
-    setLoading(true);
+    getDoctorMe()
+      .then((data) => {
+        if (active) setDoctor(data);
+      })
+      .catch(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
-    getMyProfile()
-      .then((user) => {
-        if (!active) return;
-        setDoctorName(user.fullName || 'Doctor');
-        // Find matching doctor in doctors list
-        const match = doctors.find(
-          (d) => d.name.toLowerCase() === user.fullName.toLowerCase(),
-        );
-        if (match) {
-          setDoctorId(match.id);
-          setDoctorDept(match.department);
-        }
+  // 2. Load doctor statistics and availability
+  useEffect(() => {
+    if (!doctor) return;
+    let active = true;
+
+    // Load SQL Server statistics
+    getDoctorStatistics()
+      .then((stats) => {
+        if (active) setStatusCounts(stats);
       })
       .catch(() => {});
 
-    getDoctorAppointments({ view: 'ALL', size: 100 })
-      .then((res) => {
+    // Load authoritative availability slots for the next 7 days
+    getDoctorAvailability(doctor.id, todayStr, next7DaysStr)
+      .then((avail) => {
         if (!active) return;
-        setAppointments(res.content || []);
-        if (res.content && res.content.length > 0 && res.content[0].doctor) {
-          setDoctorId(res.content[0].doctor.id);
-          setDoctorName(res.content[0].doctor.name);
-          setDoctorDept(res.content[0].doctor.departmentName ?? 'Clinic');
-        }
-        setLoading(false);
+        const slots = avail.slots || [];
+        setAvailableSlotsCount(slots.length);
+        const todayOnly = slots.filter((s) => s.date === todayStr);
+        setTodaySlots(todayOnly);
       })
-      .catch(() => {
-        if (!active) return;
-        setLoading(false);
-      });
+      .catch(() => {});
 
     return () => {
       active = false;
     };
-  }, [doctors]);
+  }, [doctor, todayStr, next7DaysStr]);
 
-  const todayStr = dateKey();
-  const today = appointments.filter((item) => item.date === todayStr);
-  const upcoming = appointments.filter(
-    (item) =>
-      item.status === 'CONFIRMED' &&
-      new Date(`${item.date}T${item.startTime.substring(0, 5)}:00+07:00`).getTime() > Date.now(),
-  );
+  // 3. Load appointments with real pagination & filtering
+  const loadAppointments = useCallback(() => {
+    if (!doctor) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
 
-  const availableSlotsCount = Array.from({ length: 7 }, (_, i) => addDays(todayStr, i))
-    .flatMap((date) => TIMES.map((time) => getSlotStatus(doctorId, date, time)))
-    .filter((status) => status === 'available').length;
+    let statusParam: AppointmentStatus | undefined = undefined;
+    if (filter !== 'ALL') {
+      statusParam = filter as AppointmentStatus;
+    } else if (tab === 'Completed') {
+      statusParam = 'COMPLETED';
+    } else if (tab === 'Cancelled') {
+      statusParam = 'CANCELLED';
+    }
 
-  const relevant = (dashboard ? today : appointments)
-    .filter(
-      (item) =>
-        (!dateFilter || item.date === dateFilter) &&
-        (filter === 'ALL' || item.status === filter) &&
-        `${item.patientName} ${item.appointmentCode} ${item.id}`
-          .toLowerCase()
-          .includes(search.toLowerCase()) &&
-        (dashboard ||
-          tab === 'All' ||
-          (tab === 'Today'
-            ? item.date === todayStr
-            : tab === 'Upcoming'
-              ? upcoming.includes(item)
-              : item.status === tab.toUpperCase())),
-    )
-    .sort((a, b) => `${a.date}${a.startTime}`.localeCompare(`${b.date}${b.startTime}`));
+    const viewParam = tab === 'Upcoming' ? 'UPCOMING' : 'ALL';
+    const fromParam = tab === 'Today' ? todayStr : (dateFilter || undefined);
+    const toParam = tab === 'Today' ? todayStr : (dateFilter || undefined);
+
+    getDoctorAppointments({
+      status: statusParam,
+      from: fromParam,
+      to: toParam,
+      view: viewParam,
+      search: search.trim() || undefined,
+      page: dashboard ? 0 : page,
+      size: dashboard ? 20 : pageSize,
+    })
+      .then((res) => {
+        setAppointments(res.content || []);
+        setTotalPages(res.totalPages || 1);
+        setTotalElements(res.totalElements || 0);
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
+      });
+  }, [doctor, filter, tab, dateFilter, search, page, dashboard, todayStr]);
+
+  useEffect(() => {
+    loadAppointments();
+  }, [loadAppointments]);
+
+  // Reset page when filters change
+  const handleFilterChange = (newFilter: string) => {
+    setFilter(newFilter);
+    setPage(0);
+  };
+
+  const handleTabChange = (newTab: string) => {
+    setTab(newTab);
+    setPage(0);
+  };
+
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+    setPage(0);
+  };
+
+  const handleDateChange = (val: string) => {
+    setDateFilter(val);
+    setPage(0);
+  };
+
+  const todayVisits = appointments.filter((item) => item.date === todayStr);
+  const doctorName = doctor?.fullName || 'Doctor';
+  const doctorDept = doctor?.departmentName || 'Clinic';
 
   const hour = Number(
     new Intl.DateTimeFormat('en-GB', {
@@ -129,16 +193,16 @@ export default function DoctorWorkspace() {
     >
       <div className={styles.heading}>
         <div>
-          <span className={styles.eyebrow}>Doctor clinical workspace</span>
+          <span className={styles.eyebrow}>Doctor Clinical Workspace</span>
           <h1>
             {dashboard
               ? `Good ${hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening'}, ${doctorName}`
-              : 'Your assigned appointments'}
+              : 'Your Assigned Appointments'}
           </h1>
           <p>
             {dashboard
-              ? 'Here is your clinical schedule for today.'
-              : 'Review and manage your scheduled consultations.'}{' '}
+              ? `Doctor ID: ${doctor?.doctorCode || '...'} • Department: ${doctorDept}`
+              : 'Review and manage your scheduled patient consultations.'}{' '}
             · {formatDate(todayStr, true)}
           </p>
         </div>
@@ -152,26 +216,26 @@ export default function DoctorWorkspace() {
           {[
             {
               title: 'Today’s appointments',
-              value: today.filter((item) => item.status !== 'CANCELLED').length,
+              value: todayVisits.filter((item) => item.status !== 'CANCELLED').length,
               sub: 'Visits scheduled today',
               icon: CalendarDays,
             },
             {
-              title: 'Upcoming',
-              value: upcoming.length,
-              sub: 'Confirmed future visits',
+              title: 'Confirmed upcoming',
+              value: (statusCounts.CONFIRMED || 0) + (statusCounts.PENDING || 0),
+              sub: 'Awaiting consultation',
               icon: Clock3,
             },
             {
-              title: 'Completed today',
-              value: today.filter((item) => item.status === 'COMPLETED').length,
-              sub: 'From today’s schedule',
+              title: 'Completed consultations',
+              value: statusCounts.COMPLETED || 0,
+              sub: 'Total finished visits',
               icon: CheckCircle2,
             },
             {
               title: 'Available slots this week',
               value: availableSlotsCount,
-              sub: 'Next 7 days',
+              sub: 'Next 7 days (open for booking)',
               icon: CalendarCheck,
             },
           ].map(({ title, value, sub, icon: Icon }) => (
@@ -193,20 +257,18 @@ export default function DoctorWorkspace() {
           role="tablist"
           aria-label="Appointment period"
         >
-          {['Today', 'Upcoming', 'Completed', 'Cancelled', 'All'].map(
-            (value) => (
-              <button
-                type="button"
-                key={value}
-                role="tab"
-                aria-selected={tab === value}
-                className={styles.tab}
-                onClick={() => setTab(value)}
-              >
-                {value}
-              </button>
-            ),
-          )}
+          {['All', 'Today', 'Upcoming', 'Completed', 'Cancelled'].map((value) => (
+            <button
+              type="button"
+              key={value}
+              role="tab"
+              aria-selected={tab === value}
+              className={styles.tab}
+              onClick={() => handleTabChange(value)}
+            >
+              {value}
+            </button>
+          ))}
         </div>
       )}
 
@@ -215,7 +277,7 @@ export default function DoctorWorkspace() {
           <div className={styles.sectionHeader}>
             <div>
               <h2>{dashboard ? 'Today’s appointments' : 'Appointment list'}</h2>
-              <p>Appointments retrieved directly from hospital database.</p>
+              <p>Appointments retrieved directly from hospital database ({totalElements} total).</p>
             </div>
             {dashboard && (
               <Button to="/doctor/appointments" variant="ghost" size="sm">
@@ -230,15 +292,15 @@ export default function DoctorWorkspace() {
               <input
                 type="search"
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search…"
+                onChange={(event) => handleSearchChange(event.target.value)}
+                placeholder="Search by patient name or reference code…"
               />
             </label>
             <label className={styles.field}>
               Status
               <select
                 value={filter}
-                onChange={(event) => setFilter(event.target.value)}
+                onChange={(event) => handleFilterChange(event.target.value)}
               >
                 <option value="ALL">All statuses</option>
                 <option value="CONFIRMED">Confirmed</option>
@@ -255,11 +317,11 @@ export default function DoctorWorkspace() {
               className={styles.field}
               style={{ maxWidth: 250, marginBottom: '1rem' }}
             >
-              Date (optional)
+              Filter by date (optional)
               <input
                 type="date"
                 value={dateFilter}
-                onChange={(event) => setDateFilter(event.target.value)}
+                onChange={(event) => handleDateChange(event.target.value)}
               />
             </label>
           )}
@@ -268,50 +330,90 @@ export default function DoctorWorkspace() {
             <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
               <Loader2 className="spin" size={32} color="#026AA7" />
             </div>
-          ) : relevant.length ? (
-            <div className={styles.tableWrap}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Time</th>
-                    <th>Patient</th>
-                    <th>Reference</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {relevant.map((item) => (
-                    <tr key={item.id}>
-                      <td>
-                        <strong>{item.startTime.substring(0, 5)} - {item.endTime.substring(0, 5)}</strong>
-                        <small>{formatDate(item.date, true)}</small>
-                      </td>
-                      <td>
-                        <strong>{item.patientName}</strong>
-                        <small>{item.phone}</small>
-                      </td>
-                      <td>
-                        <strong>{item.appointmentCode}</strong>
-                        <small>{doctorDept}</small>
-                      </td>
-                      <td>
-                        <StatusBadge status={item.status} />
-                      </td>
-                      <td>
-                        <Button
-                          to={`/doctor/appointments/${item.id}`}
-                          size="sm"
-                          variant="outline"
-                        >
-                          View details
-                        </Button>
-                      </td>
+          ) : appointments.length ? (
+            <>
+              <div className={styles.tableWrap}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>Time</th>
+                      <th>Patient</th>
+                      <th>Reference</th>
+                      <th>Status</th>
+                      <th>Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {appointments.map((item) => (
+                      <tr key={item.id}>
+                        <td>
+                          <strong>
+                            {item.startTime.substring(0, 5)} - {item.endTime.substring(0, 5)}
+                          </strong>
+                          <small>{formatDate(item.date, true)}</small>
+                        </td>
+                        <td>
+                          <strong>{item.patientName}</strong>
+                          <small>{item.phone}</small>
+                        </td>
+                        <td>
+                          <strong>{item.appointmentCode}</strong>
+                          <small>{doctorDept}</small>
+                        </td>
+                        <td>
+                          <StatusBadge status={item.status} />
+                        </td>
+                        <td>
+                          <Button
+                            to={`/doctor/appointments/${item.id}`}
+                            size="sm"
+                            variant="outline"
+                          >
+                            View details
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination for Appointments page */}
+              {!dashboard && totalPages > 1 && (
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginTop: '1.25rem',
+                    paddingTop: '1rem',
+                    borderTop: '1px solid #e2e8f0',
+                  }}
+                >
+                  <small style={{ color: '#64748b' }}>
+                    Showing page {page + 1} of {totalPages} ({totalElements} appointments)
+                  </small>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page === 0}
+                      onClick={() => setPage((p) => Math.max(0, p - 1))}
+                    >
+                      <ChevronLeft size={16} /> Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page >= totalPages - 1}
+                      onClick={() => setPage((p) => p + 1)}
+                    >
+                      Next <ChevronRight size={16} />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <EmptyState
               title="No appointments to show"
@@ -325,23 +427,33 @@ export default function DoctorWorkspace() {
         {dashboard && (
           <aside className={styles.stack}>
             <section className={styles.card}>
-              <h2>Upcoming schedule</h2>
-              <p className={styles.help}>Today's slot availability · UTC+7</p>
-              {TIMES.slice(0, 6).map((time) => (
-                <div key={time} className={styles.scheduleRow}>
-                  <strong>{time}</strong>
-                  <span>{getSlotStatus(doctorId, todayStr, time)}</span>
-                </div>
-              ))}
+              <h2>Today's Available Slots</h2>
+              <p className={styles.help}>Authoritative availability from hospital system · UTC+7</p>
+              {todaySlots.length > 0 ? (
+                todaySlots.slice(0, 6).map((slot) => (
+                  <div key={slot.startTime} className={styles.scheduleRow}>
+                    <strong>{slot.startTime.substring(0, 5)} - {slot.endTime.substring(0, 5)}</strong>
+                    <span style={{ color: '#059669', fontWeight: 600 }}>Available</span>
+                  </div>
+                ))
+              ) : (
+                <p style={{ color: '#64748b', fontSize: '0.875rem', padding: '0.5rem 0' }}>
+                  No open slots remaining for today.
+                </p>
+              )}
               <hr className={styles.divider} />
               <Button to="/doctor/schedule" fullWidth variant="outline">
                 Manage schedule
               </Button>
             </section>
+
             <section className={styles.card}>
               <h2>Doctor profile</h2>
               <p className={styles.help}>
-                Specialty: {doctorDept} · ID: {doctorId}
+                {doctor?.specialty || 'Specialist'} · {doctor?.doctorCode || 'Doctor'}
+              </p>
+              <p style={{ fontSize: '0.875rem', color: '#475569', margin: '0.5rem 0 1rem' }}>
+                Department: <strong>{doctorDept}</strong>
               </p>
               <Button to="/doctor/profile" variant="outline" fullWidth>
                 View profile

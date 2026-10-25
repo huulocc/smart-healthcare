@@ -33,8 +33,9 @@ public class AuthService {
 
 	@Transactional
 	public UserResponse register(RegisterRequest request) {
-		String email = Emails.normalize(request.email());
-		if (userRepository.existsByEmail(email)) {
+		String normalisedEmail = Emails.normalize(request.email());
+
+		if (userRepository.existsByEmail(normalisedEmail)) {
 			throw new ApiException(HttpStatus.CONFLICT, "This email is already registered", "email");
 		}
 
@@ -45,18 +46,17 @@ public class AuthService {
 
 		User user = new User();
 		user.setFullName(request.fullName().trim());
-		user.setEmail(email);
-		user.setPhone(request.phone());
+		user.setEmail(normalisedEmail);
+		user.setPhone(request.phone().trim());
 		user.setPasswordHash(passwordEncoder.encode(request.password()));
 		// Everyone starts as a patient. A doctor request is only a request until an admin approves it.
 		user.setRole(Role.PATIENT);
-		user.setRequestedRole(requestedRole);
-		// The account exists but cannot log in until the link in the email is opened.
+		user.setRequestedRole(requestedRole == Role.DOCTOR ? Role.DOCTOR : null);
 		user.setEmailVerified(false);
+		user.setStatus("ACTIVE");
 
 		User saved = userRepository.save(user);
 		emailVerificationService.sendVerificationLink(saved);
-
 		return UserResponse.from(saved);
 	}
 
@@ -70,6 +70,10 @@ public class AuthService {
 		if (!user.isEmailVerified()) {
 			// 403, not 401: the password was right, the account is simply not active yet.
 			throw new ApiException(HttpStatus.FORBIDDEN, NOT_VERIFIED_MESSAGE);
+		}
+
+		if (!user.isActive()) {
+			throw new ApiException(HttpStatus.FORBIDDEN, "This account has been deactivated. Please contact an administrator.");
 		}
 
 		return issueLogin(user, request.isRememberMe());

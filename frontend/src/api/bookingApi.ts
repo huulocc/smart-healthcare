@@ -23,6 +23,40 @@ export interface DoctorInfo {
   availability: string;
 }
 
+export interface DoctorProfile {
+  id: number;
+  doctorCode: string;
+  userId: number;
+  fullName: string;
+  email: string;
+  phone: string;
+  specialty: string;
+  experienceYears: number | null;
+  avatarUrl: string | null;
+  departmentId: number | null;
+  departmentName: string | null;
+  availability: string;
+  status: string;
+  biography: string | null;
+  expertise: string | null;
+  languages: string | null;
+}
+
+export interface DoctorWeeklyScheduleSlot {
+  id: number;
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+  shiftType: ShiftType;
+}
+
+export interface UpdateDoctorPublicProfilePayload {
+  biography?: string;
+  expertise?: string;
+  languages?: string;
+  avatarUrl?: string;
+}
+
 export interface Slot {
   date: string;
   startTime: string;
@@ -326,6 +360,45 @@ export async function deleteDoctorAvailabilityException(
   id: number,
 ): Promise<void> {
   await apiClient.delete(`/doctor/availability-exceptions/${id}`);
+}
+
+export async function getDoctorMe(): Promise<DoctorProfile> {
+  const { data } = await apiClient.get<DoctorProfile>('/doctor/me');
+  return data;
+}
+
+export async function updateDoctorPublicProfile(
+  payload: UpdateDoctorPublicProfilePayload,
+): Promise<DoctorProfile> {
+  const { data } = await apiClient.patch<DoctorProfile>(
+    '/doctor/me/public-profile',
+    payload,
+  );
+  return data;
+}
+
+export async function getDoctorSchedules(): Promise<DoctorWeeklyScheduleSlot[]> {
+  const { data } = await apiClient.get<DoctorWeeklyScheduleSlot[]>('/doctor/schedules');
+  return data;
+}
+
+export async function getDoctorAppointmentHistory(
+  id: number | string,
+  page = 0,
+  size = 20,
+): Promise<PageResponse<AppointmentHistoryItem>> {
+  const { data } = await apiClient.get<PageResponse<AppointmentHistoryItem>>(
+    `/doctor/appointments/${id}/history`,
+    { params: { page, size } },
+  );
+  return data;
+}
+
+export async function getDoctorStatistics(): Promise<Record<AppointmentStatus, number>> {
+  const { data } = await apiClient.get<Record<AppointmentStatus, number>>(
+    '/doctor/appointments/statistics',
+  );
+  return data;
 }
 
 // -------------------------------------------------------------

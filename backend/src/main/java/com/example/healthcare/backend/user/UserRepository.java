@@ -5,10 +5,11 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
 
 	Optional<User> findByEmail(String email);
 
@@ -27,4 +28,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 	Page<User> findByRoleAndRequestedRole(Role role, Role requestedRole, Pageable pageable);
 
 	long countByRoleAndRequestedRole(Role role, Role requestedRole);
+
+	long countByRole(Role role);
 }

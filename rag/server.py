@@ -26,6 +26,7 @@ from generate import answer as generate_answer
 from generate import answer_stream
 from llm import describe, embed
 from retrieve import retrieve
+from telemetry import estimate_tokens, generate_request_id, send_telemetry
 from triage import ToolError, recommend
 
 MAX_QUESTION_CHARS = 500
@@ -113,14 +114,54 @@ def chat(request: ChatRequest):
     if not question:
         raise HTTPException(status_code=400, detail="Question is empty.")
 
+    req_id = generate_request_id()
     started = time.time()
     try:
         hits = retrieve(question, k=config.TOP_K)
         text = generate_answer(question, hits)
+        latency_ms = int((time.time() - started) * 1000)
+
+        prompt_tokens = estimate_tokens(question) + sum(
+            estimate_tokens(h.get("text", "")) for h in hits
+        )
+        completion_tokens = estimate_tokens(text)
+
+        send_telemetry(
+            feature="CHAT",
+            request_id=req_id,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            latency_ms=latency_ms,
+            status="SUCCESS",
+        )
     except ModelError as exc:
-        # The model backend being down is an operational problem, not a bad
-        # request - 503 so the widget can say so rather than blaming the user.
+        latency_ms = int((time.time() - started) * 1000)
+        status = "TIMEOUT" if "timed out" in str(exc).lower() else "FAILED"
+        err_code = "GATEWAY_TIMEOUT" if status == "TIMEOUT" else "MODEL_ERROR"
+        send_telemetry(
+            feature="CHAT",
+            request_id=req_id,
+            prompt_tokens=estimate_tokens(question),
+            completion_tokens=0,
+            latency_ms=latency_ms,
+            status=status,
+            error_code=err_code,
+            error_message=str(exc),
+        )
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        latency_ms = int((time.time() - started) * 1000)
+        send_telemetry(
+            feature="CHAT",
+            request_id=req_id,
+            prompt_tokens=estimate_tokens(question),
+            completion_tokens=0,
+            latency_ms=latency_ms,
+            status="FAILED",
+            error_code="SERVER_ERROR",
+            error_message=str(exc),
+        )
+        raise
 
     return ChatResponse(
         answer=text,
@@ -159,20 +200,82 @@ def triage(request: ChatRequest, authorization: str | None = Header(default=None
     question = request.question.strip()
     if not question:
         raise HTTPException(status_code=400, detail="Question is empty.")
+
+    req_id = generate_request_id()
     started = time.time()
     try:
         hits = retrieve(question, k=config.TOP_K)
-        decision, used_tools, department_name, doctor_name = recommend(question, hits, authorization[7:])
+        decision, used_tools, department_name, doctor_name = recommend(
+            question, hits, authorization[7:]
+        )
+        latency_ms = int((time.time() - started) * 1000)
+
+        prompt_tokens = estimate_tokens(question) + sum(
+            estimate_tokens(h.get("text", "")) for h in hits
+        )
+        completion_tokens = estimate_tokens(decision.reason) + estimate_tokens(
+            decision.safety_message
+        )
+
+        send_telemetry(
+            feature="TRIAGE",
+            request_id=req_id,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            latency_ms=latency_ms,
+            status="SUCCESS",
+        )
     except ToolError as exc:
+        latency_ms = int((time.time() - started) * 1000)
+        send_telemetry(
+            feature="TRIAGE",
+            request_id=req_id,
+            prompt_tokens=estimate_tokens(question),
+            completion_tokens=0,
+            latency_ms=latency_ms,
+            status="FAILED",
+            error_code="TOOL_ERROR",
+            error_message=str(exc),
+        )
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except ModelError as exc:
+        latency_ms = int((time.time() - started) * 1000)
+        status = "TIMEOUT" if "timed out" in str(exc).lower() else "FAILED"
+        err_code = "GATEWAY_TIMEOUT" if status == "TIMEOUT" else "MODEL_ERROR"
+        send_telemetry(
+            feature="TRIAGE",
+            request_id=req_id,
+            prompt_tokens=estimate_tokens(question),
+            completion_tokens=0,
+            latency_ms=latency_ms,
+            status=status,
+            error_code=err_code,
+            error_message=str(exc),
+        )
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        latency_ms = int((time.time() - started) * 1000)
+        send_telemetry(
+            feature="TRIAGE",
+            request_id=req_id,
+            prompt_tokens=estimate_tokens(question),
+            completion_tokens=0,
+            latency_ms=latency_ms,
+            status="FAILED",
+            error_code="SERVER_ERROR",
+            error_message=str(exc),
+        )
+        raise
+
     return TriageResponse(
         **decision.model_dump(),
         department_name=department_name,
         doctor_name=doctor_name,
-        sources=[Source(**source) for source in _source_payload(hits)
-                 if source["section"] in decision.source_ids],
+        sources=[
+            Source(**source)
+            for source in _source_payload(hits)
+            if source["section"] in decision.source_ids
+        ],
         tools_called=used_tools,
         elapsed_seconds=round(time.time() - started, 1),
     )
@@ -194,21 +297,66 @@ def chat_stream_endpoint(request: ChatRequest):
     if not question:
         raise HTTPException(status_code=400, detail="Question is empty.")
 
+    req_id = generate_request_id()
+
     def events():
         started = time.time()
+        prompt_tokens = estimate_tokens(question)
+        completion_parts = []
         try:
             hits = retrieve(question, k=config.TOP_K)
+            prompt_tokens += sum(estimate_tokens(h.get("text", "")) for h in hits)
             # Sources go out before generation starts, so the reader can see
             # what was found during the wait.
             yield json.dumps({"type": "sources", "sources": _source_payload(hits)}) + "\n"
             for kind, text in answer_stream(question, hits):
                 event = "thinking" if kind == "thinking" else "token"
+                if kind != "thinking":
+                    completion_parts.append(text)
                 yield json.dumps({"type": event, "delta": text}) + "\n"
         except ModelError as exc:
+            latency_ms = int((time.time() - started) * 1000)
+            status = "TIMEOUT" if "timed out" in str(exc).lower() else "FAILED"
+            err_code = "GATEWAY_TIMEOUT" if status == "TIMEOUT" else "MODEL_ERROR"
+            send_telemetry(
+                feature="STREAM",
+                request_id=req_id,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=estimate_tokens("".join(completion_parts)),
+                latency_ms=latency_ms,
+                status=status,
+                error_code=err_code,
+                error_message=str(exc),
+            )
             # The stream has already started with a 200, so an error has to be
             # delivered in-band rather than as a status code.
             yield json.dumps({"type": "error", "message": str(exc)}) + "\n"
             return
+        except Exception as exc:
+            latency_ms = int((time.time() - started) * 1000)
+            send_telemetry(
+                feature="STREAM",
+                request_id=req_id,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=estimate_tokens("".join(completion_parts)),
+                latency_ms=latency_ms,
+                status="FAILED",
+                error_code="STREAM_ERROR",
+                error_message=str(exc),
+            )
+            yield json.dumps({"type": "error", "message": str(exc)}) + "\n"
+            return
+
+        latency_ms = int((time.time() - started) * 1000)
+        completion_tokens = estimate_tokens("".join(completion_parts))
+        send_telemetry(
+            feature="STREAM",
+            request_id=req_id,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            latency_ms=latency_ms,
+            status="SUCCESS",
+        )
         yield json.dumps(
             {"type": "done", "elapsed_seconds": round(time.time() - started, 1)}
         ) + "\n"
