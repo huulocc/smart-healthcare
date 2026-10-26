@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.repository.query.Param;
 
 public interface AppointmentRepository extends JpaRepository<Appointment, Long>, JpaSpecificationExecutor<Appointment> {
     @Override
@@ -16,4 +17,6 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long>,
     List<Appointment> findByDoctorIdAndAppointmentDateGreaterThanEqual(Long doctorId, LocalDate from);
     @Query("select a.status, count(a) from Appointment a group by a.status")
     List<Object[]> statusCounts();
+    @Query("select a.status, count(a) from Appointment a where a.doctor.id = :doctorId group by a.status")
+    List<Object[]> statusCountsByDoctorId(@Param("doctorId") Long doctorId);
 }

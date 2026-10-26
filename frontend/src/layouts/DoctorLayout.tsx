@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Link,
   NavLink,
@@ -16,7 +16,8 @@ import {
   UserRound,
 } from 'lucide-react';
 import { DoctorImage, Modal } from '../components/healthcare/HealthcareUI';
-import { useAppointments } from '../context/AppointmentContext';
+import { getDoctorMe, type DoctorProfile } from '../api/bookingApi';
+import { useAuth } from '../context/useAuth';
 import styles from './DoctorLayout.module.css';
 
 const links = [
@@ -25,15 +26,36 @@ const links = [
   { to: '/doctor/schedule', label: 'My schedule', icon: Clock3 },
   { to: '/doctor/profile', label: 'My profile', icon: UserRound },
 ];
+
 export default function DoctorLayout() {
   const [open, setOpen] = useState(false);
+  const [doctor, setDoctor] = useState<DoctorProfile | null>(null);
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { doctors } = useAppointments();
-  const doctor = doctors[0];
+  const { user, logout } = useAuth();
+
+  useEffect(() => {
+    let active = true;
+    getDoctorMe()
+      .then((data) => {
+        if (active) setDoctor(data);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const doctorName = doctor?.fullName || user?.fullName || 'Doctor';
+  const doctorSpecialty =
+    doctor?.specialty || doctor?.departmentName || 'Medical Practitioner';
+  const avatarImage = doctor?.avatarUrl || '/images/doctor_1.jpg';
+  const publicProfileLink = doctor ? `/doctors/${doctor.id}` : '/doctors';
+
   const title = pathname.includes('/appointments/')
     ? 'Appointment details'
     : (links.find((link) => link.to === pathname)?.label ?? 'Dashboard');
+
   const navigation = (
     <>
       <Link to="/" className={styles.brand}>
@@ -42,7 +64,17 @@ export default function DoctorLayout() {
           <b>Smart</b>Healthcare
         </span>
       </Link>
-      <span className={styles.preview}>Doctor workspace preview</span>
+      <span
+        className={styles.preview}
+        style={{
+          background: '#e0f2fe',
+          color: '#0369a1',
+          borderColor: '#bae6fd',
+          fontWeight: 600,
+        }}
+      >
+        Doctor Portal
+      </span>
       <nav aria-label="Doctor navigation">
         <small>WORKSPACE</small>
         {links.map(({ to, label, icon: Icon, end }) => (
@@ -53,20 +85,22 @@ export default function DoctorLayout() {
         ))}
       </nav>
       <div className={styles.bottom}>
-        <Link to="/doctors/1">View public profile</Link>
+        <Link to={publicProfileLink}>View public profile</Link>
         <button
           type="button"
           onClick={() => {
             setOpen(false);
-            navigate('/');
+            logout();
+            navigate('/login');
           }}
         >
           <LogOut size={18} />
-          Exit preview (demo)
+          Log out
         </button>
       </div>
     </>
   );
+
   return (
     <div className={styles.shell}>
       <aside className={styles.sidebar}>{navigation}</aside>
@@ -85,10 +119,15 @@ export default function DoctorLayout() {
             <small>Doctor / {title}</small>
           </div>
           <div className={styles.identity}>
-            <DoctorImage doctor={doctor} />
+            <DoctorImage
+              doctor={{
+                name: doctorName,
+                image: avatarImage,
+              }}
+            />
             <span>
-              <strong>{doctor.name}</strong>
-              <small>Demo doctor</small>
+              <strong>{doctorName}</strong>
+              <small>{doctorSpecialty}</small>
             </span>
           </div>
         </header>

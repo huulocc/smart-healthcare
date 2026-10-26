@@ -55,7 +55,7 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
 #
 # The env override exists so a backend can be A/B'd without editing a tracked
 # file; evaluate.py records the effective value next to every score.
-LLM_BACKEND = os.environ.get("RAG_LLM_BACKEND", "ollama")
+LLM_BACKEND = os.environ.get("RAG_LLM_BACKEND", "gemini")
 EMBED_BACKEND = os.environ.get("RAG_EMBED_BACKEND", "ollama")
 
 # --- ollama --------------------------------------------------------------
@@ -298,3 +298,15 @@ USER_PROMPT = """DOCUMENTS:
 {context}
 
 Question: {question}"""
+
+
+# --- telemetry -----------------------------------------------------------
+
+TELEMETRY_ENABLED = os.environ.get("RAG_TELEMETRY_ENABLED", "true").lower() in ("true", "1", "yes")
+TELEMETRY_URL = os.environ.get(
+    "RAG_TELEMETRY_URL", "http://127.0.0.1:8080/api/ai/telemetry"
+)
+TELEMETRY_SECRET = os.environ.get(
+    "RAG_TELEMETRY_SECRET",
+    os.environ.get("AI_TELEMETRY_SECRET", "smart-healthcare-telemetry-secret-key-2026")
+)

@@ -8,6 +8,7 @@ import FormInput from '../../components/FormInput';
 import GoogleSignInButton, { isGoogleSignInEnabled } from '../../components/GoogleSignInButton';
 import ResendVerification from '../../components/ResendVerification';
 import { applyFieldErrors, toApiError } from '../../api/errors';
+import type { Role } from '../../api/types';
 import { useAuth } from '../../context/useAuth';
 import { loginSchema, type LoginFormValues } from '../../schemas/authSchemas';
 import styles from './Login.module.css';
@@ -17,6 +18,22 @@ interface LoginLocationState {
   from?: string;
   notice?: string;
 }
+
+/**
+ * Resolves destination after successful authentication based on the user's role:
+ * - DOCTOR -> goes to /doctor unless a specific /doctor subroute was requested.
+ * - ADMIN  -> goes to /admin unless a specific /admin subroute was requested.
+ * - PATIENT (or other) -> goes to requested destination or defaults to /profile.
+ */
+export const resolvePostLoginRedirect = (role?: Role, requestedFrom?: string): string => {
+  if (role === 'DOCTOR') {
+    return requestedFrom && requestedFrom.startsWith('/doctor') ? requestedFrom : '/doctor';
+  }
+  if (role === 'ADMIN') {
+    return requestedFrom && requestedFrom.startsWith('/admin') ? requestedFrom : '/admin';
+  }
+  return requestedFrom && requestedFrom !== '/profile' ? requestedFrom : '/profile';
+};
 
 const Login = () => {
   const navigate = useNavigate();
@@ -38,8 +55,9 @@ const Login = () => {
     setSubmitError(null);
     setUnverifiedEmail(null);
     try {
-      await login(values.email, values.password, values.rememberMe ?? false);
-      navigate(from, { replace: true });
+      const loggedUser = await login(values.email, values.password, values.rememberMe ?? false);
+      const destination = resolvePostLoginRedirect(loggedUser.role, from);
+      navigate(destination, { replace: true });
     } catch (error) {
       const apiError = toApiError(error);
       // 403 means "correct password, account not activated yet".
@@ -57,8 +75,9 @@ const Login = () => {
       setSubmitError(null);
       setUnverifiedEmail(null);
       try {
-        await loginWithGoogle(credential, getValues('rememberMe') ?? false);
-        navigate(from, { replace: true });
+        const loggedUser = await loginWithGoogle(credential, getValues('rememberMe') ?? false);
+        const destination = resolvePostLoginRedirect(loggedUser.role, from);
+        navigate(destination, { replace: true });
       } catch (error) {
         setSubmitError(toApiError(error).message);
       }

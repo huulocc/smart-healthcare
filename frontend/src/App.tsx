@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import RequireRole from './components/RequireRole';
@@ -12,11 +12,18 @@ import AdminLayout from './layouts/AdminLayout';
 import AuthLayout from './layouts/AuthLayout';
 import DoctorLayout from './layouts/DoctorLayout';
 import MainLayout from './layouts/MainLayout';
+import AdminAiUsage from './pages/Admin/AdminAiUsage';
+import AdminAppointments from './pages/Admin/AdminAppointments';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import AdminDepartments from './pages/Admin/AdminDepartments';
 import AdminDoctorRequests from './pages/Admin/AdminDoctorRequests';
 import AdminDoctors from './pages/Admin/AdminDoctors';
+import AdminNotifications from './pages/Admin/AdminNotifications';
+import AdminPatients from './pages/Admin/AdminPatients';
+import AdminReports from './pages/Admin/AdminReports';
 import AdminSchedules from './pages/Admin/AdminSchedules';
+import AdminSettings from './pages/Admin/AdminSettings';
+import AdminUsers from './pages/Admin/AdminUsers';
 import ComingSoon from './pages/Admin/ComingSoon';
 import AppointmentDetails from './pages/Appointments/AppointmentDetails';
 import Appointments from './pages/Appointments/Appointments';
@@ -45,9 +52,6 @@ function PublicPage({ children }: { children: ReactNode }) {
 // Routed but unbuilt. Keeping the paths means the sidebar links and anyone's bookmarks still
 // land somewhere that explains itself, and swapping in the real screen is a one-line change.
 const soon = {
-  patients: 'Patients will appear here once the patient records API exists.',
-  appointments:
-    'Booking has its own screens for patients and doctors. An admin view over every appointment still needs an API of its own.',
   payments: 'Payments follow booking: there is nothing to bill against yet.',
   ai: 'The AI chat widget runs on the RAG service, which does not record consultations yet.',
 };
@@ -144,7 +148,14 @@ function App() {
               }
             />
 
-            <Route path="/doctor" element={<DoctorLayout />}>
+            <Route
+              path="/doctor"
+              element={
+                <RequireRole role="DOCTOR">
+                  <DoctorLayout />
+                </RequireRole>
+              }
+            >
               <Route index element={<DoctorWorkspace />} />
               <Route path="appointments" element={<DoctorWorkspace />} />
               <Route path="appointments/:id" element={<AppointmentDetails />} />
@@ -226,16 +237,13 @@ function App() {
               <Route path="doctor-requests" element={<AdminDoctorRequests />} />
               <Route path="departments" element={<AdminDepartments />} />
               <Route path="schedules" element={<AdminSchedules />} />
-              <Route
-                path="patients"
-                element={<ComingSoon title="Patients" note={soon.patients} />}
-              />
-              <Route
-                path="appointments"
-                element={
-                  <ComingSoon title="Appointments" note={soon.appointments} />
-                }
-              />
+              <Route path="patients" element={<AdminPatients />} />
+              <Route path="appointments" element={<AdminAppointments />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="reports" element={<AdminReports />} />
+              <Route path="settings" element={<AdminSettings />} />
+              <Route path="notifications" element={<AdminNotifications />} />
+              <Route path="ai-usage" element={<AdminAiUsage />} />
               <Route
                 path="payments"
                 element={
@@ -248,6 +256,11 @@ function App() {
               />
               <Route path="*" element={<NotFound inAdmin />} />
             </Route>
+
+            <Route
+              path="/settings"
+              element={<Navigate to="/admin/settings" replace />}
+            />
 
             <Route
               path="*"

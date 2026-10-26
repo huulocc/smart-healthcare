@@ -74,6 +74,15 @@ public class Doctor {
 
 	private String avatarUrl;
 
+	@Column(length = 1500)
+	private String biography;
+
+	@Column(length = 255)
+	private String expertise;
+
+	@Column(length = 255)
+	private String languages;
+
 	@CreationTimestamp
 	@Column(nullable = false, updatable = false)
 	private Instant createdAt;

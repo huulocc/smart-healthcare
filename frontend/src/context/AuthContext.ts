@@ -15,9 +15,9 @@ export interface AuthContextValue {
   isAuthenticated: boolean;
   user: User | null;
   role: Role | null;
-  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<User>;
   /** Signs in with the ID token that the Google button gives the browser. */
-  loginWithGoogle: (credential: string, rememberMe?: boolean) => Promise<void>;
+  loginWithGoogle: (credential: string, rememberMe?: boolean) => Promise<User>;
   logout: () => void;
 }
 

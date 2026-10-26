@@ -149,3 +149,28 @@ numbers -- as deltas, since every test class shares one H2 database.
   second async idiom would cost more than it saves.
 - **`src/api/adminTypes.ts` mirrors the backend records by hand.** Nothing checks the two
   against each other, so change them together.
+
+
+---
+
+## 5. Completed Full Admin Management Extension
+
+**Implemented Features & Endpoints:**
+
+| Domain | Route | Backend Controller & Service | SQL Server Source | Key Capabilities |
+|---|---|---|---|---|
+| **Overview Dashboard** | `/admin` | `AdminDashboardController` (`AdminDashboardService`) | Multi-table aggregation | Real KPIs (Patients, Doctors, Appointments, Users), 7-day trend SVG chart, recent appointments, AI telemetry snapshot |
+| **Patient Management** | `/admin/patients` | `AdminPatientController` (`AdminPatientService`) | `dbo.patients`, `dbo.users`, `dbo.appointments` | Search/filter, pagination, demographic edits, active/inactive toggle, appointment history modal |
+| **User & Role Administration** | `/admin/users` | `AdminUserController` (`AdminUserService`) | `dbo.users` | Create/edit users, role change (ADMIN, DOCTOR, PATIENT), activate/deactivate, self-demotion & last-admin safeguards |
+| **Appointment Management** | `/admin/appointments` | `BookingController` (Admin methods) | `dbo.appointments` | All appointments view, status change, cancellation with audit reason, clinical/admin notes |
+| **Reports & Analytics** | `/admin/reports` | `AdminReportController` (`AdminReportService`) | `dbo.appointments`, `dbo.departments`, `dbo.doctors` | Date-range filters, volume trends, department workload share, doctor consultation performance, patient growth |
+| **System Settings** | `/admin/settings` | `AdminSettingsController` (`AdminSettingsService`) | `dbo.system_settings` | Categorized configuration (Clinic, Booking, AI, System), read and bulk update |
+| **Notifications & Alerts** | `/admin/notifications` | `AdminNotificationController` (`AdminNotificationService`) | `dbo.admin_notifications` | Unread badge in topbar, filter by status, mark read / mark all read, direct resource links |
+| **AI Usage & Telemetry** | `/admin/ai-usage` | `AdminAiUsageController` & `AiTelemetryController` | `dbo.ai_usage_events` | Public ingestion (`POST /api/ai/telemetry`), cost calculation, latency (avg/p95), failure/refusal rates, provider/model breakdown, paged event logs |
+
+**Safety and Integrity Rules Maintained:**
+- Booking availability, lifecycle, and customer rescheduling algorithms were untouched and preserved.
+- Payment / billing and AI Consultation business logic remain protected.
+- SQL Server schema updated via `backend/sqlserver/admin/002_admin_features.sql`.
+- 100% backend test suite passing (123 tests) including comprehensive `AdminFeaturesApiTest`.
+- 100% frontend TypeScript build passing with Vite.

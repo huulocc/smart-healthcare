@@ -9,6 +9,8 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "test:booking": "rolldown tests/booking.test.ts --platform node -f esm -o node_modules/.tmp/booking-tests.mjs && node node_modules/.tmp/booking-tests.mjs",
+    "test:doctor": "rolldown tests/doctor.test.ts --platform node -f esm -o node_modules/.tmp/doctor-tests.mjs && node node_modules/.tmp/doctor-tests.mjs",
+    "test:aiUsage": "rolldown tests/aiUsage.test.ts --platform node -f esm -o node_modules/.tmp/aiUsage-tests.mjs && node node_modules/.tmp/aiUsage-tests.mjs",
     "prepare": "husky",
     "lint:fix": "pnpm lint --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx}\""

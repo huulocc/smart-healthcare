@@ -27,10 +27,11 @@ public class SecurityConfig {
 				.httpBasic(AbstractHttpConfigurer::disable)
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
-						.requestMatchers("/api/auth/**", "/error").permitAll()
+						.requestMatchers("/api/auth/**", "/api/ai/telemetry", "/error").permitAll()
 						// The ROLE_ authority comes from the token's role claim (JwtAuthenticationFilter),
 						// so a role change only takes effect once that user logs in again.
 						.requestMatchers("/api/admin/**").hasRole("ADMIN")
+						.requestMatchers("/api/doctor/**").hasRole("DOCTOR")
 						.anyRequest().authenticated())
 				// Created here (not as a @Component) so Spring Boot does not register it a second time outside Security.
 				.addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class)

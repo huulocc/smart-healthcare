@@ -58,6 +58,9 @@ public class User {
 	// EmailVerificationBackfill turns those nulls into true on the next start-up.
 	private Boolean emailVerified;
 
+	@Column(length = 20)
+	private String status = "ACTIVE";
+
 	@CreationTimestamp
 	@Column(nullable = false, updatable = false)
 	private Instant createdAt;
@@ -68,5 +71,9 @@ public class User {
 
 	public boolean isEmailVerified() {
 		return Boolean.TRUE.equals(emailVerified);
+	}
+
+	public boolean isActive() {
+		return status == null || "ACTIVE".equalsIgnoreCase(status);
 	}
 }
