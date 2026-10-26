@@ -21,6 +21,28 @@ existing leaflet Q&A and its evaluation results below remain separate from
 this new flow; the reported retrieval metrics do not measure department
 recommendation accuracy.
 
+## Chat file upload
+
+The chat widget accepts one PDF with selectable text or one UTF-8 TXT file per
+request (5 MB maximum; PDFs up to 20 pages; extracted text up to 24,000
+characters). A patient can attach a file and ask a question in either chat mode,
+or attach it in leaflet mode and send without a question to request a summary.
+The file is sent as multipart form data to `/api/chat/upload/stream` or
+`/api/chat/triage/upload`. The server extracts text in memory, embeds short
+chunks, selects the three most relevant passages, and includes them with their
+page and filename in the AI context and response sources. The upload is not
+retained after the request or added to the shared Chroma index; the multipart
+parser may use a temporary file while handling larger uploads. File-only
+summary requests send all extracted chunks (within the text limit); questions
+select the three closest chunks. The browser retains the
+selected file until the patient removes it, uploading it again for each new
+question. Uploaded text goes to the configured embedding and generation
+providers, which may be local Ollama or a hosted provider. Scanned PDFs need
+OCR before upload.
+
+Install the updated `rag/requirements.txt` before starting `rag/server.py`;
+multipart handling now needs `python-multipart`.
+
 A minimal, fully local retrieval-augmented generation pipeline over patient
 information leaflets. Its job is **not** to be good. Its job is to run end to
 end and produce a number that every later change has to beat.

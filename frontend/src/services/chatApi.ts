@@ -35,15 +35,21 @@ export interface TriageReply {
   elapsed_seconds: number;
 }
 
-export async function requestDepartmentGuidance(question: string): Promise<TriageReply> {
+export async function requestDepartmentGuidance(question: string, file?: File): Promise<TriageReply> {
   const token = getStoredToken();
   if (!token) throw new ChatError('Sign in to get department guidance.');
   let response: Response;
   try {
-    response = await fetch('/api/chat/triage', {
+    const body = file ? new FormData() : null;
+    if (body && file) {
+      body.append('question', question);
+      body.append('file', file);
+    }
+    response = await fetch(file ? '/api/chat/triage/upload' : '/api/chat/triage', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ question }),
+      headers: file ? { Authorization: `Bearer ${token}` } :
+        { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: body ?? JSON.stringify({ question }),
     });
   } catch {
     throw new ChatError('Could not reach the assistant. Please try again.');
@@ -51,6 +57,7 @@ export async function requestDepartmentGuidance(question: string): Promise<Triag
   if (response.status === 401 || response.status === 403) {
     throw new ChatError('Your session has expired. Sign in again for department guidance.');
   }
+  if (file && [400, 413, 422].includes(response.status)) throw await uploadError(response);
   if (!response.ok) {
     throw new ChatError('Department guidance is unavailable right now. Please try again.');
   }
@@ -66,6 +73,16 @@ export interface HealthStatus {
 
 /** Thrown with a message that is safe to show the user as-is. */
 export class ChatError extends Error {}
+
+async function uploadError(response: Response): Promise<ChatError> {
+  try {
+    const body = await response.json() as { detail?: string };
+    if (typeof body.detail === 'string') return new ChatError(body.detail);
+  } catch {
+    // A proxy failure or non-JSON response gets the generic message below.
+  }
+  return new ChatError('The file could not be processed. Check that it is a PDF or UTF-8 TXT file.');
+}
 
 export async function sendChatMessage(
   question: string,
@@ -117,14 +134,20 @@ export interface StreamHandlers {
 export async function streamChatMessage(
   question: string,
   handlers: StreamHandlers,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  file?: File,
 ): Promise<string> {
   let response: Response;
   try {
-    response = await fetch('/api/chat/stream', {
+    const body = file ? new FormData() : null;
+    if (body && file) {
+      body.append('question', question);
+      body.append('file', file);
+    }
+    response = await fetch(file ? '/api/chat/upload/stream' : '/api/chat/stream', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question }),
+      headers: file ? undefined : { 'Content-Type': 'application/json' },
+      body: body ?? JSON.stringify({ question }),
       signal,
     });
   } catch (error) {
@@ -135,6 +158,7 @@ export async function streamChatMessage(
   if ([502, 503, 504].includes(response.status)) {
     throw new ChatError('The assistant is offline right now. Please try again shortly.');
   }
+  if (file && [400, 413, 422].includes(response.status)) throw await uploadError(response);
   if (!response.ok || !response.body) {
     throw new ChatError('Something went wrong while answering. Please try again.');
   }
