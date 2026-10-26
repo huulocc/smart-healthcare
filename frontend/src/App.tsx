@@ -144,7 +144,14 @@ function App() {
               }
             />
 
-            <Route path="/doctor" element={<DoctorLayout />}>
+            <Route
+              path="/doctor"
+              element={
+                <RequireRole role="DOCTOR">
+                  <DoctorLayout />
+                </RequireRole>
+              }
+            >
               <Route index element={<DoctorWorkspace />} />
               <Route path="appointments" element={<DoctorWorkspace />} />
               <Route path="appointments/:id" element={<AppointmentDetails />} />
