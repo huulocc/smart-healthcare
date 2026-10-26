@@ -47,6 +47,27 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
 			@Param("search") String search,
 			Pageable pageable);
 
+	/** The public directory, which anyone may call without logging in.
+	 *
+	 *  Separate from {@link #search} for one reason: that query also matches
+	 *  {@code d.user.email}, so reusing it here would let an anonymous visitor type an
+	 *  address and learn from the result count whether it belongs to a doctor. This one
+	 *  matches the name and the specialty, which is exactly what the search box on the
+	 *  Doctors page offers. The status filter is a parameter rather than a literal so the
+	 *  caller states which doctors it wants, the way every other query here does. */
+	@Query("""
+			select d from Doctor d
+			where (:status       is null or d.status = :status)
+			  and (:departmentId is null or d.department.id = :departmentId)
+			  and (:search       is null or lower(d.user.fullName) like lower(concat('%', :search, '%'))
+			                             or lower(d.specialty)     like lower(concat('%', :search, '%')))
+			""")
+	Page<Doctor> searchPublic(
+			@Param("departmentId") Long departmentId,
+			@Param("status") DoctorStatus status,
+			@Param("search") String search,
+			Pageable pageable);
+
 	// The four stat tiles above the doctor list: Total / Active / Available / On Leave.
 	long countByStatus(DoctorStatus status);
 
