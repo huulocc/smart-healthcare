@@ -214,20 +214,23 @@ def embed(texts, is_query):
 
 
 def _chat_payload(system, user):
-    budget = (
-        config.GEMINI_THINKING_BUDGET_ON
-        if config.LLM_THINK
-        else config.GEMINI_THINKING_BUDGET_OFF
-    )
+    thinking_config = {"includeThoughts": bool(config.LLM_THINK)}
+    if "gemini-3" in config.GEMINI_LLM_MODEL:
+        thinking_config["thinkingLevel"] = "low" if config.LLM_THINK else "minimal"
+    else:
+        budget = (
+            config.GEMINI_THINKING_BUDGET_ON
+            if config.LLM_THINK
+            else config.GEMINI_THINKING_BUDGET_OFF
+        )
+        thinking_config["thinkingBudget"] = budget
+
     return {
         "systemInstruction": {"parts": [{"text": system}]},
         "contents": [{"role": "user", "parts": [{"text": user}]}],
         "generationConfig": {
             "temperature": config.LLM_TEMPERATURE,
-            "thinkingConfig": {
-                "thinkingBudget": budget,
-                "includeThoughts": bool(config.LLM_THINK),
-            },
+            "thinkingConfig": thinking_config,
         },
     }
 
