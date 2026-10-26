@@ -344,6 +344,13 @@ nào.
 - **AC9** — Given cần đo chất lượng truy hồi, Then bộ 85 câu hỏi trong
   `eval_questions.yaml` chấm được recall@1 và recall@3 trên các section đúng, và
   mỗi lần chạy được lưu lại để so sánh trước/sau.
+- **AC10** — Given câu hỏi tìm cách đổi chỉ thị của trợ lý, hỏi chuyện không
+  liên quan tới y tế, hoặc đòi đặt/huỷ lịch hẹn, Then bị từ chối **trước khi**
+  chạm tới mô hình, kèm một câu nói rõ trợ lý làm được gì — riêng chuyện đặt lịch
+  thì chỉ sang trang đặt lịch.
+- **AC11** — Given các lời nhắc gửi cho mô hình, Then chúng nằm trong file có
+  đánh số phiên bản dưới `rag/prompts/`, không viết thẳng trong code, nên đổi lời
+  nhắc là một thay đổi nhìn thấy được trong Git.
 
 ### US-AI-02 — Gợi ý khoa khám từ triệu chứng
 
