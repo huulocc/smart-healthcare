@@ -10,6 +10,7 @@ import ResendVerification from '../../components/ResendVerification';
 import { registerAccount } from '../../api/authApi';
 import { applyFieldErrors, toApiError } from '../../api/errors';
 import { useAuth } from '../../context/useAuth';
+import { resolvePostLoginRedirect } from '../Login/Login';
 import { registerSchema, type RegisterFormValues } from '../../schemas/authSchemas';
 import styles from './Register.module.css';
 
@@ -74,8 +75,10 @@ const Register = () => {
     async (credential: string) => {
       setSubmitError(null);
       try {
-        await loginWithGoogle(credential);
-        navigate('/profile', { replace: true });
+        const loggedUser = await loginWithGoogle(credential);
+        // Same rule as the login form: patients land on the home page, while a doctor or
+        // an admin signing up this way still goes straight to their own area.
+        navigate(resolvePostLoginRedirect(loggedUser.role), { replace: true });
       } catch (error) {
         setSubmitError(toApiError(error).message);
       }
