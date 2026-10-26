@@ -25,7 +25,7 @@ def answer(question, hits):
     return chat(config.SYSTEM_PROMPT, user)
 
 
-def answer_stream(question, hits):
+def answer_stream(question, hits, system_prompt=None):
     """Streaming form of `answer`, yielding ("thinking" | "content", text)."""
     if not hits:
         yield "content", "I do not have any documents to answer that from."
@@ -33,4 +33,4 @@ def answer_stream(question, hits):
     user = config.USER_PROMPT.format(
         context=build_context(hits), question=question
     )
-    yield from chat_stream(config.SYSTEM_PROMPT, user)
+    yield from chat_stream(system_prompt or config.SYSTEM_PROMPT, user)

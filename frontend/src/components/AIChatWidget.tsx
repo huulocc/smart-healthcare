@@ -40,6 +40,8 @@ const AIChatWidget = ({ inline = false }: { inline?: boolean }) => {
   ]);
   const [inputValue, setInputValue] = useState('');
   const [guidanceMode, setGuidanceMode] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [pending, setPending] = useState<Pending | null>(null);
   const [waitedSeconds, setWaitedSeconds] = useState(0);
@@ -70,12 +72,12 @@ const AIChatWidget = ({ inline = false }: { inline?: boolean }) => {
 
   const handleSendMessage = async (e: React.SyntheticEvent) => {
     e.preventDefault();
-    const question = inputValue.trim();
+    const question = inputValue.trim() || (selectedFile && !guidanceMode ? 'Summarize the uploaded document.' : '');
     if (!question || isSending) return;
 
     const newUserMsg: Message = {
       id: Date.now().toString(),
-      text: question,
+      text: selectedFile ? `${question}\n📎 ${selectedFile.name}` : question,
       sender: 'user',
       timestamp: new Date()
     };
@@ -91,7 +93,7 @@ const AIChatWidget = ({ inline = false }: { inline?: boolean }) => {
 
     try {
       if (guidanceMode) {
-        const triage = await requestDepartmentGuidance(question);
+        const triage = await requestDepartmentGuidance(question, selectedFile ?? undefined);
         setMessages(prev => [...prev, {
           id: `${Date.now()}-triage`,
           text: triage.reason,
@@ -111,7 +113,7 @@ const AIChatWidget = ({ inline = false }: { inline?: boolean }) => {
         onThinking: () => setPending(p => (p ? { ...p, phase: 'thinking' } : p)),
         onToken: delta =>
           setPending(p => (p ? { ...p, phase: 'writing', text: p.text + delta } : p)),
-      });
+      }, undefined, selectedFile ?? undefined);
       setMessages(prev => [...prev, {
         id: `${Date.now()}-bot`,
         text: full,
@@ -132,7 +134,10 @@ const AIChatWidget = ({ inline = false }: { inline?: boolean }) => {
       }]);
       // A failed send is better evidence than the check done when the panel
       // opened, so let the header reflect it.
-      setIsOffline(true);
+      if (error instanceof ChatError &&
+          (error.message.includes('offline') || error.message.includes('Could not reach'))) {
+        setIsOffline(true);
+      }
     } finally {
       setIsSending(false);
       setPending(null);
@@ -197,7 +202,7 @@ const AIChatWidget = ({ inline = false }: { inline?: boolean }) => {
             <div className={styles.connectionText}>
               {isOffline
                 ? 'The assistant is unavailable right now.'
-                : 'Answers come from our patient information leaflets.'}
+                : 'Answers use patient leaflets and any file you attach.'}
             </div>
             {messages.map(msg => (
               <div key={msg.id} className={`${styles.messageWrapper} ${styles[msg.sender]}`}>
@@ -258,6 +263,42 @@ const AIChatWidget = ({ inline = false }: { inline?: boolean }) => {
             <button type="button" aria-pressed={guidanceMode} disabled={isSending}
               onClick={() => setGuidanceMode(true)}>Suggest a department</button>
           </div>
+          <div className={styles.attachmentArea}>
+            <label className={styles.attachButton}>
+              📎 Attach PDF or TXT
+              <input
+                type="file"
+                accept=".pdf,.txt,application/pdf,text/plain"
+                disabled={isSending}
+                onChange={event => {
+                  const file = event.target.files?.[0] ?? null;
+                  event.target.value = '';
+                  if (!file) return;
+                  if (!/\.(pdf|txt)$/i.test(file.name)) {
+                    setSelectedFile(null);
+                    setFileError('Choose a PDF or TXT file.');
+                    return;
+                  }
+                  if (file.size > 5 * 1024 * 1024) {
+                    setSelectedFile(null);
+                    setFileError('The file must be 5 MB or smaller.');
+                    return;
+                  }
+                  setSelectedFile(file);
+                  setFileError(null);
+                }}
+              />
+            </label>
+            {selectedFile && (
+              <span className={styles.selectedFile}>
+                {selectedFile.name}
+                <button type="button" disabled={isSending} aria-label="Remove attached file"
+                  onClick={() => setSelectedFile(null)}>×</button>
+              </span>
+            )}
+            {fileError && <span className={styles.fileError} role="alert">{fileError}</span>}
+            <small>File text is sent to the configured AI provider for this request and is not saved in the document index.</small>
+          </div>
           <form className={styles.inputArea} onSubmit={handleSendMessage}>
             <input
               type="text"
@@ -279,7 +320,7 @@ const AIChatWidget = ({ inline = false }: { inline?: boolean }) => {
               type="submit"
               className={styles.sendButton}
               aria-label="Send message"
-              disabled={isSending || !inputValue.trim()}
+              disabled={isSending || (!inputValue.trim() && (!selectedFile || guidanceMode))}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="22" y1="2" x2="11" y2="13"></line>
