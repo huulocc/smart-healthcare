@@ -278,6 +278,7 @@
   color: var(--text-main);
   border: 1px solid var(--border);
   border-top-right-radius: 2px;
+  white-space: pre-wrap;
 }
 
 .time {
@@ -455,6 +456,52 @@
 
 .guidanceResult small {
   opacity: 0.8;
+}
+
+.attachmentArea {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.75rem;
+}
+
+.attachmentArea small {
+  width: 100%;
+  color: var(--text-muted);
+}
+
+.attachButton {
+  cursor: pointer;
+  color: var(--primary);
+}
+
+.attachButton input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.selectedFile {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  gap: 0.2rem;
+  overflow-wrap: anywhere;
+  color: var(--text-main);
+}
+
+.selectedFile button {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.fileError {
+  color: #b91c1c;
 }
 
 @keyframes caretBlink {
