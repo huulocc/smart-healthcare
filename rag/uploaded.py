@@ -6,6 +6,7 @@ from math import sqrt
 from pypdf import PdfReader
 
 from errors import ModelError
+from guardrails import neutralize_document_instructions
 from llm import embed
 
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
@@ -61,6 +62,7 @@ def extract_upload(data: bytes, filename: str | None) -> list[dict]:
     else:
         raise UploadError("Only PDF and TXT files are supported.")
 
+    pages = [neutralize_document_instructions(page) for page in pages]
     total = sum(len(page) for page in pages)
     if total > MAX_TEXT_CHARS:
         raise UploadError("This document has too much text. Use a shorter file (up to 24,000 characters).")

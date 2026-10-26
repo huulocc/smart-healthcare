@@ -20,7 +20,7 @@ public class AiTelemetryController {
 
     public AiTelemetryController(
             AdminAiUsageService service,
-            @Value("${app.ai.telemetry-secret:${AI_TELEMETRY_SECRET:smart-healthcare-telemetry-secret-key-2026}}") String configuredSecret
+            @Value("${app.ai.telemetry-secret:}") String configuredSecret
     ) {
         this.service = service;
         this.configuredSecret = configuredSecret;
@@ -39,7 +39,7 @@ public class AiTelemetryController {
 
     private void validateSecret(String secretHeader, String authHeader) {
         if (configuredSecret == null || configuredSecret.isBlank()) {
-            return;
+            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Telemetry secret is not configured");
         }
 
         if (secretHeader != null && configuredSecret.equals(secretHeader.trim())) {

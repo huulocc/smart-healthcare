@@ -57,7 +57,7 @@ export async function requestDepartmentGuidance(question: string, file?: File): 
   if (response.status === 401 || response.status === 403) {
     throw new ChatError('Your session has expired. Sign in again for department guidance.');
   }
-  if (file && [400, 413, 422].includes(response.status)) throw await uploadError(response);
+  if ([400, 413, 422].includes(response.status)) throw await requestError(response);
   if (!response.ok) {
     throw new ChatError('Department guidance is unavailable right now. Please try again.');
   }
@@ -74,14 +74,14 @@ export interface HealthStatus {
 /** Thrown with a message that is safe to show the user as-is. */
 export class ChatError extends Error {}
 
-async function uploadError(response: Response): Promise<ChatError> {
+async function requestError(response: Response): Promise<ChatError> {
   try {
     const body = await response.json() as { detail?: string };
     if (typeof body.detail === 'string') return new ChatError(body.detail);
   } catch {
     // A proxy failure or non-JSON response gets the generic message below.
   }
-  return new ChatError('The file could not be processed. Check that it is a PDF or UTF-8 TXT file.');
+  return new ChatError('The request could not be processed. Please check your question or file.');
 }
 
 export async function sendChatMessage(
@@ -108,6 +108,7 @@ export async function sendChatMessage(
   if ([502, 503, 504].includes(response.status)) {
     throw new ChatError('The assistant is offline right now. Please try again shortly.');
   }
+  if ([400, 413, 422].includes(response.status)) throw await requestError(response);
   if (!response.ok) {
     throw new ChatError('Something went wrong while answering. Please try again.');
   }
@@ -158,7 +159,7 @@ export async function streamChatMessage(
   if ([502, 503, 504].includes(response.status)) {
     throw new ChatError('The assistant is offline right now. Please try again shortly.');
   }
-  if (file && [400, 413, 422].includes(response.status)) throw await uploadError(response);
+  if ([400, 413, 422].includes(response.status)) throw await requestError(response);
   if (!response.ok || !response.body) {
     throw new ChatError('Something went wrong while answering. Please try again.');
   }
@@ -201,7 +202,7 @@ export async function streamChatMessage(
       } else if (event.type === 'error') {
         // The stream opened with a 200 before this went wrong, so the failure
         // arrives in the body rather than as a status code.
-        throw new ChatError('The assistant is offline right now. Please try again shortly.');
+        throw new ChatError(event.message || 'The assistant could not answer. Please try again.');
       }
     }
   }
