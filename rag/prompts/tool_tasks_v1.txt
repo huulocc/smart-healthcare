@@ -1,0 +1,5 @@
+{
+  "list_departments": "Call list_departments first.",
+  "search_doctors": "Choose one department ID from the returned list, or null when uncertain, then call search_doctors.",
+  "get_availability": "Choose one doctor ID from these search results and call get_availability."
+}

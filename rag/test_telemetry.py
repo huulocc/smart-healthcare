@@ -26,6 +26,7 @@ class TestTelemetry(unittest.TestCase):
         result = send_telemetry(feature="CHAT")
         self.assertFalse(result)
 
+    @patch("config.TELEMETRY_SECRET", "test-telemetry-secret")
     @patch("urllib.request.urlopen")
     def test_send_telemetry_success(self, mock_urlopen):
         mock_resp = MagicMock()
@@ -48,9 +49,16 @@ class TestTelemetry(unittest.TestCase):
         req = mock_urlopen.call_args[0][0]
         self.assertEqual(
             req.get_header("X-telemetry-secret"),
-            "smart-healthcare-telemetry-secret-key-2026",
+            "test-telemetry-secret",
         )
 
+    @patch("config.TELEMETRY_SECRET", "")
+    @patch("urllib.request.urlopen")
+    def test_missing_secret_does_not_send(self, mock_urlopen):
+        self.assertFalse(send_telemetry(feature="CHAT"))
+        mock_urlopen.assert_not_called()
+
+    @patch("config.TELEMETRY_SECRET", "test-telemetry-secret")
     @patch("urllib.request.urlopen")
     def test_send_telemetry_failure_does_not_raise(self, mock_urlopen):
         mock_urlopen.side_effect = urllib.error.URLError("Connection refused")
@@ -67,6 +75,7 @@ class TestTelemetry(unittest.TestCase):
         )
         self.assertFalse(success)
 
+    @patch("config.TELEMETRY_SECRET", "test-telemetry-secret")
     @patch("urllib.request.urlopen")
     def test_send_telemetry_http_error_does_not_raise(self, mock_urlopen):
         mock_urlopen.side_effect = urllib.error.HTTPError(
