@@ -161,7 +161,7 @@ test('Doctor appointment isolation (IDOR protection contract)', () => {
   assert.equal(doc10CanSeeApp3, false, 'IDOR violation prevented: Doctor 10 cannot see Doctor 20 appointments');
 });
 
-test('Role-based post-login redirection: DOCTOR -> /doctor, ADMIN -> /admin, PATIENT -> /profile', () => {
+test('Role-based post-login redirection: DOCTOR -> /doctor, ADMIN -> /admin, PATIENT -> home', () => {
   type Role = 'PATIENT' | 'DOCTOR' | 'ADMIN';
   const resolvePostLoginRedirect = (role?: Role, requestedFrom?: string): string => {
     if (role === 'DOCTOR') {
@@ -170,7 +170,7 @@ test('Role-based post-login redirection: DOCTOR -> /doctor, ADMIN -> /admin, PAT
     if (role === 'ADMIN') {
       return requestedFrom && requestedFrom.startsWith('/admin') ? requestedFrom : '/admin';
     }
-    return requestedFrom && requestedFrom !== '/profile' ? requestedFrom : '/profile';
+    return requestedFrom && requestedFrom !== '/' ? requestedFrom : '/';
   };
 
   // 1. Doctor logging in directly defaults to /doctor, bypassing /profile
@@ -189,8 +189,9 @@ test('Role-based post-login redirection: DOCTOR -> /doctor, ADMIN -> /admin, PAT
   assert.equal(resolvePostLoginRedirect('ADMIN', '/admin/users'), '/admin/users');
   assert.equal(resolvePostLoginRedirect('ADMIN', '/admin/settings'), '/admin/settings');
 
-  // 5. Patient continues to go to /profile or specific requested page
-  assert.equal(resolvePostLoginRedirect('PATIENT', undefined), '/profile');
+  // 5. Patient lands on the home page, unless a specific page was requested
+  assert.equal(resolvePostLoginRedirect('PATIENT', undefined), '/');
+  assert.equal(resolvePostLoginRedirect('PATIENT', '/'), '/');
   assert.equal(resolvePostLoginRedirect('PATIENT', '/profile'), '/profile');
   assert.equal(resolvePostLoginRedirect('PATIENT', '/book/1'), '/book/1');
 });

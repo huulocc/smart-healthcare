@@ -1,25 +1,51 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Button from '../../components/Button';
-import { DEPARTMENTS } from '../../data/mockData';
 import DoctorCard from '../../components/DoctorCard';
-import { useAppointments } from '../../context/AppointmentContext';
+import { useAsync } from '../../hooks/useAsync';
+import {
+  doctorCardModel,
+  getPublicDepartments,
+  getPublicDoctors,
+} from '../../api/publicApi';
 import styles from './Doctors.module.css';
 
+const PAGE_SIZE = 12;
+
 const Doctors = () => {
-  const { doctors } = useAppointments();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDept, setSelectedDept] = useState('');
+  const [query, setQuery] = useState('');
+  const [departmentId, setDepartmentId] = useState('');
+  const [page, setPage] = useState(0);
 
-  // Filter doctors based on search and department selection
-  const filteredDoctors = doctors.filter((doctor) => {
-    const matchesSearch =
-      doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doctor.specialty.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDept =
-      selectedDept === '' || doctor.department === selectedDept;
+  // One request per pause in typing, not one per keystroke. The filtering itself is done
+  // by the server, so every change of either filter is a round trip.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setQuery(searchTerm.trim());
+      setPage(0);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
-    return matchesSearch && matchesDept;
-  });
+  const departments = useAsync(() => getPublicDepartments(), []);
+
+  const doctors = useAsync(
+    () =>
+      getPublicDoctors({
+        departmentId: departmentId === '' ? undefined : Number(departmentId),
+        search: query === '' ? undefined : query,
+        page,
+        size: PAGE_SIZE,
+      }),
+    [departmentId, query, page],
+  );
+
+  function clearFilters() {
+    setSearchTerm('');
+    setQuery('');
+    setDepartmentId('');
+    setPage(0);
+  }
 
   return (
     <div className={styles.page}>
@@ -45,41 +71,82 @@ const Doctors = () => {
           </div>
           <div className={styles.selectBox}>
             <select
-              value={selectedDept}
+              value={departmentId}
               aria-label="Filter by department"
-              onChange={(e) => setSelectedDept(e.target.value)}
+              onChange={(e) => {
+                setDepartmentId(e.target.value);
+                setPage(0);
+              }}
               className={styles.select}
             >
               <option value="">All Departments</option>
-              {DEPARTMENTS.map((dept) => (
-                <option key={dept.id} value={dept.name}>
-                  {dept.name}
-                </option>
-              ))}
+              {departments.state.status === 'ready' &&
+                departments.state.data.map((dept) => (
+                  <option key={dept.id} value={dept.id}>
+                    {dept.name}
+                  </option>
+                ))}
             </select>
           </div>
         </div>
 
-        {filteredDoctors.length > 0 ? (
-          <div className={styles.grid}>
-            {filteredDoctors.map((doctor) => (
-              <DoctorCard key={doctor.id} doctor={doctor} />
-            ))}
-          </div>
-        ) : (
+        {doctors.state.status === 'loading' && (
           <div className={styles.emptyState}>
-            <h3>No doctors found</h3>
-            <p>We couldn't find any doctors matching your current filters.</p>
-            <Button
-              onClick={() => {
-                setSearchTerm('');
-                setSelectedDept('');
-              }}
-            >
-              Clear Filters
-            </Button>
+            <h3>Loading doctors...</h3>
           </div>
         )}
+
+        {doctors.state.status === 'error' && (
+          <div className={styles.emptyState}>
+            <h3>Could not load the directory</h3>
+            <p>{doctors.state.message}</p>
+            <Button onClick={doctors.reload}>Try Again</Button>
+          </div>
+        )}
+
+        {doctors.state.status === 'ready' &&
+          (doctors.state.data.content.length > 0 ? (
+            <>
+              <div className={styles.grid}>
+                {doctors.state.data.content.map((doctor) => (
+                  <DoctorCard
+                    key={doctor.id}
+                    doctor={doctorCardModel(doctor)}
+                  />
+                ))}
+              </div>
+              {doctors.state.data.totalPages > 1 && (
+                <div className={styles.filters}>
+                  <Button
+                    variant="outline"
+                    disabled={page === 0}
+                    onClick={() => setPage((value) => value - 1)}
+                  >
+                    Previous
+                  </Button>
+                  <span className={styles.subtitle}>
+                    Page {doctors.state.data.page + 1} of{' '}
+                    {doctors.state.data.totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    disabled={page + 1 >= doctors.state.data.totalPages}
+                    onClick={() => setPage((value) => value + 1)}
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className={styles.emptyState}>
+              <h3>No doctors found</h3>
+              <p>
+                We couldn't find any doctors matching your current filters.
+              </p>
+              <Button onClick={clearFilters}>Clear Filters</Button>
+            </div>
+          ))}
       </div>
     </div>
   );

@@ -23,7 +23,7 @@ interface LoginLocationState {
  * Resolves destination after successful authentication based on the user's role:
  * - DOCTOR -> goes to /doctor unless a specific /doctor subroute was requested.
  * - ADMIN  -> goes to /admin unless a specific /admin subroute was requested.
- * - PATIENT (or other) -> goes to requested destination or defaults to /profile.
+ * - PATIENT (or other) -> goes to requested destination or defaults to the home page.
  */
 export const resolvePostLoginRedirect = (role?: Role, requestedFrom?: string): string => {
   if (role === 'DOCTOR') {
@@ -32,14 +32,14 @@ export const resolvePostLoginRedirect = (role?: Role, requestedFrom?: string): s
   if (role === 'ADMIN') {
     return requestedFrom && requestedFrom.startsWith('/admin') ? requestedFrom : '/admin';
   }
-  return requestedFrom && requestedFrom !== '/profile' ? requestedFrom : '/profile';
+  return requestedFrom && requestedFrom !== '/' ? requestedFrom : '/';
 };
 
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, loginWithGoogle } = useAuth();
-  const { from = '/profile', notice } = (location.state as LoginLocationState | null) ?? {};
+  const { from = '/', notice } = (location.state as LoginLocationState | null) ?? {};
   const [submitError, setSubmitError] = useState<string | null>(null);
   // Set when the password was right but the account has not been activated yet.
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);

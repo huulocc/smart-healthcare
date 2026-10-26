@@ -2,6 +2,7 @@ package com.example.healthcare.backend.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -28,6 +29,10 @@ public class SecurityConfig {
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/api/auth/**", "/api/ai/telemetry", "/error").permitAll()
+						// The public directory behind the Doctors and Departments pages, which are
+						// reachable without logging in. GET only: a write method under this prefix
+						// would 401 rather than silently become a public write.
+						.requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
 						// The ROLE_ authority comes from the token's role claim (JwtAuthenticationFilter),
 						// so a role change only takes effect once that user logs in again.
 						.requestMatchers("/api/admin/**").hasRole("ADMIN")

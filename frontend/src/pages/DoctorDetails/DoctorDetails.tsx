@@ -1,178 +1,179 @@
-import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { CalendarDays, MapPin, Star } from 'lucide-react';
+import { CalendarDays, Stethoscope } from 'lucide-react';
+import { addDays, format, parseISO } from 'date-fns';
 import Button from '../../components/Button';
 import {
-  DemoNotice,
   DoctorImage,
-  FeeSummary,
   NotFound,
   Page,
 } from '../../components/healthcare/HealthcareUI';
-import { useAppointments } from '../../context/AppointmentContext';
-import {
-  addDays,
-  dateKey,
-  departmentForDoctor,
-  formatDate,
-  TIMES,
-} from '../../data/appointmentDemo';
+import { useAsync } from '../../hooks/useAsync';
+import { getPublicDoctor } from '../../api/publicApi';
 import { getDoctorAvailability, type Slot } from '../../api/bookingApi';
+import { getStoredToken } from '../../api/client';
 import styles from './DoctorDetails.module.css';
+
+const DAYS_AHEAD = 29;
+
+/** Dates are plain yyyy-MM-dd strings end to end, the same shape the API uses. */
+const isoDay = (date: Date) => format(date, 'yyyy-MM-dd');
+const readable = (day: string) => format(parseISO(day), 'EEEE d MMMM yyyy');
 
 export default function DoctorDetails() {
   const { id } = useParams();
-  const { doctors, getSlotStatus } = useAppointments();
-  const doctor = doctors.find((item) => item.id === Number(id));
-  const [realSlots, setRealSlots] = useState<Slot[] | null>(null);
+  const doctorId = Number(id);
 
-  const today = dateKey();
-  const maxDate = addDays(today, 29);
+  // The directory is public; availability is not. A visitor who is not signed in would get
+  // 401 from /api/booking, so the request is not made at all and the panel says why.
+  const signedIn = getStoredToken() !== null;
+  const today = isoDay(new Date());
+  const until = isoDay(addDays(new Date(), DAYS_AHEAD));
 
-  useEffect(() => {
-    let active = true;
-    if (!doctor) return;
-    getDoctorAvailability(doctor.id, today, maxDate)
-      .then((res) => {
-        if (active) setRealSlots(res.slots || []);
-      })
-      .catch(() => {
-        if (active) setRealSlots([]);
-      });
-    return () => {
-      active = false;
-    };
-  }, [doctor, today, maxDate]);
+  const doctor = useAsync(() => getPublicDoctor(doctorId), [doctorId]);
 
-  if (!doctor) return <NotFound title="Doctor not found" />;
-  const department = departmentForDoctor(doctor);
+  const availability = useAsync<Slot[] | null>(
+    () =>
+      signedIn && Number.isFinite(doctorId)
+        ? getDoctorAvailability(doctorId, today, until).then(
+            (response) => response.slots ?? [],
+          )
+        : Promise.resolve(null),
+    [doctorId, signedIn, today, until],
+  );
 
-  // Compute nextDate from realSlots if loaded, otherwise from getSlotStatus
-  const nextDate = realSlots !== null
-    ? (realSlots.length > 0 ? realSlots[0].date : null)
-    : Array.from({ length: 30 }, (_, i) => addDays(dateKey(), i)).find((date) =>
-        TIMES.some((time) => getSlotStatus(doctor.id, date, time) === 'available'),
-      );
+  if (!Number.isFinite(doctorId)) return <NotFound title="Doctor not found" />;
+  if (doctor.state.status === 'loading') {
+    return (
+      <Page crumbs={[{ label: 'Doctors', to: '/doctors' }]}>
+        <section className={styles.card}>
+          <p>Loading this profile...</p>
+        </section>
+      </Page>
+    );
+  }
+  if (doctor.state.status === 'error') {
+    return <NotFound title="Doctor not found" />;
+  }
 
-  const availableTimesOnNextDate = realSlots !== null && nextDate
-    ? realSlots
-        .filter((s) => s.date === nextDate)
-        .map((s) => (s.startTime.length === 5 ? s.startTime : s.startTime.substring(0, 5)))
-    : nextDate
-      ? TIMES.filter((time) => getSlotStatus(doctor.id, nextDate, time) === 'available')
-      : [];
+  const profile = doctor.state.data;
+  const slots = availability.state.status === 'ready' ? availability.state.data : null;
+  const nextDay = slots && slots.length > 0 ? slots[0].date : null;
+  const timesOnNextDay = (slots ?? [])
+    .filter((slot) => slot.date === nextDay)
+    .map((slot) => slot.startTime.slice(0, 5));
 
   return (
     <Page
-      previewStates
-      crumbs={[{ label: 'Doctors', to: '/doctors' }, { label: doctor.name }]}
+      crumbs={[{ label: 'Doctors', to: '/doctors' }, { label: profile.name }]}
     >
-      <DemoNotice />
       <div className={styles.twoColumn}>
         <div className={styles.stack}>
           <section className={`${styles.card} ${styles.profileHero}`}>
-            <DoctorImage doctor={doctor} className={styles.profilePhoto} />
+            <DoctorImage
+              doctor={{ name: profile.name, image: profile.avatarUrl ?? '' }}
+              className={styles.profilePhoto}
+            />
             <div className={styles.profileIntro}>
-              <Link
-                className={styles.eyebrow}
-                to={`/departments/${department?.id}`}
-              >
-                {doctor.department}
-              </Link>
-              <h1>{doctor.name}</h1>
-              <p>{doctor.specialty}</p>
-              <div className={styles.rating}>
-                <Star size={16} fill="currentColor" />
-                <strong>{doctor.rating}</strong>
-                <span>({doctor.reviews} reviews · verified profile)</span>
-              </div>
+              {profile.departmentId === null ? (
+                <span className={styles.eyebrow}>
+                  {profile.departmentName ?? 'General Medicine'}
+                </span>
+              ) : (
+                <Link
+                  className={styles.eyebrow}
+                  to={`/departments/${profile.departmentId}`}
+                >
+                  {profile.departmentName}
+                </Link>
+              )}
+              <h1>{profile.name}</h1>
+              <p>{profile.specialty}</p>
             </div>
           </section>
+
           <section className={styles.card}>
             <h2>About the doctor</h2>
-            <p>
-              {doctor.about ||
-                'A detailed biography has not been provided for this profile.'}
-            </p>
-            {doctor.expertise && (
-              <>
-                <h3>Areas of expertise</h3>
-                <p>{doctor.expertise}</p>
-              </>
-            )}
-            {doctor.languages && (
-              <>
-                <h3>Languages</h3>
-                <p>{doctor.languages}</p>
-              </>
-            )}
             <div className={styles.fact}>
-              <MapPin />
+              <Stethoscope />
               <div>
-                <small>Consultation location</small>
-                <strong>Smart Healthcare Clinic · Room {doctor.room}</strong>
+                <small>Specialty</small>
+                <strong>{profile.specialty}</strong>
               </div>
             </div>
-          </section>
-          <section className={styles.card}>
-            <h2>Availability preview</h2>
-            <p>
-              {nextDate
-                ? `Next availability: ${formatDate(nextDate)}`
-                : 'No availability in the next 30 days'}
-            </p>
-            {nextDate && availableTimesOnNextDate.length > 0 && (
-              <div className={styles.actions}>
-                {availableTimesOnNextDate.slice(0, 4).map((time) => (
-                  <Button
-                    key={time}
-                    to={`/book/${doctor.id}`}
-                    variant="outline"
-                    size="sm"
-                  >
-                    {time}
-                  </Button>
-                ))}
+            {profile.experienceYears !== null && (
+              <div className={styles.fact}>
+                <CalendarDays />
+                <div>
+                  <small>Clinical experience</small>
+                  <strong>{profile.experienceYears} years</strong>
+                </div>
               </div>
             )}
             <p className={styles.help}>
-              Vietnam time (UTC+7). Live doctor schedules.
+              Reference {profile.doctorCode}. A longer biography is not held in
+              the clinic system.
             </p>
-            <Button to={`/book/${doctor.id}`} variant="ghost">
-              {nextDate ? 'View full schedule' : 'Check other dates'}
-            </Button>
           </section>
+
           <section className={styles.card}>
-            <h2>Patient reviews</h2>
-            <div className={styles.rating}>
-              <Star size={20} fill="currentColor" />
-              <strong>{doctor.rating} / 5</strong>
-              <span>· {doctor.reviews} reviews in the clinic system</span>
-            </div>
-            <p className={styles.help}>
-              Individual review text is not available.
-            </p>
+            <h2>Availability</h2>
+            {!signedIn ? (
+              <>
+                <p>Sign in to see this doctor's open appointment times.</p>
+                <Button to="/login" variant="outline">
+                  Sign in
+                </Button>
+              </>
+            ) : availability.state.status === 'loading' ? (
+              <p>Checking the schedule...</p>
+            ) : availability.state.status === 'error' ? (
+              <>
+                <p>Could not load the schedule. {availability.state.message}</p>
+                <Button onClick={availability.reload} variant="outline">
+                  Try Again
+                </Button>
+              </>
+            ) : (
+              <>
+                <p>
+                  {nextDay
+                    ? `Next availability: ${readable(nextDay)}`
+                    : `No availability in the next ${DAYS_AHEAD + 1} days`}
+                </p>
+                {timesOnNextDay.length > 0 && (
+                  <div className={styles.actions}>
+                    {timesOnNextDay.slice(0, 4).map((time) => (
+                      <Button
+                        key={time}
+                        to={`/book/${profile.id}`}
+                        variant="outline"
+                        size="sm"
+                      >
+                        {time}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+                <p className={styles.help}>Vietnam time (UTC+7).</p>
+              </>
+            )}
           </section>
         </div>
+
         <aside className={`${styles.card} ${styles.aside}`}>
           <span className={styles.eyebrow}>Plan your visit</span>
           <h2>Book a consultation</h2>
           <p className={styles.help}>In person · 30 minutes</p>
-          <FeeSummary fee={doctor.fee} />
           <div className={styles.stack}>
-            <Button to={`/book/${doctor.id}`} fullWidth>
+            <Button to={`/book/${profile.id}`} fullWidth>
               <CalendarDays size={18} />
               Book appointment
-            </Button>
-            <Button to={`/book/${doctor.id}`} variant="outline" fullWidth>
-              View schedule
             </Button>
           </div>
           <hr className={styles.divider} />
           <p className={styles.help}>
-            {nextDate
-              ? `Next availability: ${formatDate(nextDate, true)}`
-              : 'No availability in the selected period'}
+            No payment is taken when booking. The clinic confirms your
+            appointment by email.
           </p>
         </aside>
       </div>

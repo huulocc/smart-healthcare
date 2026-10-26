@@ -13,6 +13,13 @@ interface Props {
   children: ReactNode;
 }
 
+/** Who the guarded area belongs to, for the refusal message. */
+const audience: Record<Role, string> = {
+  ADMIN: 'administrators',
+  DOCTOR: 'doctors',
+  PATIENT: 'patients',
+};
+
 const RequireRole = ({ role, children }: Props) => {
   const { status, user } = useAuth();
   const location = useLocation();
@@ -41,7 +48,7 @@ const RequireRole = ({ role, children }: Props) => {
         <AlertCircle size={32} className={styles.errorIcon} />
         <h1 className={styles.heading}>You do not have access to this page</h1>
         <p className={styles.text}>
-          This area is for administrators. You are signed in as {user.email}.
+          This area is for {audience[role]}. You are signed in as {user.email}.
         </p>
         <Link to="/" className={styles.link}>
           Back to home

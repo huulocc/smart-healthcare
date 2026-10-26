@@ -105,3 +105,6 @@ context.md
 .gemini/
 .antigravity/
 .cursor/
+
+# Word writes a lock file beside any .docx it has open; it is never ours to commit.
+~$*
