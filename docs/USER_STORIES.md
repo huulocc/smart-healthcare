@@ -8,15 +8,22 @@ lời cho khối nào.
 Mã story mang tên module, nên nhìn mã là biết hỏi ai: `AU` authen, `DR` doctor,
 `AD` admin, `BK` booking, `AI` trợ lý RAG.
 
-Mục tiêu 14 story. Đã viết 6.
+Mục tiêu 15 story. Đã viết 8.
 
 | Khối | Chủ | Story | Trạng thái |
 |---|---|---|---|
 | authen | Huy | US-AU-01 … 03 | đã viết |
-| doctor | Huy | US-DR-01 … 03 | đã viết |
+| doctor | Huy | US-DR-01 … 05 | đã viết |
 | admin | Dũng | US-AD-01 … 02 | chờ viết |
 | booking | Dũng | US-BK-01 … 03 | chờ viết |
-| RAG | Lộc | US-AI-01 … 03 | chờ viết |
+| RAG | Lộc | US-AI-01 … 02 | chờ viết |
+
+**Khối doctor gồm cả hai góc nhìn.** US-DR-01…03 kể từ phía **admin** — duyệt
+bác sĩ, quản lý hồ sơ, xếp lịch trực; US-DR-04…05 kể từ phía **chính bác sĩ** —
+lịch hẹn trong ngày, lịch nghỉ, hồ sơ công khai. Cả năm nằm chung một khối vì
+code của chúng nằm chung trong package `doctor` và cùng một người trả lời. Để
+tổng nằm trong mức 15 của đề, khối RAG rút còn hai story: chuyện trả lời theo
+dòng là chi tiết giao diện của cùng một hành vi nên gộp vào story đầu.
 
 Một quy tắc nên giữ khi viết nốt phần còn lại: **đừng viết story nào không có
 test nào chạm tới.** Story rẻ nhất để viết là story đã có sẵn test ghim lại, và ô
@@ -145,6 +152,42 @@ test để trống là thứ người đọc nhận ra đầu tiên.
 - **AC6** — Given bác sĩ đang ngừng hoạt động, Then lịch tuần của họ chỉ được xóa
   chứ không được thêm; và chỉ admin mới vào được tất cả những chức năng trên.
 
+### US-DR-04 — Lịch hẹn trong ngày
+
+> Là bác sĩ, tôi muốn mở lịch hẹn của chính mình, chuyển trạng thái từng ca khám
+> và ghi chú lại, để theo được buổi làm việc mà không phải nhờ admin.
+
+- **AC1** — Given tôi đã đăng nhập bằng tài khoản bác sĩ, When mở khu làm việc,
+  Then chỉ thấy lịch hẹn được gán cho chính tôi, lọc và phân trang được.
+- **AC2** — Given `from` và `to` cùng một ngày, Then nhận đúng lịch của ngày đó.
+- **AC3** — Given một ca khám, When tôi chuyển trạng thái, Then chỉ các bước hợp
+  lệ được chấp nhận: `PENDING` → `CONFIRMED` → `IN_PROGRESS` → `COMPLETED` hoặc
+  `NO_SHOW`.
+- **AC4** — Given tôi ghi chú vào một ca đang khám hoặc đã khám xong, Then ghi
+  chú được lưu và bản cũ vẫn còn trong lịch sử.
+- **AC5** — Given tôi mở lịch hẹn của bác sĩ khác, Then nhận **404**, không phải
+  403 — 403 đã vô tình xác nhận bản ghi đó tồn tại.
+- **AC6** — Given tôi chưa đăng nhập, hoặc đăng nhập bằng tài khoản bệnh nhân
+  hay admin, Then mọi endpoint `/api/doctor/**` đều từ chối.
+- **AC7** — Given tôi còn lịch hẹn trong tương lai, Then admin không thể vô hiệu
+  hoá tôi hay đặt tôi sang nghỉ phép.
+
+### US-DR-05 — Lịch nghỉ và hồ sơ công khai
+
+> Là bác sĩ, tôi muốn tự khai những buổi mình không làm được và tự sửa phần giới
+> thiệu bệnh nhân nhìn thấy, để không phải nhờ admin cho mỗi thay đổi nhỏ.
+
+- **AC1** — Given tôi đã đăng nhập, When mở hồ sơ của mình, Then thấy đúng hồ sơ
+  gắn với tài khoản tôi, không phải của người khác.
+- **AC2** — Given tôi sửa phần giới thiệu công khai, Then thay đổi được lưu và
+  hiện ra ở trang chi tiết bác sĩ.
+- **AC3** — Given tôi xem lịch trực tuần của mình, Then thấy đúng khung giờ admin
+  đã xếp cho tôi.
+- **AC4** — Given tôi khai một khoảng `WORK`, `BREAK` hoặc `LEAVE` theo ngày cụ
+  thể, Then khoảng đó đè lên lịch tuần cho riêng ngày ấy.
+- **AC5** — Given tôi xoá một khoảng ngoại lệ mà việc xoá sẽ bỏ rơi một lịch hẹn
+  đã đặt, Then thao tác bị từ chối.
+
 ---
 
 ## admin — Dũng
@@ -172,7 +215,7 @@ những gì đã được ghim lại.
 
 ## RAG — Lộc
 
-*Chờ viết: US-AI-01, US-AI-02, US-AI-03.*
+*Chờ viết: US-AI-01, US-AI-02.*
 
 Ứng viên: hỏi một câu về sức khỏe và nhận câu trả lời có trích dẫn đúng section
 nguồn; trợ lý từ chối khi câu trả lời không có trong tài liệu; câu trả lời hiện

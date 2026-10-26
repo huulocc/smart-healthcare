@@ -13,6 +13,11 @@ hoàn thành và hiểu hết module ấy, kể cả những phần do người 
 bảng dưới đây không có cột tác giả — nó là bảng phân công trình bày, và `git log`
 không phải căn cứ để đọc nó. Hệ quả nằm ở mục cuối file.
 
+Cụ thể với module doctor: nó gồm **cả hai phía**. Phía admin quản lý bác sĩ
+(duyệt, sửa hồ sơ, xếp lịch trực) và phía bác sĩ tự làm việc (lịch hẹn, lịch
+nghỉ, hồ sơ công khai) nằm chung một module, vì code của chúng nằm chung trong
+package `doctor` và cùng một người đứng ra giải thích.
+
 ## Nhóm
 
 | Thành viên | Module | Phần việc khác |
@@ -30,7 +35,7 @@ không phải căn cứ để đọc nó. Hệ quả nằm ở mục cuối file
 | Module | Chủ | Backend | Frontend | Test |
 |---|---|---|---|---|
 | **authen** | Huy | `auth/**`, `user/**`, `config/SecurityConfig.java` | `pages/Login`, `pages/Register`, `pages/ForgotPassword`, `pages/ResetPassword`, `pages/VerifyEmail`, `pages/Profile`, `pages/ChangePassword`, `context/AuthProvider.tsx`, `components/ProtectedRoute.tsx`, `components/RequireRole.tsx` | `auth/AuthApiTest`, `auth/reset/PasswordResetFlowTest`, `auth/verify/EmailVerificationFlowTest`, `user/UserApiTest` |
-| **doctor** | Huy | `doctor/AdminDoctorController`, `doctor/DoctorRequestController`, `doctor/AdminScheduleController` cùng các service của chúng, `doctor/Doctor`, `doctor/DoctorSchedule` | `pages/Admin/AdminDoctors`, `pages/Admin/AdminDoctorRequests`, `pages/Admin/AdminSchedules`, `pages/Doctors`, `pages/DoctorDetails`, `pages/Doctor/**` | `doctor/AdminDoctorApiTest`, `doctor/AdminScheduleApiTest`, `doctor/DoctorRequestApiTest`, `doctor/DoctorRepositoryTest` |
+| **doctor** | Huy | `doctor/**` — `AdminDoctorController`, `DoctorRequestController`, `AdminScheduleController`, `DoctorSelfController` cùng các service, `Doctor`, `DoctorSchedule`, `DoctorRepository`; thêm `booking/AvailabilityException` | `pages/Admin/AdminDoctors`, `pages/Admin/AdminDoctorRequests`, `pages/Admin/AdminSchedules`, `pages/Doctors`, `pages/DoctorDetails`, `pages/Doctor/**` | `doctor/AdminDoctorApiTest`, `doctor/AdminScheduleApiTest`, `doctor/DoctorRequestApiTest`, `doctor/DoctorRepositoryTest`, `doctor/DoctorManagementIntegrationTest`, `frontend/tests/doctor.test.ts` |
 | **admin** | Dũng | `department/**` | `layouts/AdminLayout`, `pages/Admin/AdminDashboard`, `pages/Admin/AdminDepartments` | `department/AdminDepartmentApiTest` |
 | **booking** | Dũng | `booking/**` | `pages/Booking`, `pages/Appointments` | `booking/BookingFlowTest`, `booking/AvailabilityEngineTest`, `booking/SqlServerBookingContractTest`, `frontend/tests/booking.test.ts` |
 | **RAG** | Lộc | `rag/**` (service Python riêng) | `components/AIChatWidget.tsx`, `services/chatApi.ts` | `rag/eval/eval_questions.yaml` và các lần chạy trong `rag/eval/results/` |
@@ -41,31 +46,33 @@ mấy file này thuộc về người sửa chúng gần nhất.
 
 ### Trạng thái dữ liệu của các trang bác sĩ
 
-`pages/Doctors`, `pages/DoctorDetails` và `pages/Doctor/**` (cổng dành cho bác
-sĩ) thuộc module doctor theo chủ đề. Tính đến 2026-10-24:
+`pages/Doctors`, `pages/DoctorDetails` và `pages/Doctor/**` đều thuộc module
+doctor: hai trang đầu là cách bệnh nhân tìm bác sĩ, ba trang sau là nơi bác sĩ
+làm việc. Tính đến 2026-10-26, **cả năm trang đã chạy trên API thật**:
 
 | Trang | Nguồn dữ liệu |
 |---|---|
-| `pages/Doctors` | `/api/public/doctors` + `/api/public/departments` — thật, không cần đăng nhập |
-| `pages/DoctorDetails` | `/api/public/doctors/{id}` — thật; phần lịch trống gọi `/api/booking` nên chỉ hiện khi đã đăng nhập |
-| `pages/Doctor/DoctorWorkspace` | `/api/doctor/appointments` — thật, qua `AppointmentContext` |
-| `pages/Doctor/DoctorSchedule` | lịch hẹn thật; nhưng `setAvailability` mới chỉ ghi vào bộ nhớ, chưa gọi `/api/doctor/availability-exceptions` |
-| `pages/Doctor/DoctorProfile` | **chưa có API** — xem bên dưới |
+| `pages/Doctors` | `/api/public/doctors` + `/api/public/departments` — không cần đăng nhập |
+| `pages/DoctorDetails` | `/api/public/doctors/{id}`; phần lịch trống gọi `/api/booking` nên chỉ hiện khi đã đăng nhập |
+| `pages/Doctor/DoctorWorkspace` | `/api/doctor/appointments` |
+| `pages/Doctor/DoctorSchedule` | `/api/doctor/schedules` + `/api/doctor/availability-exceptions` |
+| `pages/Doctor/DoctorProfile` | `/api/doctor/me` + `/api/doctor/me/public-profile` |
 
-Hai phần chưa hoàn thành của module này, người trình bày cần biết:
-
-- **`DoctorProfile` không có endpoint.** Nó ghi `about` / `languages` /
-  `expertise` / `image` vào state cục bộ với điều kiện cứng `doctor.id === 1`.
-  Backend chỉ có `PUT /api/admin/doctors/{id}` dành cho admin, và DTO của nó
-  không mang bốn trường đó. Cần thêm endpoint mới thì trang này mới nối được.
-- **`DoctorSchedule` ghi lịch nghỉ vào bộ nhớ.** Endpoint đã có sẵn
-  (`addDoctorAvailabilityException`, `deleteDoctorAvailabilityException`), chỉ
-  là trang chưa gọi, nên tắt trình duyệt là mất.
+Hai hạn chế tôi ghi ở bản trước — `DoctorProfile` không có endpoint và
+`DoctorSchedule` chỉ ghi lịch nghỉ vào bộ nhớ — **đã được giải quyết** bằng
+`DoctorSelfController` ở backend và phần frontend merge vào `main` ngày 26/10.
+`DoctorManagementIntegrationTest` với 9 test là bản đặc tả của hai trang này.
 
 ## Hệ quả: chủ module phải hiểu hết module, không chỉ phần mình viết
 
 Theo nguyên tắc ở đầu file, mỗi người phải nắm **toàn bộ** module mình đứng tên —
 cả backend lẫn frontend, cả phần đã xong lẫn phần còn dở — bất kể ai đã gõ.
+
+Riêng module doctor, người đứng tên phải sẵn sàng cho **cả hai phía**: giám khảo
+có thể hỏi về luồng admin duyệt bác sĩ, rồi hỏi tiếp bác sĩ đó đăng nhập vào thì
+thấy gì. Hai nửa nối nhau ở chỗ `DoctorRequestService.approve()` đặt
+`user.setRole(Role.DOCTOR)` — từ dòng đó trở đi, tài khoản ấy mở được
+`/api/doctor/**`.
 
 Cụ thể, với từng module, hãy kiểm tra trước buổi bảo vệ:
 
