@@ -1,5 +1,26 @@
 # RAG baseline
 
+## Symptom-to-department assistant (4.1 B and C)
+
+The chat widget now has a **Suggest a department** mode for signed-in users.
+`POST /api/chat/triage` retrieves patient-leaflet passages, then asks the LLM to
+request three allowlisted, read-only functions in sequence: `list_departments`
+(`GET /api/booking/departments`), `search_doctors`
+(`GET /api/booking/doctors`), and `get_availability`
+(`GET /api/booking/doctors/{id}/availability`). The third call is skipped when
+the selected department has no doctors. Every requested department, doctor, and
+source ID is checked against returned data before use. No tool changes clinic
+data, so the flow never books an appointment.
+
+The final LLM JSON is validated with the `TriageDecision` Pydantic schema and
+drives the displayed urgency, department, doctor, explanation, and safety
+message. Invalid JSON or invented IDs fail closed. The user's bearer token is
+forwarded only to Spring Boot, never to the LLM. Run Spring Boot on port 8080,
+or set `RAG_APP_BACKEND_URL` in `rag/.env`, alongside the RAG service. The
+existing leaflet Q&A and its evaluation results below remain separate from
+this new flow; the reported retrieval metrics do not measure department
+recommendation accuracy.
+
 A minimal, fully local retrieval-augmented generation pipeline over patient
 information leaflets. Its job is **not** to be good. Its job is to run end to
 end and produce a number that every later change has to beat.

@@ -425,6 +425,38 @@
   animation: caretBlink 1s step-end infinite;
 }
 
+.guidanceModes {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.55rem 0.8rem 0;
+}
+
+.guidanceModes button {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: white;
+  color: var(--text-main);
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+.guidanceModes button[aria-pressed="true"] {
+  background: var(--primary, #2563eb);
+  color: white;
+}
+
+.guidanceResult {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  white-space: pre-wrap;
+}
+
+.guidanceResult small {
+  opacity: 0.8;
+}
+
 @keyframes caretBlink {
   50% { opacity: 0; }
 }

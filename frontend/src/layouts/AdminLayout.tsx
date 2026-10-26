@@ -1,4 +1,6 @@
 import {
+  BarChart3,
+  Bell,
   Bot,
   Building2,
   CalendarDays,
@@ -7,12 +9,15 @@ import {
   HeartPulse,
   LayoutDashboard,
   LogOut,
+  Settings,
+  Sparkles,
   Stethoscope,
   UserCircle,
+  UserCog,
   UserPlus,
   Users,
 } from 'lucide-react';
-import { startTransition } from 'react';
+import { startTransition, useEffect, useState } from 'react';
 import {
   Link,
   NavLink,
@@ -21,22 +26,27 @@ import {
   useNavigate,
 } from 'react-router-dom';
 
+import { getUnreadNotificationCount } from '../api/adminApi';
 import { useAuth } from '../context/useAuth';
 
 import '../components/admin/admin.css';
 
-/** The screens that run on a real API. Everything else is waiting on a backend. */
+/** The operational screens backed by live backend APIs */
 const nav = [
   { label: 'Doctors', path: '/admin/doctors', icon: Stethoscope },
   { label: 'Doctor Requests', path: '/admin/doctor-requests', icon: UserPlus },
   { label: 'Departments', path: '/admin/departments', icon: Building2 },
   { label: 'Doctor Schedules', path: '/admin/schedules', icon: Clock3 },
-];
-
-/** Routed, but with nothing behind them yet: booking and the rest are being built elsewhere. */
-const comingSoon = [
   { label: 'Patients', path: '/admin/patients', icon: Users },
   { label: 'Appointments', path: '/admin/appointments', icon: CalendarDays },
+  { label: 'User Accounts', path: '/admin/users', icon: UserCog },
+  { label: 'Reports & Analytics', path: '/admin/reports', icon: BarChart3 },
+  { label: 'System Settings', path: '/admin/settings', icon: Settings },
+  { label: 'AI Telemetry', path: '/admin/ai-usage', icon: Sparkles },
+];
+
+/** Protected modules reserved or developed separately */
+const comingSoon = [
   { label: 'Payments / Billing', path: '/admin/payments', icon: CreditCard },
   { label: 'AI Consultation', path: '/admin/ai-consultation', icon: Bot },
 ];
@@ -47,16 +57,17 @@ const titles: Record<string, string> = {
   '/admin/doctor-requests': 'Doctor Requests',
   '/admin/departments': 'Departments',
   '/admin/schedules': 'Doctor Schedules',
-  '/admin/patients': 'Patients',
+  '/admin/patients': 'Patient Management',
   '/admin/appointments': 'Appointments',
+  '/admin/users': 'User Accounts & Roles',
+  '/admin/reports': 'Reports & Analytics',
+  '/admin/settings': 'System Settings',
+  '/admin/notifications': 'Notifications & Alerts',
+  '/admin/ai-usage': 'AI Usage & Telemetry',
   '/admin/payments': 'Payments & Billing',
   '/admin/ai-consultation': 'AI Consultation',
 };
 
-/**
- * Longest matching prefix, not an exact lookup: a detail route like /admin/doctors/4 then
- * shows "Doctors" instead of falling all the way back to "Dashboard".
- */
 const titleFor = (pathname: string) => {
   const match = Object.keys(titles)
     .sort((a, b) => b.length - a.length)
@@ -81,8 +92,28 @@ const AdminLayout = () => {
   const navigate = useNavigate();
   const title = titleFor(pathname);
 
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+
+  // Poll or fetch unread notifications count
+  useEffect(() => {
+    let mounted = true;
+    const fetchUnread = async () => {
+      try {
+        const { count } = await getUnreadNotificationCount();
+        if (mounted) setUnreadCount(count);
+      } catch {
+        // Silently ignore if not authorized or network issue
+      }
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, [pathname]);
+
   const handleLogout = () => {
-    // One transition for both, so the guard never sees "logged out, still on /admin".
     startTransition(() => {
       logout();
       navigate('/');
@@ -145,7 +176,43 @@ const AdminLayout = () => {
             <div className="admin-top-title">{title}</div>
             <div className="admin-crumb">Admin / {title}</div>
           </div>
-          <div className="admin-header-actions">
+          <div className="admin-header-actions" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            {/* Notification Bell */}
+            <Link
+              to="/admin/notifications"
+              style={{
+                position: 'relative',
+                display: 'grid',
+                placeItems: 'center',
+                width: 38,
+                height: 38,
+                borderRadius: '50%',
+                background: '#f1f5f9',
+                color: '#475569',
+                textDecoration: 'none',
+              }}
+              title="Notifications"
+            >
+              <Bell size={18} />
+              {unreadCount > 0 && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: -2,
+                    right: -2,
+                    background: '#dc2626',
+                    color: '#fff',
+                    borderRadius: 10,
+                    padding: '1px 5px',
+                    fontSize: 10,
+                    fontWeight: 700,
+                  }}
+                >
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </Link>
+
             <div className="admin-chip">
               <span className="admin-avatar header admin-initials">
                 {initialsOf(user?.fullName ?? '')}

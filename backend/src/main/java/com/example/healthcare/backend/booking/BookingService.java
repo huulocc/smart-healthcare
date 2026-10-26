@@ -294,9 +294,9 @@ public class BookingService {
     }
     @Transactional(readOnly = true)
     public Map<AppointmentStatus, Long> statistics(AuthenticatedUser principal) {
-        actor(principal, Role.ADMIN); Map<AppointmentStatus, Long> result = new EnumMap<>(AppointmentStatus.class);
+        User user = actor(principal, Role.ADMIN, Role.DOCTOR); Map<AppointmentStatus, Long> result = new EnumMap<>(AppointmentStatus.class);
         for (AppointmentStatus status : AppointmentStatus.values()) result.put(status, 0L);
-        appointments.statusCounts().forEach(row -> result.put((AppointmentStatus) row[0], (Long) row[1])); return result;
+        if (user.getRole() == Role.ADMIN) { appointments.statusCounts().forEach(row -> result.put((AppointmentStatus) row[0], (Long) row[1])); } else { Doctor d = doctors.findByUserId(user.getId()).orElseThrow(() -> error(HttpStatus.NOT_FOUND, "Doctor profile not found")); appointments.statusCountsByDoctorId(d.getId()).forEach(row -> result.put((AppointmentStatus) row[0], (Long) row[1])); } return result;
     }
     private Doctor assigned(User user, Long doctorId) {
         Doctor d = doctorId == null ? doctors.findByUserId(user.getId())

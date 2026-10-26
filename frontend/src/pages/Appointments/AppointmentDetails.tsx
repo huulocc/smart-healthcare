@@ -27,6 +27,7 @@ import {
   getAppointmentDetails,
   getAppointmentHistory,
   getDoctorAppointmentDetails,
+  getDoctorAppointmentHistory,
   rescheduleAppointment,
   rescheduleDoctorAppointment,
   updateDoctorAppointmentNotes,
@@ -73,7 +74,10 @@ export default function AppointmentDetails() {
         setNotes(data.notes ?? '');
         setLoading(false);
         // Load history
-        getAppointmentHistory(id)
+        const fetchHistory = isDoctor
+          ? getDoctorAppointmentHistory(id)
+          : getAppointmentHistory(id);
+        fetchHistory
           .then((hist) => setHistory(hist.content || []))
           .catch(() => {});
       })
