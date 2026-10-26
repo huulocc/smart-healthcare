@@ -43,6 +43,12 @@ OCR before upload.
 Install the updated `rag/requirements.txt` before starting `rag/server.py`;
 multipart handling now needs `python-multipart`.
 
+The chatbot-specific evaluation set is in `eval/chatbot_cases.json`; see
+`eval/CHATBOT_EVAL.md` for the live before/after run. Prompts for leaflet,
+tool calls, triage, and uploads are versioned in `prompts/` and selected in
+`prompts.py`. A non-empty matching telemetry secret must be configured in
+`rag/.env` and the Spring backend environment before usage events are accepted.
+
 A minimal, fully local retrieval-augmented generation pipeline over patient
 information leaflets. Its job is **not** to be good. Its job is to run end to
 end and produce a number that every later change has to beat.
@@ -76,8 +82,8 @@ generate.py  top-k + question -> prompt -> qwen3 -> answer + section cited
 evaluate.py  34 questions -> recall@1 / recall@3 + heuristic answer checks
 ```
 
-Everything tunable lives in `config.py`. A result is only meaningful alongside
-the config that produced it, so record both together.
+Runtime settings live in `config.py` and prompt text in `prompts/`. A result is
+only meaningful alongside both versions, so the evaluator records them.
 
 ## Stack
 

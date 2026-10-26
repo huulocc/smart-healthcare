@@ -1,11 +1,13 @@
 """Single source of truth for every baseline parameter.
 
-Nothing tunable lives outside this file. When a result is recorded in the
-README, it is only meaningful alongside the values below.
+Runtime settings live here; versioned prompt text lives in prompts/. When a
+result is recorded, both settings and prompt versions are needed to explain it.
 """
 
 import os
 from pathlib import Path
+
+from prompts import LEAFLET_SYSTEM, LEAFLET_USER
 
 # --- paths ---------------------------------------------------------------
 
@@ -279,25 +281,8 @@ DOCUMENTS = {
 #                    four attack steps while Q29 (same chunk) kept all four
 PROMPT_VERSION = "v2-completeness"
 
-SYSTEM_PROMPT = """You answer questions about patient information leaflets.
-
-Rules:
-- Answer ONLY from the DOCUMENTS given to you. Never use outside knowledge.
-- If the documents do not contain the answer, say plainly that the information
-  is not in the available documents. Do not guess and do not fill the gap.
-- When the documents give a sequence of steps, a list of criteria, or safety
-  instructions, reproduce EVERY item, in the document's order. Never stop
-  part-way through a list, and never summarise it into fewer steps.
-- Never invent a dose, a price, or any medical figure.
-- Do not diagnose. Point the reader to a healthcare professional where relevant.
-- End with the section name(s) you used, like: (section: asthma-attack)
-- Keep the answer short and direct - but completeness comes first: never drop a
-  step or a safety instruction to make the answer shorter."""
-
-USER_PROMPT = """DOCUMENTS:
-{context}
-
-Question: {question}"""
+SYSTEM_PROMPT = LEAFLET_SYSTEM
+USER_PROMPT = LEAFLET_USER
 
 
 # --- telemetry -----------------------------------------------------------
@@ -308,5 +293,5 @@ TELEMETRY_URL = os.environ.get(
 )
 TELEMETRY_SECRET = os.environ.get(
     "RAG_TELEMETRY_SECRET",
-    os.environ.get("AI_TELEMETRY_SECRET", "smart-healthcare-telemetry-secret-key-2026")
-)
+    os.environ.get("AI_TELEMETRY_SECRET", "")
+).strip()

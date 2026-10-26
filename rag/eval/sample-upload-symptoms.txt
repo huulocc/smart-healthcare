@@ -1,0 +1,21 @@
+SAMPLE PATIENT NOTE — TEST DATA ONLY
+
+Patient: Nguyen Van A
+Age: 29
+Recorded date: 2026-10-26
+
+Main concern:
+For the last three days, the patient has had an itchy red rash on both hands
+after using a new lavender-scented soap. The rash becomes more noticeable after
+washing. There is no chest pain, no shortness of breath, no facial swelling,
+and no fainting. The patient has stopped using the new soap.
+
+Question for the clinic assistant:
+Based on the symptoms in this note, which department should the patient visit?
+
+Expected test direction:
+The assistant should use this uploaded note as context and suggest Dermatology
+for a routine or soon assessment. It should not diagnose the condition or say
+that an appointment has been booked.
+
+This document contains fictional information created only for software testing.

@@ -15,6 +15,7 @@ import uuid
 import config
 
 logger = logging.getLogger("rag.telemetry")
+_warned_missing_secret = False
 
 
 def generate_request_id(prefix: str = "REQ-AI") -> str:
@@ -87,12 +88,17 @@ def send_telemetry(
 
     url = getattr(config, "TELEMETRY_URL", "http://127.0.0.1:8080/api/ai/telemetry")
     secret = getattr(config, "TELEMETRY_SECRET", "")
+    if not secret:
+        global _warned_missing_secret
+        if not _warned_missing_secret:
+            logger.warning("AI telemetry is disabled until RAG_TELEMETRY_SECRET is configured")
+            _warned_missing_secret = True
+        return False
 
     headers = {
         "Content-Type": "application/json",
+        "X-Telemetry-Secret": secret,
     }
-    if secret:
-        headers["X-Telemetry-Secret"] = secret
 
     req = urllib.request.Request(
         url,

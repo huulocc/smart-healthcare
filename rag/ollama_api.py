@@ -32,7 +32,10 @@ def _post(path, payload, timeout=600):
     )
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
-            return json.loads(response.read())
+            try:
+                return json.loads(response.read())
+            except json.JSONDecodeError as exc:
+                raise OllamaError("Ollama returned invalid JSON.") from exc
     except urllib.error.URLError as exc:
         raise OllamaError(
             f"Cannot reach Ollama at {OLLAMA_HOST} ({exc}). Start it with `ollama serve`."
@@ -47,7 +50,11 @@ def embed(texts, is_query):
     """
     prefix = QUERY_PREFIX if is_query else PASSAGE_PREFIX
     payload = {"model": EMBED_MODEL, "input": [prefix + text for text in texts]}
-    return _post("/api/embed", payload)["embeddings"]
+    result = _post("/api/embed", payload)
+    vectors = result.get("embeddings") if isinstance(result, dict) else None
+    if not isinstance(vectors, list) or len(vectors) != len(texts):
+        raise OllamaError("Ollama returned incomplete embeddings.")
+    return vectors
 
 
 def _chat_payload(system, user, stream):
@@ -65,7 +72,13 @@ def _chat_payload(system, user, stream):
 
 def chat(system, user):
     payload = _chat_payload(system, user, stream=False)
-    return _post("/api/chat", payload)["message"].get("content", "").strip()
+    response = _post("/api/chat", payload)
+    message = response.get("message") if isinstance(response, dict) else None
+    text = message.get("content", "") if isinstance(message, dict) else ""
+    text = text.strip() if isinstance(text, str) else ""
+    if not text:
+        raise OllamaError("Ollama returned no answer text.")
+    return text
 
 
 def chat_stream(system, user):
@@ -86,18 +99,35 @@ def chat_stream(system, user):
         headers={"Content-Type": "application/json"},
     )
     try:
+        has_answer = False
         with urllib.request.urlopen(request, timeout=600) as response:
             for line in response:
                 if not line.strip():
                     continue
-                chunk = json.loads(line)
+                try:
+                    chunk = json.loads(line)
+                except json.JSONDecodeError as exc:
+                    raise OllamaError("Ollama streamed invalid JSON.") from exc
+                if not isinstance(chunk, dict):
+                    raise OllamaError("Ollama streamed an invalid response.")
                 message = chunk.get("message", {})
-                if message.get("thinking"):
-                    yield "thinking", message["thinking"]
-                if message.get("content"):
-                    yield "content", message["content"]
+                if not isinstance(message, dict):
+                    raise OllamaError("Ollama streamed an invalid message.")
+                thinking = message.get("thinking")
+                content = message.get("content")
+                if thinking is not None and not isinstance(thinking, str):
+                    raise OllamaError("Ollama streamed an invalid message.")
+                if content is not None and not isinstance(content, str):
+                    raise OllamaError("Ollama streamed an invalid message.")
+                if thinking:
+                    yield "thinking", thinking
+                if content:
+                    has_answer = has_answer or bool(content.strip())
+                    yield "content", content
                 if chunk.get("done"):
-                    return
+                    break
+        if not has_answer:
+            raise OllamaError("Ollama streamed no answer text.")
     except urllib.error.URLError as exc:
         raise OllamaError(
             f"Cannot reach Ollama at {OLLAMA_HOST} ({exc}). Start it with `ollama serve`."
