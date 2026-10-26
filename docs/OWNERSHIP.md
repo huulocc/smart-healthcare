@@ -26,6 +26,16 @@ package `doctor` và cùng một người đứng ra giải thích.
 | **Lộc** | RAG | phần AI design trong báo cáo; ghi chú AI usage cho doctor details + page |
 | **Dũng** | admin, booking | sơ đồ kiến trúc; tổng hợp tài liệu |
 
+[`USER_STORIES.md`](USER_STORIES.md) **không chia story theo người** — đề không
+yêu cầu thế, và 14 story ở đó mô tả cả sản phẩm. File này mới là chỗ nói ai trả
+lời cho khối nào, nên đây là bảng bắc cầu từ người sang story:
+
+| Thành viên | Khối | Story phải trace được |
+|---|---|---|
+| **Huy** | authen, doctor | US-AU-01…03, US-DR-01…05 |
+| **Lộc** | RAG | US-AI-01…02 |
+| **Dũng** | admin, booking | US-AD-01…02, US-BK-01…02 |
+
 ## Code của mỗi module nằm ở đâu
 
 Đường dẫn tính từ thư mục gốc của repo. Phần backend đã lược bỏ tiền tố chung
@@ -36,7 +46,7 @@ package `doctor` và cùng một người đứng ra giải thích.
 |---|---|---|---|---|
 | **authen** | Huy | `auth/**`, `user/**`, `config/SecurityConfig.java` | `pages/Login`, `pages/Register`, `pages/ForgotPassword`, `pages/ResetPassword`, `pages/VerifyEmail`, `pages/Profile`, `pages/ChangePassword`, `context/AuthProvider.tsx`, `components/ProtectedRoute.tsx`, `components/RequireRole.tsx` | `auth/AuthApiTest`, `auth/reset/PasswordResetFlowTest`, `auth/verify/EmailVerificationFlowTest`, `user/UserApiTest` |
 | **doctor** | Huy | `doctor/**` — `AdminDoctorController`, `DoctorRequestController`, `AdminScheduleController`, `DoctorSelfController` cùng các service, `Doctor`, `DoctorSchedule`, `DoctorRepository`; thêm `booking/AvailabilityException` | `pages/Admin/AdminDoctors`, `pages/Admin/AdminDoctorRequests`, `pages/Admin/AdminSchedules`, `pages/Doctors`, `pages/DoctorDetails`, `pages/Doctor/**` | `doctor/AdminDoctorApiTest`, `doctor/AdminScheduleApiTest`, `doctor/DoctorRequestApiTest`, `doctor/DoctorRepositoryTest`, `doctor/DoctorManagementIntegrationTest`, `frontend/tests/doctor.test.ts` |
-| **admin** | Dũng | `department/**` | `layouts/AdminLayout`, `pages/Admin/AdminDashboard`, `pages/Admin/AdminDepartments` | `department/AdminDepartmentApiTest` |
+| **admin** | Dũng | `department/**`, `admin/**` (gồm `admin/ai/**` — telemetry và bảng mức dùng AI) | `layouts/AdminLayout`, `pages/Admin/AdminDashboard`, `pages/Admin/AdminDepartments`, `pages/Admin/AdminAiUsage` | `department/AdminDepartmentApiTest`, `admin/AiTelemetryApiTest`, `admin/GoogleAiUsageApiTest`, `admin/AdminFeaturesApiTest` |
 | **booking** | Dũng | `booking/**` | `pages/Booking`, `pages/Appointments` | `booking/BookingFlowTest`, `booking/AvailabilityEngineTest`, `booking/SqlServerBookingContractTest`, `frontend/tests/booking.test.ts` |
 | **RAG** | Lộc | `rag/**` (service Python riêng) | `components/AIChatWidget.tsx`, `services/chatApi.ts` | `rag/eval/eval_questions.yaml` và các lần chạy trong `rag/eval/results/` |
 
