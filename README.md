@@ -245,7 +245,7 @@ python rag/evaluate_chatbot.py --validate   # validate the case set, contacts no
 
 | File | Contents |
 |---|---|
-| [`docs/BAO-CAO.pdf`](docs/BAO-CAO.pdf) | the project report |
+| [`docs/REPORT.pdf`](docs/REPORT.pdf) | the project report |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | system diagram and the flow of one AI request |
 | [`docs/adr/`](docs/adr/) | architecture decisions with their reasoning |
 | [`docs/USER_STORIES.md`](docs/USER_STORIES.md) | user stories with acceptance criteria |
