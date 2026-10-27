@@ -1,0 +1,51 @@
+{
+  "note": "Chi cac su kien do that. Da loai 14 dong seed cua 002_admin_features.sql va mui thu REQ-AI-PROBE0001.",
+  "rows": [
+    {
+      "provider": "OLLAMA",
+      "model": "qwen3",
+      "feature": "STREAM",
+      "n": 10,
+      "min_ms": 27476,
+      "max_ms": 92516,
+      "avg_ms": 52609,
+      "prompt_tokens": 6673,
+      "completion_tokens": 857,
+      "cost_usd": 0.0,
+      "ok": 10
+    },
+    {
+      "provider": "OLLAMA",
+      "model": "qwen3",
+      "feature": "TRIAGE",
+      "n": 8,
+      "min_ms": 162380,
+      "max_ms": 423265,
+      "avg_ms": 239508,
+      "prompt_tokens": 6109,
+      "completion_tokens": 431,
+      "cost_usd": 0.0,
+      "ok": 7
+    },
+    {
+      "provider": "GOOGLE",
+      "model": "gemini-3.5-flash",
+      "feature": "TRIAGE",
+      "n": 1,
+      "min_ms": 97532,
+      "max_ms": 97532,
+      "avg_ms": 97532,
+      "prompt_tokens": 17,
+      "completion_tokens": 0,
+      "cost_usd": 3e-06,
+      "ok": 0
+    }
+  ],
+  "total": {
+    "events": 19,
+    "ok": 17,
+    "prompt_tokens": 12799,
+    "completion_tokens": 1288,
+    "cost_usd": 3e-06
+  }
+}

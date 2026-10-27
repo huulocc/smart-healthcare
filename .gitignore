@@ -108,3 +108,8 @@ context.md
 
 # Word writes a lock file beside any .docx it has open; it is never ours to commit.
 ~$*
+
+# build_report.py rewrites each figure before handing it to svglib; the
+# rewritten copy is derived from the committed .svg beside it.
+docs/report/figures/_*.svg
+docs/report/__pycache__/

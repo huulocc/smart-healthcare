@@ -9,7 +9,7 @@ VERSIONS = {
     "leaflet_user": "v1",
     "tool_call": "v1",
     "tool_tasks": "v1",
-    "triage": "v1",
+    "triage": "v2",
     "upload_appendix": "v1",
 }
 

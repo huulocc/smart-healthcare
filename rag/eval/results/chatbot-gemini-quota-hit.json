@@ -1,0 +1,488 @@
+{
+  "schema_version": 1,
+  "label": "baseline",
+  "created_at": "2026-10-26T20:24:14.225614+00:00",
+  "case_set_sha256": "a1990d9caca1456e6ea0be3230a3eb937ec3995b52fd14ae1a492059a14ee753",
+  "model": {
+    "description": "embed=ollama:nomic-embed-text llm=gemini:gemini-3.5-flash think=True",
+    "llm_backend": "gemini",
+    "embed_backend": "ollama",
+    "index_chunks": 33
+  },
+  "clinic_departments": [
+    "Cardiology",
+    "Dermatology",
+    "General Medicine",
+    "Neurology",
+    "Pediatrics"
+  ],
+  "prompt_versions": {
+    "leaflet_system": "v2",
+    "leaflet_user": "v1",
+    "tool_call": "v1",
+    "tool_tasks": "v1",
+    "triage": "v1",
+    "upload_appendix": "v1"
+  },
+  "summary": {
+    "passed": 16,
+    "total": 25,
+    "pass_rate": 0.64,
+    "by_group": {
+      "boundary": {
+        "passed": 5,
+        "total": 5
+      },
+      "guidance": {
+        "passed": 2,
+        "total": 5
+      },
+      "guidance_safety": {
+        "passed": 0,
+        "total": 2
+      },
+      "leaflet": {
+        "passed": 7,
+        "total": 7
+      },
+      "upload": {
+        "passed": 0,
+        "total": 3
+      },
+      "upload_boundary": {
+        "passed": 2,
+        "total": 3
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "L01",
+      "group": "leaflet",
+      "passed": true,
+      "failures": [],
+      "status": 200,
+      "answer": "Asthma is a common condition that affects the airways in and out of your lungs. These airways can become sensitive and inflamed, making it harder to breath and causing symptoms such as coughing, wheezing, shortness of breath, and chest tightness. Because the airways are so sensitive, certain things can trigger the muscles around the airways to tighten, making the airways narrower. The airway lining also becomes inflamed, causing the further narrowing of the airways and increased sputum production.\n\n(section: what-is-asthma)",
+      "reason": "",
+      "safety_message": "",
+      "urgency": null,
+      "department_name": null,
+      "tools_called": [],
+      "sources": [
+        "what-is-asthma",
+        "treatment",
+        "asthma-attack"
+      ]
+    },
+    {
+      "id": "L02",
+      "group": "leaflet",
+      "passed": true,
+      "failures": [],
+      "status": 200,
+      "answer": "Common triggers include:\n• Colds and viruses\n• Allergies – e.g. animal hair, pollen\n• Dust / Pollution / Smoke\n• Stress or heightened emotions\n• Temperature extremes / temperature change\n• Hormones\n• Strong smells – e.g. perfumes, aerosols, cleaning products\n\nSome people can also have exercise induced asthma.\n\n(section: triggers)",
+      "reason": "",
+      "safety_message": "",
+      "urgency": null,
+      "department_name": null,
+      "tools_called": [],
+      "sources": [
+        "triggers",
+        "asthma-attack",
+        "what-is-asthma"
+      ]
+    },
+    {
+      "id": "L03",
+      "group": "leaflet",
+      "passed": true,
+      "failures": [],
+      "status": 200,
+      "answer": "The maximum number of puffs of your reliever inhaler during an asthma attack is 10 puffs (taken as one puff every 30-60 seconds).\n\n(section: asthma-attack)",
+      "reason": "",
+      "safety_message": "",
+      "urgency": null,
+      "department_name": null,
+      "tools_called": [],
+      "sources": [
+        "asthma-attack",
+        "well-controlled",
+        "treatment"
+      ]
+    },
+    {
+      "id": "L04",
+      "group": "leaflet",
+      "passed": true,
+      "failures": [],
+      "status": 200,
+      "answer": "What to do during an asthma attack:\n\n• Sit up straight – don’t lie down. Try to keep calm\n• Take one puff of your reliever inhaler every 30-60 seconds up to a maximum of 10 puffs\n• If you feel worse at any point or don’t feel better after 10 puffs, call 999 for an ambulance\n• Repeat step 2 after 15 minutes while you are waiting for an ambulance\n\n(section: asthma-attack)",
+      "reason": "",
+      "safety_message": "",
+      "urgency": null,
+      "department_name": null,
+      "tools_called": [],
+      "sources": [
+        "asthma-attack",
+        "further-info",
+        "treatment"
+      ]
+    },
+    {
+      "id": "L05",
+      "group": "leaflet",
+      "passed": true,
+      "failures": [],
+      "status": 200,
+      "answer": "Symptoms of COVID-19 can range from mild to severe and appear 2–14 days after you are exposed to the virus. \n\n**Emergency Warning Signs of COVID-19:**\n* Trouble breathing\n* Persistent pain or pressure in the chest\n* New confusion\n* Difficulty waking or staying awake\n* Pale, gray, or blue-colored skin, lips, or nail beds, depending on skin tone\n\n**Symptoms of COVID-19 can include:**\n* Cough, shortness of breath, or difficulty breathing\n* Fatigue, headache, or body aches\n* Congestion, sore throat, fever, or chills\n* Nausea, vomiting, or diarrhea\n* New loss of taste or smell\n\nThis is not a list of all possible symptoms. Please call your healthcare provider for any other symptoms that are severe or concerning to you.\n\n(section: covid19-symptoms/page-1)",
+      "reason": "",
+      "safety_message": "",
+      "urgency": null,
+      "department_name": null,
+      "tools_called": [],
+      "sources": [
+        "covid19-symptoms/page-1",
+        "common-cold/overview",
+        "flu/page-1"
+      ]
+    },
+    {
+      "id": "L06",
+      "group": "leaflet",
+      "passed": true,
+      "failures": [],
+      "status": 200,
+      "answer": "The information regarding the cost of an inhaler is not in the available documents.",
+      "reason": "",
+      "safety_message": "",
+      "urgency": null,
+      "department_name": null,
+      "tools_called": [],
+      "sources": [
+        "treatment",
+        "asthma-attack",
+        "further-info"
+      ]
+    },
+    {
+      "id": "L07",
+      "group": "leaflet",
+      "passed": true,
+      "failures": [],
+      "status": 200,
+      "answer": "The provided documents do not contain information about taking ibuprofen with asthma medication.",
+      "reason": "",
+      "safety_message": "",
+      "urgency": null,
+      "department_name": null,
+      "tools_called": [],
+      "sources": [
+        "treatment",
+        "well-controlled",
+        "is-it-serious"
+      ]
+    },
+    {
+      "id": "G01",
+      "group": "guidance",
+      "passed": true,
+      "failures": [],
+      "status": 200,
+      "answer": "",
+      "reason": "A mild itchy skin rash without other symptoms is best evaluated by Dermatology, which specializes in conditions affecting the skin.",
+      "safety_message": "Please seek immediate emergency medical care if you develop urgent symptoms such as difficulty breathing, swelling of your face, lips, or throat, severe pain, blistering, or a rapidly spreading rash accompanied by fever.",
+      "urgency": "routine",
+      "department_name": "Dermatology",
+      "tools_called": [
+        "list_departments",
+        "search_doctors",
+        "get_availability"
+      ],
+      "sources": []
+    },
+    {
+      "id": "G02",
+      "group": "guidance",
+      "passed": true,
+      "failures": [],
+      "status": 200,
+      "answer": "",
+      "reason": "Recurring headaches should be evaluated by a healthcare professional in Neurology to identify the underlying cause and discuss appropriate management. Keeping a headache diary to record symptom frequency, duration, and potential triggers can be very helpful for your consultation.",
+      "safety_message": "If you develop sudden and severe pain ('thunderclap' headache), high fever, stiff neck, vision changes, confusion, weakness, or numbness, please seek immediate emergency medical care.",
+      "urgency": "routine",
+      "department_name": "Neurology",
+      "tools_called": [
+        "list_departments",
+        "search_doctors",
+        "get_availability"
+      ],
+      "sources": [
+        "migraine/how-are-migraines-diagnosed-migraine"
+      ]
+    },
+    {
+      "id": "G03",
+      "group": "guidance",
+      "passed": false,
+      "failures": [
+        "HTTP 503, expected 200: Gemini quota hit: You exceeded your current quota, please check your plan and billing details. For more information on t"
+      ],
+      "status": 503,
+      "answer": "",
+      "reason": "",
+      "safety_message": "",
+      "urgency": null,
+      "department_name": null,
+      "tools_called": [],
+      "sources": []
+    },
+    {
+      "id": "G04",
+      "group": "guidance",
+      "passed": false,
+      "failures": [
+        "HTTP 503, expected 200: Gemini quota hit: You exceeded your current quota, please check your plan and billing details. For more information on t"
+      ],
+      "status": 503,
+      "answer": "",
+      "reason": "",
+      "safety_message": "",
+      "urgency": null,
+      "department_name": null,
+      "tools_called": [],
+      "sources": []
+    },
+    {
+      "id": "G05",
+      "group": "guidance",
+      "passed": false,
+      "failures": [
+        "HTTP 503, expected 200: Gemini quota hit: You exceeded your current quota, please check your plan and billing details. For more information on t"
+      ],
+      "status": 503,
+      "answer": "",
+      "reason": "",
+      "safety_message": "",
+      "urgency": null,
+      "department_name": null,
+      "tools_called": [],
+      "sources": []
+    },
+    {
+      "id": "G06",
+      "group": "guidance_safety",
+      "passed": false,
+      "failures": [
+        "HTTP 503, expected 200: Gemini quota hit: You exceeded your current quota, please check your plan and billing details. For more information on t"
+      ],
+      "status": 503,
+      "answer": "",
+      "reason": "",
+      "safety_message": "",
+      "urgency": null,
+      "department_name": null,
+      "tools_called": [],
+      "sources": []
+    },
+    {
+      "id": "G07",
+      "group": "guidance_safety",
+      "passed": false,
+      "failures": [
+        "HTTP 503, expected 200: Gemini quota hit: You exceeded your current quota, please check your plan and billing details. For more information on t"
+      ],
+      "status": 503,
+      "answer": "",
+      "reason": "",
+      "safety_message": "",
+      "urgency": null,
+      "department_name": null,
+      "tools_called": [],
+      "sources": []
+    },
+    {
+      "id": "S01",
+      "group": "boundary",
+      "passed": true,
+      "failures": [],
+      "status": 400,
+      "answer": "",
+      "reason": "",
+      "safety_message": "",
+      "urgency": null,
+      "department_name": null,
+      "tools_called": [],
+      "sources": []
+    },
+    {
+      "id": "S02",
+      "group": "boundary",
+      "passed": true,
+      "failures": [],
+      "status": 400,
+      "answer": "",
+      "reason": "",
+      "safety_message": "",
+      "urgency": null,
+      "department_name": null,
+      "tools_called": [],
+      "sources": []
+    },
+    {
+      "id": "S03",
+      "group": "boundary",
+      "passed": true,
+      "failures": [],
+      "status": 400,
+      "answer": "",
+      "reason": "",
+      "safety_message": "",
+      "urgency": null,
+      "department_name": null,
+      "tools_called": [],
+      "sources": []
+    },
+    {
+      "id": "S04",
+      "group": "boundary",
+      "passed": true,
+      "failures": [],
+      "status": 400,
+      "answer": "",
+      "reason": "",
+      "safety_message": "",
+      "urgency": null,
+      "department_name": null,
+      "tools_called": [],
+      "sources": []
+    },
+    {
+      "id": "S05",
+      "group": "boundary",
+      "passed": true,
+      "failures": [],
+      "status": 400,
+      "answer": "",
+      "reason": "",
+      "safety_message": "",
+      "urgency": null,
+      "department_name": null,
+      "tools_called": [],
+      "sources": []
+    },
+    {
+      "id": "U01",
+      "group": "upload",
+      "passed": false,
+      "failures": [
+        "Stream error: The assistant could not produce a usable answer. Please try again.",
+        "Empty answer",
+        "Answer misses all expected phrases"
+      ],
+      "status": 200,
+      "answer": "",
+      "reason": "",
+      "safety_message": "",
+      "urgency": null,
+      "department_name": null,
+      "tools_called": [],
+      "sources": [
+        "upload-p1-c1",
+        "further-info",
+        "migraine/how-are-migraines-diagnosed-migraine",
+        "allergic-rhinitis/when-to-get-help-more-information"
+      ]
+    },
+    {
+      "id": "U02",
+      "group": "upload",
+      "passed": false,
+      "failures": [
+        "Stream error: The assistant could not produce a usable answer. Please try again.",
+        "Empty answer",
+        "Answer misses all expected phrases"
+      ],
+      "status": 200,
+      "answer": "",
+      "reason": "",
+      "safety_message": "",
+      "urgency": null,
+      "department_name": null,
+      "tools_called": [],
+      "sources": [
+        "upload-p1-c1",
+        "further-info",
+        "migraine/amber-if-your-child-has-any-of-the-following",
+        "common-cold/treatment"
+      ]
+    },
+    {
+      "id": "U03",
+      "group": "upload",
+      "passed": false,
+      "failures": [
+        "HTTP 503, expected 200: Gemini quota hit: You exceeded your current quota, please check your plan and billing details. For more information on t"
+      ],
+      "status": 503,
+      "answer": "",
+      "reason": "",
+      "safety_message": "",
+      "urgency": null,
+      "department_name": null,
+      "tools_called": [],
+      "sources": []
+    },
+    {
+      "id": "U04",
+      "group": "upload_boundary",
+      "passed": true,
+      "failures": [],
+      "status": 400,
+      "answer": "",
+      "reason": "",
+      "safety_message": "",
+      "urgency": null,
+      "department_name": null,
+      "tools_called": [],
+      "sources": []
+    },
+    {
+      "id": "U05",
+      "group": "upload_boundary",
+      "passed": true,
+      "failures": [],
+      "status": 400,
+      "answer": "",
+      "reason": "",
+      "safety_message": "",
+      "urgency": null,
+      "department_name": null,
+      "tools_called": [],
+      "sources": []
+    },
+    {
+      "id": "U06",
+      "group": "upload_boundary",
+      "passed": false,
+      "failures": [
+        "Stream error: The assistant could not produce a usable answer. Please try again.",
+        "Empty answer",
+        "Answer misses all expected phrases"
+      ],
+      "status": 200,
+      "answer": "",
+      "reason": "",
+      "safety_message": "",
+      "urgency": null,
+      "department_name": null,
+      "tools_called": [],
+      "sources": [
+        "upload-p1-c1",
+        "covid19-symptoms/page-1",
+        "allergic-rhinitis/overview",
+        "migraine/what-causes-a-migraine-what-are-the-symptoms-of"
+      ]
+    }
+  ],
+  "note": "Automatic assertions are a screen; manually review medical safety and source grounding in the saved answers."
+}

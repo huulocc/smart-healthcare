@@ -66,19 +66,52 @@ Chi tiết: [`docs/AI_USAGE_AND_REVIEW.md`](docs/AI_USAGE_AND_REVIEW.md).
 
 ### 2.3. RAG cho chatbot — PR #4 (11/10/2026)
 
-**Người thực hiện:** Huy (13 commit trong `rag/`) · **Công cụ:** Claude Code
+**Người thực hiện:** Huy (13 commit trong `rag/`, từ `c010831` 21/09 tới
+`6518dbb` 11/10/2026) · **Công cụ:** Claude Code (Opus 5)
 
-> *Chờ Huy viết.* Cần: prompt đại diện, AI sinh ra những gì trong `rag/`
-> (`ingest.py`, `retrieve.py`, `generate.py`, `evaluate.py`, `llm.py`), và bạn đã
-> kiểm tra hoặc sửa gì.
->
-> Nguyên liệu sẵn có để viết mục này, không cần nhớ lại: `rag/README.md` đã ghi
-> các số đo và những thứ đã thử; thư mục `rag/eval/results/` lưu kết quả từng lần
-> chạy kèm cấu hình; và `rag/config.py` có comment giải thích vì sao chọn từng
-> tham số. Hai ứng viên rõ ràng cho mục "AI sai": chuyện thiếu tiền tố
-> `search_document:` / `search_query:` làm hỏng xếp hạng **mà không báo lỗi gì**,
-> và chuyện trộn hai model embedding khác nhau khiến tìm kiếm trả về sai đoạn
-> nhưng điểm số vẫn trông hợp lý.
+**Prompt chính:** *"Xây một RAG
+baseline chạy local trên tập tờ hướng dẫn bệnh nhân: đọc PDF, chia đoạn theo
+heading, nhúng bằng `nomic-embed-text`, lưu ChromaDB, sinh câu trả lời bằng
+`qwen3` qua Ollama. Viết Python thuần, **không** dùng LangChain hay LlamaIndex.
+Làm bộ đánh giá **trước** pipeline, vì một baseline chỉ có nghĩa khi đã có thước
+đo cố định để chấm. Trợ lý phải nói rõ khi tài liệu không chứa câu trả lời."*
+
+Các vòng sau mở rộng dần, mỗi vòng một commit: phục vụ qua HTTP, nối vào widget
+chat, chuyển sang streaming, thêm Gemini sau một lớp chuyển, rồi index toàn bộ
+corpus thay vì một tài liệu.
+
+**AI sinh ra:** `ingest.py`, `retrieve.py`, `generate.py`, `evaluate.py`,
+`llm.py`, `server.py`, `ask.py`, bộ `eval/eval_questions.yaml` 34 câu, và
+`docs/CHATBOT.md` cùng bản tiếng Việt.
+
+**Người kiểm tra và sửa.** Cách làm là **đo trước, sửa sau** — mỗi thay đổi phải
+chạy lại bộ đánh giá và kết quả lưu vào `rag/eval/results/` kèm cấu hình, nên
+không có số nào trong báo cáo mà không truy ra được lần chạy sinh ra nó.
+
+Ba lần AI đề xuất sai hướng và bị phép đo bác lại:
+
+- **Vòng hillclimb đầu tiên thất bại, và được ghi lại đúng như vậy** (`c9adf48`).
+  Thêm một quy tắc "trả lời đầy đủ" vào system prompt đã **viết lại 26 trong 34
+  câu trả lời**, sửa được Q07, làm hỏng Q11 thành bản copy nguyên bullet, và
+  **trượt đúng mục tiêu của nó**: Q23 vẫn mất hai trong bốn bước xử lý cơn hen.
+  Dò tiếp mới ra nguyên nhân thật — context truy hồi *có* đủ bốn bước, và cùng
+  prompt đó với `think=true` thì ra đủ bốn. Đòn bẩy là chế độ suy luận, không
+  phải prompt.
+- **`think=false` ban đầu được chọn từ một phép dò 2 câu** mà hai câu trả lời
+  trông y hệt nhau và chạy nhanh gấp 5. Hai câu là không đủ để thấy khác biệt.
+  Bật `think=true` đưa kết quả từ **27/30 lên 29/30** (`cc391f6`).
+- **Rồi `think=true` lại bị chính phép đo loại** (`288dd64`): đo qua full stack
+  thì 82 giây một câu khi máy rảnh, **237 giây khi có request khác xếp hàng**, và
+  chết ở mốc timeout 180 giây của proxy, so với 8.7 giây khi tắt. Chỉ tới khi
+  chuyển sang streaming (`c34a7f6`) mới giữ được cả hai: bật suy luận mà widget
+  vẫn dùng được, và khoảng lặng chờ được lấp bằng sự kiện stream thật chứ không
+  phải đồng hồ giả.
+
+Hai chỗ kiểm chứng phải làm **trên trình duyệt** mới thấy, test không bắt được:
+nút Enter không gửi được tin (`65c234c`), và khi dịch vụ RAG tắt thì proxy trả
+502 nên giao diện vẫn hiện "Online" trong lúc không có gì chạy.
+
+Hai lỗi nguy hiểm nhất — cả hai **không báo lỗi gì** — được ghi ở mục 3.5.
 
 ### 2.4. Khu quản trị và quản lý bác sĩ — PR #6, #9 (11/10 và 22/10/2026)
 
@@ -154,7 +187,7 @@ bịa dữ liệu y tế. Bốn lỗi của chính AI trong phiên này ghi ở 
 
 ## 3. Những trường hợp code AI sinh ra bị sai
 
-Đề yêu cầu ít nhất 2. Dưới đây có 9, chia theo mảng việc.
+Đề yêu cầu ít nhất 2. Dưới đây có 14, chia theo mảng việc: 3 ở mục 3.1, 1 ở 3.2, 3 ở 3.3, 4 ở 3.4 và 3 ở 3.5.
 
 ### 3.1. Phần tài khoản — Huy
 
@@ -224,6 +257,36 @@ theo tác giả. Người phụ trách chỉ ra, AI hoàn tác và ghi nguyên t
 
 ---
 
+### 3.5. RAG cho chatbot — Huy
+
+Hai lỗi dưới đây có cùng một tính chất, và đó là lý do chúng đáng kể ra: **cả hai
+đều không sinh ra thông báo lỗi nào.** Chương trình chạy, trả về kết quả, điểm số
+trông hợp lý — chỉ có câu trả lời là sai.
+
+**Thiếu tiền tố nhiệm vụ của `nomic-embed-text`.** Model này được huấn luyện với
+hai tiền tố, `"search_document: "` cho đoạn văn khi index và `"search_query: "`
+cho câu hỏi khi truy vấn. Bỏ chúng đi thì không có lỗi, không có cảnh báo, chỉ là
+thứ tự xếp hạng bị hỏng — bỏ tiền tố làm câu Q14 nhảy sang **sai section**.
+Phát hiện bằng bộ đánh giá, vì nó chấm section đúng chứ không chấm "có trả lời
+được hay không". Khắc phục: hai tiền tố thành hằng số trong `config.py` kèm
+comment giải thích tại sao bắt buộc, không để thành kinh nghiệm truyền miệng
+(`0028bfc`).
+
+**Trộn hai model nhúng khác nhau.** Index dựng bằng model nào thì phải truy vấn
+bằng đúng model đó, nhưng không có gì ngăn chuyện đó, và hậu quả thì vô hình:
+tìm kiếm trả về sai đoạn mà điểm cosine vẫn nằm trong khoảng trông bình thường.
+Lỗi này lộ ra khi thêm Gemini — vì lúc đó phần nhúng *có thể* bị đổi sang nhà
+cung cấp khác. Khắc phục: `ingest.py` **đóng dấu** collection bằng tên model đã
+dựng nó (`embed_model: nomic-embed-text`), và `retrieve.py` **dừng hẳn** khi phát
+hiện lệch thay vì trả về kết quả sai (`68241ba`).
+
+Một lỗi thứ ba cùng loại, không nằm trong `rag/`: AI đề xuất cấu hình Vite proxy
+một khoá `/api` duy nhất, trong khi nhánh chat cần `/api/chat` đi sang cổng 8000.
+Vite khớp khoá **theo thứ tự khai báo**, nên gộp lại thì Spring Boot nuốt luôn
+request chat và chatbot hỏng **không một tiếng báo**. Ghi lại kèm cách giải quyết
+— giữ cả hai khoá, khoá cụ thể hơn đặt trước — trong `0a7d7f1`, trước khi merge
+để người gộp nhánh không phải tự phát hiện lại.
+
 ## 4. Cách nhóm kiểm chứng code do AI sinh ra
 
 - **Test tự động:** `cd backend && ./mvnw test` — hiện 123 test, 0 lỗi, 3 skip
@@ -244,6 +307,6 @@ theo tác giả. Người phụ trách chỉ ra, AI hoàn tác và ghi nguyên t
 ## 5. Còn thiếu
 
 - [ ] Mục 2.1 — Lộc viết
-- [ ] Mục 2.3 — Huy viết (phần RAG)
+- [x] Mục 2.3 — xong 27/10/2026
 - [ ] Mảng việc nào phát sinh sau 25/10/2026 thì thêm một mục vào phần 2 ngay khi
       merge, đừng để dồn tới cuối kỳ
