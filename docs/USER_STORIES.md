@@ -13,26 +13,27 @@ công; file này chỉ mô tả hệ thống làm được gì.
 Story được nhóm theo **khối chức năng** chứ không theo tác giả, và mã story mang
 tên khối: `AU` authen, `DR` doctor, `AD` admin, `BK` booking, `AI` trợ lý RAG.
 
-Tổng **14 story**, nằm trong mức 8–15 của đề.
+Tổng **12 story**, nằm trong mức 8–15 của đề.
 
 | Khối | Story | Nội dung |
 |---|---|---|
 | authen | US-AU-01 … 03 | đăng ký và kích hoạt, quên mật khẩu, đăng nhập và phân quyền |
-| doctor | US-DR-01 … 05 | duyệt bác sĩ, hồ sơ, lịch trực, lịch hẹn trong ngày, lịch nghỉ |
+| doctor | US-DR-01 … 03 | duyệt và quản lý bác sĩ, lịch trực, khu làm việc của bác sĩ |
 | admin | US-AD-01 … 02 | danh mục khoa, giám sát mức dùng AI |
 | booking | US-BK-01 … 02 | đặt lịch khám, đổi/huỷ và vòng đời ca khám |
 | RAG | US-AI-01 … 02 | hỏi đáp có trích nguồn, gợi ý khoa từ triệu chứng |
 
-**Khối doctor gồm cả hai góc nhìn.** US-DR-01…03 kể từ phía **admin** — duyệt
-bác sĩ, quản lý hồ sơ, xếp lịch trực; US-DR-04…05 kể từ phía **chính bác sĩ** —
-lịch hẹn trong ngày, lịch nghỉ, hồ sơ công khai. Cả năm nằm chung một khối vì
-code của chúng nằm chung trong package `doctor`.
+**Khối doctor gồm cả hai góc nhìn.** US-DR-01…02 kể từ phía **admin** — duyệt,
+quản lý bác sĩ và xếp lịch trực; US-DR-03 kể từ phía **chính bác sĩ** — lịch
+hẹn trong ngày, lịch nghỉ và hồ sơ công khai. Cả ba nằm chung một khối vì code
+của chúng nằm chung trong package `doctor`.
 
-**Hai khối đã gom lại cho vừa khung.** Khối RAG còn hai story: chuyện trả lời
+**Các khối đã được gom theo hành trình chính.** Khối RAG còn hai story: chuyện trả lời
 theo dòng là chi tiết giao diện của cùng một hành vi nên gộp vào story đầu. Khối
 booking còn hai thay vì ba: huỷ và dời lịch đi chung một bộ quy tắc vòng đời,
-tách ra chỉ làm loãng cả hai. Tổng 14 nên vẫn thừa một chỗ nếu sau này cần thêm
-— ứng viên rõ nhất nằm ở mục [Chưa thành story](#chưa-thành-story) cuối file.
+tách ra chỉ làm loãng cả hai. Hai cặp story doctor cũng được gom theo cùng một
+vai trò và hành trình sử dụng. Tổng 12 nên vẫn còn chỗ nếu sau này cần thêm —
+các ứng viên nằm ở mục [Chưa thành story](#chưa-thành-story) cuối file.
 
 Một quy tắc nên giữ nếu viết thêm: **đừng viết story nào không có test nào chạm
 tới.** Story rẻ nhất để viết là story đã có sẵn test ghim lại, và ô test để trống
@@ -105,46 +106,31 @@ là thứ người đọc nhận ra đầu tiên.
 
 ## doctor
 
-### US-DR-01 — Quyết định ai trở thành bác sĩ
+### US-DR-01 — Duyệt và quản lý bác sĩ
 
-> Là admin, tôi muốn xem ai đã xin tài khoản bác sĩ, người chờ lâu nhất lên đầu,
-> rồi duyệt họ vào một khoa hoặc từ chối, để chỉ nhân sự đã được kiểm chứng mới
-> có quyền truy cập lâm sàng.
+> Là admin, tôi muốn duyệt yêu cầu trở thành bác sĩ và quản lý hồ sơ của những
+> người đã được duyệt, để chỉ nhân sự hợp lệ có quyền lâm sàng và thông tin bệnh
+> nhân nhìn thấy luôn chính xác.
 
-- **AC1** — Given có các yêu cầu đang chờ, When mở hàng đợi, Then chúng được liệt
-  kê theo thứ tự chờ lâu nhất trước và có phân trang.
-- **AC2** — Given duyệt kèm khoa và chuyên môn, Then hồ sơ bác sĩ được tạo, vai
-  trò tài khoản đổi thành `DOCTOR`, và mã bác sĩ được sinh ra.
-- **AC3** — Given từ chối, Then tài khoản vẫn là bệnh nhân bình thường.
-- **AC4** — Given tài khoản chưa xác thực email, Then không duyệt được.
-- **AC5** — Given yêu cầu đã được quyết rồi, Then không quyết lại lần thứ hai
-  được.
-- **AC6** — Given khoa không tồn tại hoặc đang ngừng hoạt động, Then việc duyệt
-  bị từ chối.
-- **AC7** — Given người gọi không phải admin, Then cả hàng đợi lẫn hai thao tác
-  quyết định đều bị từ chối; id người dùng không tồn tại trả về 404.
+- **AC1** — Given có yêu cầu đang chờ, When mở hàng đợi, Then các yêu cầu được
+  phân trang và xếp người chờ lâu nhất trước.
+- **AC2** — Given tài khoản đã xác thực và một khoa đang hoạt động, When admin
+  duyệt kèm chuyên môn, Then hồ sơ cùng mã bác sĩ được tạo và vai trò đổi thành
+  `DOCTOR`; nếu từ chối thì tài khoản vẫn là `PATIENT`.
+- **AC3** — Given tài khoản chưa xác thực, khoa không hợp lệ hoặc yêu cầu đã
+  được quyết, Then thao tác duyệt hay từ chối lại bị chặn.
+- **AC4** — Given danh sách bác sĩ, When admin kết hợp từ khóa, khoa, chuyên môn,
+  trạng thái làm việc và trạng thái tài khoản, Then kết quả lọc và phân trang
+  phản ánh đồng thời tất cả điều kiện.
+- **AC5** — Given admin sửa hồ sơ hoặc chuyển khoa, Then dữ liệu không hợp lệ bị
+  từ chối, khoa đích phải đang hoạt động và chức trưởng khoa cũ được kết thúc.
+- **AC6** — Given admin vô hiệu hóa bác sĩ, Then vai trò `DOCTOR` bị thu hồi và
+  bác sĩ chuyển sang ngoài ca; khi kích hoạt lại thì vai trò được cấp lại và các
+  ô thống kê cập nhật ngay.
+- **AC7** — Given người gọi không phải admin, Then toàn bộ endpoint duyệt và
+  quản lý bác sĩ bị từ chối; id không tồn tại trả về 404.
 
-### US-DR-02 — Tìm kiếm và quản lý hồ sơ bác sĩ
-
-> Là admin, tôi muốn tìm kiếm, lọc và phân trang danh sách bác sĩ, đồng thời sửa
-> hồ sơ, trạng thái làm việc và trạng thái tài khoản của họ, để những gì bệnh
-> nhân nhìn thấy luôn đúng.
-
-- **AC1** — Given danh sách, When lọc theo khoa, chuyên môn, trạng thái làm việc,
-  trạng thái tài khoản hoặc từ khóa tự do, Then các bộ lọc kết hợp với nhau chứ
-  không thay thế lẫn nhau.
-- **AC2** — Given tham số phân trang nằm ngoài khoảng cho phép, Then chúng được
-  kéo về trong khoảng; giá trị lọc lạ thì bị từ chối.
-- **AC3** — Given một lần sửa hồ sơ, Then dữ liệu được kiểm tra, và giá trị quá
-  dài hoặc không an toàn bị từ chối.
-- **AC4** — Given chuyển bác sĩ sang khoa khác, Then chức trưởng khoa ở khoa cũ
-  (nếu có) kết thúc; chuyển vào khoa **đang ngừng hoạt động** thì bị từ chối.
-- **AC5** — Given vô hiệu hóa một bác sĩ, Then vai trò `DOCTOR` bị thu hồi và họ
-  được chuyển sang trạng thái ngoài ca; kích hoạt lại thì trả vai trò về.
-- **AC6** — Given bất kỳ thao tác nào ở trên, Then các ô thống kê phản ánh ngay
-  lập tức.
-
-### US-DR-03 — Xếp lịch trực theo tuần cho bác sĩ
+### US-DR-02 — Xếp lịch trực theo tuần cho bác sĩ
 
 > Là admin, tôi muốn thêm, sửa và xóa ca trực trên bảng lịch tuần, để bệnh nhân
 > chỉ được mời những khung giờ bác sĩ thực sự làm việc.
@@ -161,41 +147,26 @@ là thứ người đọc nhận ra đầu tiên.
 - **AC6** — Given bác sĩ đang ngừng hoạt động, Then lịch tuần của họ chỉ được xóa
   chứ không được thêm; và chỉ admin mới vào được tất cả những chức năng trên.
 
-### US-DR-04 — Lịch hẹn trong ngày
+### US-DR-03 — Quản lý công việc và hồ sơ của bác sĩ
 
-> Là bác sĩ, tôi muốn mở lịch hẹn của chính mình, chuyển trạng thái từng ca khám
-> và ghi chú lại, để theo được buổi làm việc mà không phải nhờ admin.
+> Là bác sĩ, tôi muốn quản lý lịch hẹn, lịch làm việc và hồ sơ công khai của
+> chính mình, để hoàn thành buổi khám và cập nhật thông tin mà không phải nhờ
+> admin.
 
-- **AC1** — Given tôi đã đăng nhập bằng tài khoản bác sĩ, When mở khu làm việc,
-  Then chỉ thấy lịch hẹn được gán cho chính tôi, lọc và phân trang được.
-- **AC2** — Given `from` và `to` cùng một ngày, Then nhận đúng lịch của ngày đó.
-- **AC3** — Given một ca khám, When tôi chuyển trạng thái, Then chỉ các bước hợp
-  lệ được chấp nhận: `PENDING` → `CONFIRMED` → `IN_PROGRESS` → `COMPLETED` hoặc
-  `NO_SHOW`.
-- **AC4** — Given tôi ghi chú vào một ca đang khám hoặc đã khám xong, Then ghi
-  chú được lưu và bản cũ vẫn còn trong lịch sử.
-- **AC5** — Given tôi mở lịch hẹn của bác sĩ khác, Then nhận **404**, không phải
-  403 — 403 đã vô tình xác nhận bản ghi đó tồn tại.
-- **AC6** — Given tôi chưa đăng nhập, hoặc đăng nhập bằng tài khoản bệnh nhân
-  hay admin, Then mọi endpoint `/api/doctor/**` đều từ chối.
-- **AC7** — Given tôi còn lịch hẹn trong tương lai, Then admin không thể vô hiệu
-  hoá tôi hay đặt tôi sang nghỉ phép.
-
-### US-DR-05 — Lịch nghỉ và hồ sơ công khai
-
-> Là bác sĩ, tôi muốn tự khai những buổi mình không làm được và tự sửa phần giới
-> thiệu bệnh nhân nhìn thấy, để không phải nhờ admin cho mỗi thay đổi nhỏ.
-
-- **AC1** — Given tôi đã đăng nhập, When mở hồ sơ của mình, Then thấy đúng hồ sơ
-  gắn với tài khoản tôi, không phải của người khác.
-- **AC2** — Given tôi sửa phần giới thiệu công khai, Then thay đổi được lưu và
-  hiện ra ở trang chi tiết bác sĩ.
-- **AC3** — Given tôi xem lịch trực tuần của mình, Then thấy đúng khung giờ admin
-  đã xếp cho tôi.
-- **AC4** — Given tôi khai một khoảng `WORK`, `BREAK` hoặc `LEAVE` theo ngày cụ
-  thể, Then khoảng đó đè lên lịch tuần cho riêng ngày ấy.
-- **AC5** — Given tôi xoá một khoảng ngoại lệ mà việc xoá sẽ bỏ rơi một lịch hẹn
-  đã đặt, Then thao tác bị từ chối.
+- **AC1** — Given đăng nhập bằng tài khoản bác sĩ, When mở khu làm việc, Then tôi
+  chỉ thấy lịch hẹn của mình, có thể lọc, phân trang và lấy đúng lịch một ngày.
+- **AC2** — Given một ca khám, Then chỉ các bước trạng thái hợp lệ được chấp nhận:
+  `PENDING` → `CONFIRMED` → `IN_PROGRESS` → `COMPLETED` hoặc `NO_SHOW`; ghi chú
+  mới được lưu mà lịch sử cũ vẫn còn.
+- **AC3** — Given tôi mở lịch hẹn của bác sĩ khác, Then nhận 404; người chưa đăng
+  nhập, bệnh nhân và admin đều không truy cập được `/api/doctor/**`.
+- **AC4** — Given tôi mở hoặc sửa hồ sơ của mình, Then đúng hồ sơ gắn với tài
+  khoản được trả về và phần giới thiệu mới xuất hiện ở trang công khai.
+- **AC5** — Given tôi xem lịch tuần hoặc tạo ngoại lệ `WORK`, `BREAK`, `LEAVE`
+  cho một ngày, Then lịch admin đã xếp được hiển thị và ngoại lệ chỉ ghi đè ngày
+  tương ứng.
+- **AC6** — Given việc xóa ngoại lệ hay thay đổi trạng thái bác sĩ sẽ làm hỏng
+  một lịch hẹn tương lai, Then thao tác bị từ chối.
 
 ---
 
@@ -385,10 +356,10 @@ nào.
 
 ## Chưa thành story
 
-Tổng đang là 14, nên còn đúng **một** chỗ trước khi chạm trần 15 của đề. Ba ứng
-viên dưới đây đều đã có code và test sẵn, xếp theo thứ tự đáng lấy nhất.
+Tổng đang là 12, nên còn **ba** chỗ trước khi chạm trần 15 của đề. Ba ứng viên
+dưới đây đều đã có code và test sẵn, xếp theo thứ tự đáng lấy nhất.
 
-**US-DR-06 — bệnh nhân chưa đăng nhập tìm bác sĩ.** Hai trang công khai
+**US-DR-04 — bệnh nhân chưa đăng nhập tìm bác sĩ.** Hai trang công khai
 `pages/Doctors` và `pages/DoctorDetails` chạy trên `/api/public/**` và đã có
 `catalog/PublicCatalogApiTest` (9 test) phủ phía server. Đây là ứng viên mạnh
 nhất vì nó là cửa vào của cả luồng đặt lịch, mà hiện chưa story nào kể.

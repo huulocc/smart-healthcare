@@ -27,12 +27,12 @@ package `doctor` và cùng một người đứng ra giải thích.
 | **Dũng** | admin, booking | sơ đồ kiến trúc; tổng hợp tài liệu |
 
 [`USER_STORIES.md`](USER_STORIES.md) **không chia story theo người** — đề không
-yêu cầu thế, và 14 story ở đó mô tả cả sản phẩm. File này mới là chỗ nói ai trả
+yêu cầu thế, và 12 story ở đó mô tả cả sản phẩm. File này mới là chỗ nói ai trả
 lời cho khối nào, nên đây là bảng bắc cầu từ người sang story:
 
 | Thành viên | Khối | Story phải trace được |
 |---|---|---|
-| **Huy** | authen, doctor | US-AU-01…03, US-DR-01…05 |
+| **Huy** | authen, doctor | US-AU-01…03, US-DR-01…03 |
 | **Lộc** | RAG | US-AI-01…02 |
 | **Dũng** | admin, booking | US-AD-01…02, US-BK-01…02 |
 
