@@ -7,6 +7,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import com.example.healthcare.backend.admin.ai.AiUsageEventRepository;
 import com.example.healthcare.backend.admin.notification.AdminNotification;
@@ -21,6 +24,7 @@ import com.example.healthcare.backend.user.User;
 import com.example.healthcare.backend.user.UserRepository;
 import com.jayway.jsonpath.JsonPath;
 
+@TestPropertySource(properties = "app.ai.telemetry-secret=test-admin-features-telemetry-secret")
 public class AdminFeaturesApiTest extends ApiTestSupport {
 
     @Autowired
@@ -333,7 +337,10 @@ public class AdminFeaturesApiTest extends ApiTestSupport {
         String adminToken = adminToken();
 
         // 1. Record telemetry via public endpoint (permitAll)
-        postJson("/api/ai/telemetry", """
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/ai/telemetry")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("X-Telemetry-Secret", "test-admin-features-telemetry-secret")
+                .content("""
                 {
                     "traceId": "trace-test-01",
                     "feature": "medical_rag",
@@ -344,7 +351,7 @@ public class AdminFeaturesApiTest extends ApiTestSupport {
                     "latencyMs": 420,
                     "status": "SUCCESS"
                 }
-                """, null)
+                """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.model").value("gemini-2.5-flash"))
                 .andExpect(jsonPath("$.totalTokens").value(200));

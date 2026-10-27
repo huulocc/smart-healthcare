@@ -18,14 +18,27 @@ import lombok.extern.slf4j.Slf4j;
 public class DefaultGoogleQuotaClient implements GoogleQuotaClient {
 
     private final HttpClient httpClient;
+    private final String targetModel;
 
     @org.springframework.beans.factory.annotation.Autowired
     public DefaultGoogleQuotaClient(GoogleCloudProperties properties) {
-        this(HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(6)).build());
+        this(
+                HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(6)).build(),
+                properties != null && properties.getModel() != null && !properties.getModel().isBlank()
+                        ? properties.getModel()
+                        : "gemini-3.6-flash"
+        );
     }
 
     public DefaultGoogleQuotaClient(HttpClient httpClient) {
+        this(httpClient, "gemini-3.6-flash");
+    }
+
+    public DefaultGoogleQuotaClient(HttpClient httpClient, String targetModel) {
         this.httpClient = httpClient;
+        this.targetModel = targetModel != null && !targetModel.isBlank()
+                ? targetModel.trim()
+                : "gemini-3.6-flash";
     }
 
     @Override
@@ -226,21 +239,19 @@ public class DefaultGoogleQuotaClient implements GoogleQuotaClient {
             String defaultUnit,
             String defaultPeriod
     ) {
-        // First priority: general/global quota without specific model constraint
+        String normalizedTarget = normalizeModel(targetModel);
+
+        // Exact match against the model dimension of the configured Gemini model
         for (GoogleAiUsageDto.QuotaLimitInfo q : quotas) {
-            if (q.name().contains(category) && (q.dimensions().isEmpty() || !q.dimensions().containsKey("model"))) {
-                return q;
+            if (q == null || q.name() == null || !q.name().contains(category)) {
+                continue;
             }
-        }
-        // Second priority: popular models (flash before pro)
-        for (GoogleAiUsageDto.QuotaLimitInfo q : quotas) {
-            if (q.name().contains(category) && q.name().contains("flash")) {
-                return q;
+            Map<String, String> dimensions = q.dimensions();
+            if (dimensions == null) {
+                continue;
             }
-        }
-        // Third priority: any quota in category
-        for (GoogleAiUsageDto.QuotaLimitInfo q : quotas) {
-            if (q.name().contains(category)) {
+            String quotaModel = normalizeModel(dimensions.get("model"));
+            if (!normalizedTarget.isBlank() && normalizedTarget.equals(quotaModel)) {
                 return q;
             }
         }
@@ -255,6 +266,15 @@ public class DefaultGoogleQuotaClient implements GoogleQuotaClient {
                 "UNAVAILABLE",
                 Collections.emptyMap()
         );
+    }
+
+    private String normalizeModel(String model) {
+        if (model == null) {
+            return "";
+        }
+        return model.trim()
+                .replaceFirst("^models/", "")
+                .toLowerCase(Locale.ROOT);
     }
 
     private GoogleAiUsageDto.QuotaMetrics unconfiguredQuota(String status) {

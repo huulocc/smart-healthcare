@@ -65,6 +65,10 @@ Compose file bị xoá chứ không giữ lại cho có, vì nó chỉ chứa m�
   thành **một biến `DB_URL` nguyên khối** thay vì ghép từ `DB_HOST`/`DB_PORT`/
   `DB_NAME` như trước — SQL Server gọi instance mặc định bằng cổng và gọi
   instance có tên bằng tên, hai hình dạng đó không nhét chung một khuôn được.
+- Kiểu cột thời gian phải khớp ánh xạ của dialect. Hibernate đưa `Instant`
+  qua `TIMESTAMP_UTC`, mà dialect SQL Server render thành `datetimeoffset`;
+  dịch tay sang `datetime2` thì ứng dụng không khởi động nổi. Chi tiết ở
+  mục 3.2 của [`../../AI_USAGE.md`](../../AI_USAGE.md).
 - Chuỗi kết nối phải mang `encrypt=true;trustServerCertificate=true`. Driver từ
   phiên bản 10 mã hoá mặc định, instance trên máy thì trình ra một chứng chỉ
   không ai tin, thiếu nửa sau là bắt tay hỏng ngay.

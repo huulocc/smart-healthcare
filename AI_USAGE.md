@@ -22,7 +22,7 @@ bảng phân công ghi **ai đứng ra giải thích**.
 | Công cụ | Model | Dùng cho |
 |---|---|---|
 | **Claude Code** (Claude desktop, tab Code) | Claude Sonnet 5, Claude Opus 5 | Phần tài khoản, admin, bác sĩ, chuyển sang SQL Server, danh bạ công khai, RAG |
-| **Codex** | — | Khung backend đặt lịch: entity, `AvailabilityEngine`, DTO, migration `001_booking.sql` |
+| **Codex** | — | Giao diện danh bạ/chat, triage + upload + chatbot eval; khung backend đặt lịch |
 | **Antigravity** | Gemini 3.8 Flash | Tích hợp full-stack phần đặt lịch: `bookingApi.ts`, schema Zod, nối các trang React, xử lý collation SQL Server |
 
 **Cách làm chung:** AI đọc dự án, đề xuất kế hoạch, người phụ trách trả lời các
@@ -33,15 +33,28 @@ thử và duyệt mới cho đi tiếp.
 
 ## 2. Các mảng việc
 
-Sáu mảng, theo đúng thứ tự trong `git log`.
+Tám mảng, theo đúng thứ tự trong `git log`.
 
 ### 2.1. Giao diện danh sách khoa, bác sĩ và khung chat — PR #2 (20/08/2026)
 
-**Người thực hiện:** Lộc (`huulocc`)
+**Người thực hiện:** Lộc (`huulocc`) · **Công cụ:** Codex
 
-> *Chờ Lộc viết.* Cần: công cụ đã dùng, một prompt đại diện, AI sinh ra những file
-> nào (`pages/Departments`, `pages/Doctors`, `components/AIChatWidget.tsx`), và
-> bạn đã kiểm tra hoặc sửa gì trước khi commit.
+**Prompt đại diện (tóm tắt, không phải trích nguyên văn):** *"Dựa trên giao diện
+Smart Healthcare hiện có, thêm trang danh sách khoa, trang danh sách bác sĩ có
+tìm kiếm/lọc, và một chat widget nổi dùng React + CSS module; giữ cùng phong cách
+với trang chủ."*
+
+**AI sinh ra:** `pages/Departments`, `pages/Doctors`, `AIChatWidget.tsx` và các
+CSS module tương ứng; thêm route, gắn widget vào `MainLayout`, và tạo
+`data/mockData.ts` để giao diện chạy được trước khi backend sẵn sàng.
+
+**Kiểm tra và sửa thể hiện trong lịch sử repo:** commit đầu chỉ là prototype UI:
+chat trả lời bằng `setTimeout`, còn danh sách đọc mock data. Phần chat sau đó được
+thay bằng stream thật từ RAG (`65c234c`, `c34a7f6`); danh bạ được thay bằng API
+Spring Boot và gỡ các trường đánh giá/phí bị bịa (`1924941`). Các thay đổi tiếp
+theo cũng sửa layout và type để qua `npm run build`/ESLint. Vì prompt nguyên văn
+không được lưu trong Git, phần trên chủ động ghi là bản tóm tắt thay vì giả làm
+trích dẫn phiên làm việc.
 
 ### 2.2. Tài khoản: đăng ký, đăng nhập, hồ sơ, mật khẩu — PR #3, #5 (30/08 và 11/10/2026)
 
@@ -66,52 +79,32 @@ Chi tiết: [`docs/AI_USAGE_AND_REVIEW.md`](docs/AI_USAGE_AND_REVIEW.md).
 
 ### 2.3. RAG cho chatbot — PR #4 (11/10/2026)
 
-**Người thực hiện:** Huy (13 commit trong `rag/`, từ `c010831` 21/09 tới
-`6518dbb` 11/10/2026) · **Công cụ:** Claude Code (Opus 5)
+**Người thực hiện:** Huy (13 commit trong `rag/`) · **Công cụ:** Claude Code
 
-**Prompt chính:** *"Xây một RAG
-baseline chạy local trên tập tờ hướng dẫn bệnh nhân: đọc PDF, chia đoạn theo
-heading, nhúng bằng `nomic-embed-text`, lưu ChromaDB, sinh câu trả lời bằng
-`qwen3` qua Ollama. Viết Python thuần, **không** dùng LangChain hay LlamaIndex.
-Làm bộ đánh giá **trước** pipeline, vì một baseline chỉ có nghĩa khi đã có thước
-đo cố định để chấm. Trợ lý phải nói rõ khi tài liệu không chứa câu trả lời."*
+**Prompt chính (tóm tắt):** *"Xây một RAG baseline tối thiểu, chạy local trên
+Ollama, đọc patient leaflets từ PDF, chia chunk, lưu Chroma, truy xuất top-k và
+trả lời chỉ từ nguồn. Viết bộ đánh giá trước khi tối ưu; mọi kết quả phải lưu kèm
+model, tham số và phiên bản prompt để tái lập. Sau đó thêm Gemini như một backend
+có thể đổi bằng cấu hình mà không làm đổi pipeline."*
 
-Các vòng sau mở rộng dần, mỗi vòng một commit: phục vụ qua HTTP, nối vào widget
-chat, chuyển sang streaming, thêm Gemini sau một lớp chuyển, rồi index toàn bộ
-corpus thay vì một tài liệu.
+**AI sinh ra:** `ingest.py` để trích PDF/chunk/embed, `retrieve.py` để kiểm tra
+metadata collection và tìm top-k, `generate.py` để dựng prompt/citation,
+`evaluate.py` cùng bộ câu hỏi và result JSON, `llm.py` để đổi Ollama/Gemini, và
+FastAPI `server.py` dùng bởi widget. Cấu hình nằm ở `config.py`; prompt được tách
+ra file có phiên bản để mỗi kết quả chỉ đúng với cấu hình đã ghi.
 
-**AI sinh ra:** `ingest.py`, `retrieve.py`, `generate.py`, `evaluate.py`,
-`llm.py`, `server.py`, `ask.py`, bộ `eval/eval_questions.yaml` 34 câu, và
-`docs/CHATBOT.md` cùng bản tiếng Việt.
+**Người kiểm tra và sửa:** không chấp nhận pipeline chỉ vì nó chạy được. Mỗi lần
+đổi chunking/prompt/model đều chạy lại eval và giữ file kết quả. Hai lỗi im lặng
+quan trọng được đo rồi chặn trong code: (1) `nomic-embed-text` thiếu tiền tố
+`search_document:` / `search_query:` vẫn trả vector nhưng làm Q14 xếp sai; (2)
+index được tạo bởi một embedding model vẫn có thể bị query bằng model khác và trả
+điểm nhìn có vẻ hợp lý, nên ingest đóng dấu model/dimension còn retrieve từ chối
+khi metadata không khớp. Ngoài ra, bật thinking nâng answer score từ 27/30 lên
+29/30 và phục hồi bước gọi xe cấp cứu ở Q23; lỗi stream HTTP 200 nhưng không có
+answer được đổi thành lỗi rõ ràng thay vì để UI treo.
 
-**Người kiểm tra và sửa.** Cách làm là **đo trước, sửa sau** — mỗi thay đổi phải
-chạy lại bộ đánh giá và kết quả lưu vào `rag/eval/results/` kèm cấu hình, nên
-không có số nào trong báo cáo mà không truy ra được lần chạy sinh ra nó.
-
-Ba lần AI đề xuất sai hướng và bị phép đo bác lại:
-
-- **Vòng hillclimb đầu tiên thất bại, và được ghi lại đúng như vậy** (`c9adf48`).
-  Thêm một quy tắc "trả lời đầy đủ" vào system prompt đã **viết lại 26 trong 34
-  câu trả lời**, sửa được Q07, làm hỏng Q11 thành bản copy nguyên bullet, và
-  **trượt đúng mục tiêu của nó**: Q23 vẫn mất hai trong bốn bước xử lý cơn hen.
-  Dò tiếp mới ra nguyên nhân thật — context truy hồi *có* đủ bốn bước, và cùng
-  prompt đó với `think=true` thì ra đủ bốn. Đòn bẩy là chế độ suy luận, không
-  phải prompt.
-- **`think=false` ban đầu được chọn từ một phép dò 2 câu** mà hai câu trả lời
-  trông y hệt nhau và chạy nhanh gấp 5. Hai câu là không đủ để thấy khác biệt.
-  Bật `think=true` đưa kết quả từ **27/30 lên 29/30** (`cc391f6`).
-- **Rồi `think=true` lại bị chính phép đo loại** (`288dd64`): đo qua full stack
-  thì 82 giây một câu khi máy rảnh, **237 giây khi có request khác xếp hàng**, và
-  chết ở mốc timeout 180 giây của proxy, so với 8.7 giây khi tắt. Chỉ tới khi
-  chuyển sang streaming (`c34a7f6`) mới giữ được cả hai: bật suy luận mà widget
-  vẫn dùng được, và khoảng lặng chờ được lấp bằng sự kiện stream thật chứ không
-  phải đồng hồ giả.
-
-Hai chỗ kiểm chứng phải làm **trên trình duyệt** mới thấy, test không bắt được:
-nút Enter không gửi được tin (`65c234c`), và khi dịch vụ RAG tắt thì proxy trả
-502 nên giao diện vẫn hiện "Online" trong lúc không có gì chạy.
-
-Hai lỗi nguy hiểm nhất — cả hai **không báo lỗi gì** — được ghi ở mục 3.5.
+Chi tiết, số đo và file kết quả: [`rag/README.md`](rag/README.md),
+[`docs/CHATBOT.md`](docs/CHATBOT.md), `rag/eval/results/`.
 
 ### 2.4. Khu quản trị và quản lý bác sĩ — PR #6, #9 (11/10 và 22/10/2026)
 
@@ -166,7 +159,7 @@ kiểm thử PowerShell.
 
 Chi tiết: [`docs/AI_USAGE_BOOKING.md`](docs/AI_USAGE_BOOKING.md).
 
-### 2.7. Danh bạ công khai — chưa merge (24/10/2026)
+### 2.7. Danh bạ công khai — commit `1924941` (24/10/2026)
 
 **Người thực hiện:** Huy · **Công cụ:** Claude Code (Opus 5)
 
@@ -182,6 +175,28 @@ một dòng `permitAll` trong `SecurityConfig`, 9 test, và phía frontend là
 giá `4.9`, số lượt đánh giá tính theo `120 + id * 15`, số phòng khám, phí khám) bị
 **gỡ bỏ** thay vì giữ lại, vì backend không có nguồn nào cho chúng và giữ lại là
 bịa dữ liệu y tế. Bốn lỗi của chính AI trong phiên này ghi ở mục 3.4.
+
+### 2.8. Chatbot triage, upload và evaluation guardrails — PR #13, #15 (26/10/2026)
+
+**Người thực hiện:** Lộc (`huulocc`) · **Công cụ:** Codex
+
+**Prompt chính (tóm tắt):** *"Bổ sung tool B/C của mục 4.1 để chatbot nhận triệu
+chứng, gợi ý khoa/bác sĩ/lịch phù hợp; cho phép PDF/TXT làm ngữ cảnh; sau đó tạo
+bộ evaluate đúng với các tính năng thật của project và thêm guardrail."*
+
+**AI sinh ra:** ba tool chỉ-đọc trong `rag/clinic_tools.py`, structured output
+`TriageDecision`, hai endpoint upload, parser/chunker file, prompt có phiên bản,
+guardrail secret/redaction, 25 ca live trong `rag/eval/chatbot_cases.json`, runner
+`rag/evaluate_chatbot.py`, test Python/Java và tài liệu chạy eval.
+
+**Người kiểm tra và sửa:** luồng tool kiểm mọi department/doctor/source id với
+dữ liệu Spring Boot thay vì tin id do model trả; bearer token chỉ được chuyển tới
+Spring, không vào prompt. Upload giới hạn loại file, 5 MB, 20 trang và 24.000 ký
+tự; nội dung chỉ tồn tại trong request. Telemetry từ Python sang Spring dùng
+shared secret và redaction. Trước khi merge đã chạy 36 test Python, test telemetry
+Java, frontend build và lint mục tiêu. Bộ 25 ca đã được validate cấu trúc nhưng
+chưa được tính pass rate live vì ba service/model chưa cùng chạy; tài liệu không
+biến việc validate thành kết quả đánh giá.
 
 ---
 
@@ -306,7 +321,6 @@ request chat và chatbot hỏng **không một tiếng báo**. Ghi lại kèm c�
 
 ## 5. Còn thiếu
 
-- [ ] Mục 2.1 — Lộc viết
-- [x] Mục 2.3 — xong 27/10/2026
-- [ ] Mảng việc nào phát sinh sau 25/10/2026 thì thêm một mục vào phần 2 ngay khi
-      merge, đừng để dồn tới cuối kỳ
+- [x] Mục 2.1 — giao diện danh bạ và khung chat
+- [x] Mục 2.3 — RAG
+- [x] Mảng phát sinh ngày 26/10/2026 đã được ghi ở mục 2.8

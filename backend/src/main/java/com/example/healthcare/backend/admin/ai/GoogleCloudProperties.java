@@ -30,6 +30,9 @@ public class GoogleCloudProperties {
     /** BigQuery table name containing exported Google Cloud billing records. */
     private String billingTable = "";
 
+    /** Target Gemini model for quota monitoring (default: gemini-3.6-flash). */
+    private String model = "gemini-3.6-flash";
+
     /** In-memory cache TTL in seconds for Google Cloud API responses to prevent rate limiting. */
     private int cacheTtlSeconds = 120;
 

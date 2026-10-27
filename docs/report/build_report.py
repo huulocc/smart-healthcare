@@ -9,6 +9,7 @@ measured. Rebuild with:
 Needs `pip install reportlab svglib` and the two SVG figures beside this file.
 """
 import json
+import re
 import sys
 from datetime import date
 from pathlib import Path
@@ -52,6 +53,25 @@ def load(name, decoder_tolerant=False):
     if decoder_tolerant:
         return json.JSONDecoder().raw_decode(raw)[0]
     return json.loads(raw)
+
+
+def story_ids():
+    """Read the story ids out of USER_STORIES.md.
+
+    The set has changed once already (14 -> 12 when the doctor stories were
+    consolidated), so the report counts them rather than stating a number that
+    can quietly go stale.
+    """
+    text = (ROOT / "docs" / "USER_STORIES.md").read_text(encoding="utf-8")
+    # headings only: the prose also names the next free numbers
+    return sorted(set(re.findall(r"^### (US-[A-Z]{2}-\d{2})", text, re.M)))
+
+
+def stories_for(prefix):
+    ids = [i for i in story_ids() if i.startswith("US-" + prefix)]
+    if len(ids) > 2:
+        return code(ids[0]) + "…" + code(ids[-1].split("-")[-1])
+    return ", ".join(code(i) for i in ids)
 
 
 def pct(x):
@@ -705,12 +725,10 @@ def sec9(w):
     rows = [
         ["Thành viên", "Module sở hữu", "User story"],
         ["Trần Quốc Huy", "authen, doctor",
-         code("US-AU-01") + "…" + code("03") + ", " + code("US-DR-01") +
-         "…" + code("05")],
-        ["Võ Hữu Lộc", "RAG", code("US-AI-01") + ", " + code("US-AI-02")],
+         stories_for("AU") + ", " + stories_for("DR")],
+        ["Võ Hữu Lộc", "RAG", stories_for("AI")],
         ["Nguyễn Chí Dũng", "admin, booking",
-         code("US-AD-01") + ", " + code("US-AD-02") + ", " + code("US-BK-01") +
-         ", " + code("US-BK-02")],
+         stories_for("AD") + ", " + stories_for("BK")],
     ]
     tests = [
         ["Tầng", "Kiểm thử"],
@@ -730,7 +748,7 @@ def sec9(w):
           f"{code('docs/OWNERSHIP.md')}."),
         table(rows, [4.2 * cm, 4.2 * cm, w - 8.4 * cm]),
         Spacer(1, 0.3 * cm),
-        P(f"{code('docs/TRACEABILITY.md')} nối 14 user story tới "
+        P(f"{code('docs/TRACEABILITY.md')} nối " + str(len(story_ids())) + " user story tới "
           "endpoint, file mã nguồn và test cụ thể, "
           "nên mỗi yêu cầu đều chỉ ra "
           "được chỗ nó được thực "
@@ -843,7 +861,7 @@ def sec11(w):
             [code("docs/ARCHITECTURE.md"), "hai sơ đồ trong báo "
                                            "cáo này, dạng mermaid"],
             [code("docs/adr/"), "ba quyết định kiến trúc"],
-            [code("docs/USER_STORIES.md"), "14 story kèm tiêu chí "
+            [code("docs/USER_STORIES.md"), f"{len(story_ids())} story kèm tiêu chí "
                                            "chấp nhận"],
             [code("docs/TRACEABILITY.md"), "story → endpoint → file → test"],
             [code("docs/CHATBOT.md"), "trợ lý hoạt động "

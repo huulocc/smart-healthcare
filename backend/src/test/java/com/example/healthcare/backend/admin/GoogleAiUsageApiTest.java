@@ -312,6 +312,10 @@ public class GoogleAiUsageApiTest extends ApiTestSupport {
                                         {
                                             "effectiveLimit": "15",
                                             "dimensions": { "model": "gemini-1.5-pro" }
+                                        },
+                                        {
+                                            "effectiveLimit": "20",
+                                            "dimensions": { "model": "gemini-3.6-flash" }
                                         }
                                     ]
                                 }
@@ -337,7 +341,7 @@ public class GoogleAiUsageApiTest extends ApiTestSupport {
 
         GoogleAiUsageDto.QuotaMetrics quota = client.parseQuotaResponse(sampleServiceUsage);
         assertThat(quota.status()).isEqualTo("AVAILABLE");
-        assertThat(quota.modelQuotas()).hasSize(3);
+        assertThat(quota.modelQuotas()).hasSize(4);
 
         // Check gemini-1.5-flash RPM
         GoogleAiUsageDto.QuotaLimitInfo flashRpm = quota.modelQuotas().stream()
@@ -351,8 +355,212 @@ public class GoogleAiUsageApiTest extends ApiTestSupport {
                 .findFirst().orElseThrow();
         assertThat(proRpm.limitValue()).isEqualTo(15L);
 
-        // Check representative primary RPM
-        assertThat(quota.rpm().limitValue()).isEqualTo(60L);
+        // Check gemini-3.6-flash RPM
+        GoogleAiUsageDto.QuotaLimitInfo flash36Rpm = quota.modelQuotas().stream()
+                .filter(q -> "gemini-3.6-flash".equals(q.dimensions().get("model")) && q.name().contains("RPM"))
+                .findFirst().orElseThrow();
+        assertThat(flash36Rpm.limitValue()).isEqualTo(20L);
+
+        // Check representative primary RPM matches configured model (gemini-3.6-flash)
+        assertThat(quota.rpm().limitValue()).isEqualTo(20L);
+    }
+
+    @Test
+    @DisplayName("Quota selection Test 1: Given gemini-1.5-flash 100 RPD and gemini-3.6-flash 20 RPD, selects 20 RPD")
+    void quotaSelectionTest1_CorrectModel() {
+        DefaultGoogleQuotaClient client = new DefaultGoogleQuotaClient(googleCloudProperties);
+        String json = """
+                {
+                    "metrics": [
+                        {
+                            "metric": "generativelanguage.googleapis.com/generate_content_requests_per_day",
+                            "consumerQuotaLimits": [
+                                {
+                                    "unit": "1/d",
+                                    "quotaBuckets": [
+                                        {
+                                            "effectiveLimit": "100",
+                                            "dimensions": { "model": "gemini-1.5-flash" }
+                                        },
+                                        {
+                                            "effectiveLimit": "20",
+                                            "dimensions": { "model": "gemini-3.6-flash" }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+                """;
+
+        GoogleAiUsageDto.QuotaMetrics quota = client.parseQuotaResponse(json);
+        assertThat(quota.rpd().limitValue()).isEqualTo(20L);
+        assertThat(quota.rpd().status()).isEqualTo("AVAILABLE");
+    }
+
+    @Test
+    @DisplayName("Quota selection Test 2: Given gemini-1.5-flash 100 RPD and gemini-3.5-flash 50 RPD, returns UNAVAILABLE with null limit")
+    void quotaSelectionTest2_ModelUnavailable() {
+        DefaultGoogleQuotaClient client = new DefaultGoogleQuotaClient(googleCloudProperties);
+        String json = """
+                {
+                    "metrics": [
+                        {
+                            "metric": "generativelanguage.googleapis.com/generate_content_requests_per_day",
+                            "consumerQuotaLimits": [
+                                {
+                                    "unit": "1/d",
+                                    "quotaBuckets": [
+                                        {
+                                            "effectiveLimit": "100",
+                                            "dimensions": { "model": "gemini-1.5-flash" }
+                                        },
+                                        {
+                                            "effectiveLimit": "50",
+                                            "dimensions": { "model": "gemini-3.5-flash" }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+                """;
+
+        GoogleAiUsageDto.QuotaMetrics quota = client.parseQuotaResponse(json);
+        assertThat(quota.rpd().limitValue()).isNull();
+        assertThat(quota.rpd().status()).isEqualTo("UNAVAILABLE");
+    }
+
+    @Test
+    @DisplayName("Quota selection Test 3: Documented models/gemini-3.6-flash and gemini-3.6-flash match correctly")
+    void quotaSelectionTest3_NormalizedModelIdentifier() {
+        DefaultGoogleQuotaClient client = new DefaultGoogleQuotaClient(googleCloudProperties);
+        String json = """
+                {
+                    "metrics": [
+                        {
+                            "metric": "generativelanguage.googleapis.com/generate_content_requests_per_day",
+                            "consumerQuotaLimits": [
+                                {
+                                    "unit": "1/d",
+                                    "quotaBuckets": [
+                                        {
+                                            "effectiveLimit": "20",
+                                            "dimensions": { "model": "models/gemini-3.6-flash" }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+                """;
+
+        GoogleAiUsageDto.QuotaMetrics quota = client.parseQuotaResponse(json);
+        assertThat(quota.rpd().limitValue()).isEqualTo(20L);
+        assertThat(quota.rpd().status()).isEqualTo("AVAILABLE");
+    }
+
+    @Test
+    @DisplayName("Quota selection Test 4: Missing or null model dimensions do not cause NPE or incorrect selection")
+    void quotaSelectionTest4_MissingDimensions() {
+        DefaultGoogleQuotaClient client = new DefaultGoogleQuotaClient(googleCloudProperties);
+        String json = """
+                {
+                    "metrics": [
+                        {
+                            "metric": "generativelanguage.googleapis.com/generate_content_requests_per_day",
+                            "consumerQuotaLimits": [
+                                {
+                                    "unit": "1/d",
+                                    "quotaBuckets": [
+                                        {
+                                            "effectiveLimit": "100"
+                                        },
+                                        {
+                                            "effectiveLimit": "200",
+                                            "dimensions": {}
+                                        },
+                                        {
+                                            "effectiveLimit": "300",
+                                            "dimensions": { "region": "global" }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+                """;
+
+        GoogleAiUsageDto.QuotaMetrics quota = client.parseQuotaResponse(json);
+        assertThat(quota.rpd().limitValue()).isNull();
+        assertThat(quota.rpd().status()).isEqualTo("UNAVAILABLE");
+    }
+
+    @Test
+    @DisplayName("Quota selection Test 5: RPM, TPM, and RPD remain separate metrics and preserve modelQuotas")
+    void quotaSelectionTest5_SeparateMetrics() {
+        DefaultGoogleQuotaClient client = new DefaultGoogleQuotaClient(googleCloudProperties);
+        String json = """
+                {
+                    "metrics": [
+                        {
+                            "metric": "generativelanguage.googleapis.com/generate_content_requests",
+                            "consumerQuotaLimits": [
+                                {
+                                    "unit": "1/min",
+                                    "quotaBuckets": [
+                                        {
+                                            "effectiveLimit": "15",
+                                            "dimensions": { "model": "gemini-3.6-flash" }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "metric": "generativelanguage.googleapis.com/generate_content_input_tokens",
+                            "consumerQuotaLimits": [
+                                {
+                                    "unit": "tokens/min",
+                                    "quotaBuckets": [
+                                        {
+                                            "effectiveLimit": "500000",
+                                            "dimensions": { "model": "gemini-3.6-flash" }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "metric": "generativelanguage.googleapis.com/generate_content_requests_per_day",
+                            "consumerQuotaLimits": [
+                                {
+                                    "unit": "1/d",
+                                    "quotaBuckets": [
+                                        {
+                                            "effectiveLimit": "20",
+                                            "dimensions": { "model": "gemini-3.6-flash" }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+                """;
+
+        GoogleAiUsageDto.QuotaMetrics quota = client.parseQuotaResponse(json);
+        assertThat(quota.rpm().limitValue()).isEqualTo(15L);
+        assertThat(quota.rpm().status()).isEqualTo("AVAILABLE");
+        assertThat(quota.tpm().limitValue()).isEqualTo(500000L);
+        assertThat(quota.tpm().status()).isEqualTo("AVAILABLE");
+        assertThat(quota.rpd().limitValue()).isEqualTo(20L);
+        assertThat(quota.rpd().status()).isEqualTo("AVAILABLE");
+        assertThat(quota.modelQuotas()).hasSize(3);
     }
 
     // -------------------------------------------------------------

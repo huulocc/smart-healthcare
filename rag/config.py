@@ -101,7 +101,7 @@ GEMINI_HOST = "https://generativelanguage.googleapis.com/v1beta"
 # in ~5s with thinking on. Reliability with thinking on is what matters here,
 # because thinking off is what drops the ambulance step from Q23. Retry the
 # newer model once its capacity settles.
-GEMINI_LLM_MODEL = "gemini-3.5-flash"
+GEMINI_LLM_MODEL = "gemini-3.6-flash"
 GEMINI_EMBED_MODEL = "gemini-embedding-001"
 
 # gemini-embedding-001 defaults to 3072 dimensions. Pinned to 768 so a Gemini
