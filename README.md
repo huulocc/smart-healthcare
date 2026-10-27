@@ -1,68 +1,78 @@
 # Smart Healthcare
 
-Ứng dụng đặt lịch khám cho phòng khám, kèm một trợ lý AI đọc tờ hướng dẫn bệnh
-nhân và gợi ý khoa khám từ triệu chứng.
+An appointment-booking application for a clinic, with an AI assistant that
+answers from patient-information leaflets and suggests a department from
+described symptoms.
 
-Đồ án cuối kỳ môn **Công nghệ mới trong Công nghệ phần mềm 2026–2027**.
+Final project for **New Technologies in Software Engineering 2026–2027**.
 
 | | |
 |---|---|
 | **Frontend** | React 19 · TypeScript · Vite |
 | **Backend** | Spring Boot 4.1 · Java 21 · Spring Security + JWT · OAuth2 Google |
 | **Database** | SQL Server |
-| **Trợ lý AI** | FastAPI · ChromaDB · Ollama hoặc Google Gemini |
+| **AI assistant** | FastAPI · ChromaDB · Ollama or Google Gemini |
 
-Sơ đồ kiến trúc và luồng của một request AI: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+Architecture diagram and the data flow of one AI request:
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ---
 
-## Năng lực AI đã làm
+## AI capabilities implemented
 
-Theo mục 4.1 của đề, nhóm 3 người cần tối thiểu ba mục. Nhóm làm **A, B, C**:
+Section 4.1 of the brief asks a team of three for at least three of them. This
+team implemented **A, B and C**:
 
-| | Năng lực | Ở đâu |
+| | Capability | Where |
 |---|---|---|
-| **A** | RAG trên tài liệu: chia đoạn, nhúng, tìm theo vector, trả lời kèm trích nguồn, và nói rõ khi tài liệu không có câu trả lời | `rag/ingest.py`, `rag/retrieve.py`, `rag/generate.py` |
-| **B** | Agent gọi công cụ: mô hình xin ba công cụ **chỉ đọc** lấy dữ liệu thật từ Spring Boot | `rag/triage.py` |
-| **C** | Structured output: kết quả là JSON kiểm theo schema Pydantic, và ứng dụng dùng nó để chặn sáu trường hợp mô hình bịa | `rag/triage.py` — `TriageDecision` |
+| **A** | RAG over documents: chunking, embedding, vector search, answers with cited sources, and saying plainly when the documents do not contain the answer | `rag/ingest.py`, `rag/retrieve.py`, `rag/generate.py` |
+| **B** | Tool-calling agent: the model requests three **read-only** tools that fetch real data from Spring Boot | `rag/triage.py` |
+| **C** | Structured output: the result is JSON validated against a Pydantic schema, and the application uses it to block six ways the model could make things up | `rag/triage.py` — `TriageDecision` |
+
+Capability **D** is deliberately not claimed. File upload works —
+`rag/uploaded.py` extracts text from a PDF or TXT, embeds it, uses it for that
+one question and then forgets it — but because nothing is written to disk or to
+the database it does not satisfy *"the result is stored and used by the app"*.
 
 ---
 
-## Cần gì trên máy
+## What you need on the machine
 
-| | Phiên bản | Ghi chú |
+| | Version | Notes |
 |---|---|---|
 | **JDK** | 21 | |
-| **Node.js** | 20 trở lên | |
-| **Python** | 3.11 trở lên | đã chạy trên 3.12 |
-| **SQL Server** | 2019 trở lên | bản Developer là đủ |
-| **Ollama** | mới nhất | bỏ qua nếu dùng Gemini |
+| **Node.js** | 20 or newer | |
+| **Python** | 3.11 or newer | tested on 3.12 |
+| **SQL Server** | 2019 or newer | the Developer edition is enough |
+| **Ollama** | latest | skip if you use Gemini |
 
-Dự án **không có Docker**. Lý do và những gì phải đánh đổi: [`docs/adr/0002`](docs/adr/0002-sql-server-cai-tren-may.md).
+This project has **no Docker**. The reasoning and what it costs:
+[`docs/adr/0001`](docs/adr/0001-use-sql-server.md).
 
 ---
 
-## Cách chạy
+## How to run
 
-Chạy mọi lệnh **từ thư mục gốc của repo**, trừ chỗ ghi rõ khác. Lệnh viết cho
-PowerShell trên Windows; trên macOS hoặc Linux thì `.\mvnw.cmd` đổi thành
-`./mvnw`.
+Run every command **from the repository root** unless stated otherwise. The
+commands are written for PowerShell on Windows; on macOS or Linux replace
+`.\mvnw.cmd` with `./mvnw`.
 
 ### 1. SQL Server
 
-Ba thứ phải bật sẵn trên instance, và **không cái nào bật mặc định** trong bản
-cài Developer:
+Three things have to be enabled on the instance, and **none of them is on by
+default** in the Developer installation:
 
-- **TCP/IP** — Configuration Manager → Protocols for *\<INSTANCE\>* → TCP/IP = Enabled.
-  Thiếu cái này thì SSMS và `sqlcmd` vẫn vào được nhưng backend thì không, vì
-  driver JDBC chỉ nói TCP.
-- **SQL Server Authentication** — chế độ hỗn hợp, không chỉ Windows Authentication.
-- **Dịch vụ đang chạy.** Bản cài hay để StartType = Manual.
+- **TCP/IP** — Configuration Manager → Protocols for *\<INSTANCE\>* → TCP/IP =
+  Enabled. Without it SSMS and `sqlcmd` still connect but the backend does not,
+  because the JDBC driver only speaks TCP.
+- **SQL Server Authentication** — mixed mode, not Windows Authentication only.
+- **The service is running.** The installer often leaves StartType = Manual.
 
-Sau đó tạo database và một login cho ứng dụng, rồi khởi động lại dịch vụ SQL Server.
+Then create the database and a login for the application, and restart the SQL
+Server service.
 
-Nhóm đang dùng chung một file `.bak`; cách phục hồi và các bẫy đã gặp nằm ở
-[`docs/DATABASE.md`](docs/DATABASE.md).
+The team shares one `.bak` file; how to restore it and the traps already hit
+are in [`docs/DATABASE.md`](docs/DATABASE.md).
 
 ### 2. Backend
 
@@ -70,18 +80,18 @@ Nhóm đang dùng chung một file `.bak`; cách phục hồi và các bẫy đ�
 copy backend\.env.example backend\.env
 ```
 
-Mở `backend/.env` và điền giá trị — file đó tự nó là bảng kiểm, mỗi biến có chú
-thích đi kèm. Spring Boot đọc file này qua `spring.config.import` trong
-`application.properties`, nên không cần đặt biến môi trường thủ công.
+Open `backend/.env` and fill in the values — that file is the checklist, with a
+comment on every variable. Spring Boot reads it through `spring.config.import`
+in `application.properties`, so no environment variables need setting by hand.
 
 ```powershell
 cd backend
 .\mvnw.cmd spring-boot:run
 ```
 
-Lên ở <http://localhost:8080>.
+Comes up on <http://localhost:8080>.
 
-### 3. Trợ lý AI
+### 3. AI assistant
 
 ```powershell
 pip install -r rag/requirements.txt
@@ -89,31 +99,33 @@ ollama pull nomic-embed-text
 ollama pull qwen3
 
 copy rag\.env.example rag\.env
-python rag/ingest.py        # dựng index, chạy lại mỗi khi đổi tài liệu
+python rag/ingest.py        # build the index; rerun whenever documents change
 python rag/server.py        # :8000
 ```
 
-`ingest.py` phải chạy **trước** `server.py` ít nhất một lần, nếu không mọi câu
-hỏi sẽ dừng ở "No index found".
+`ingest.py` has to run **before** `server.py` at least once, otherwise every
+question stops at "No index found".
 
-**Mặc định trong `config.py` là Gemini, không phải Ollama.** Nên một bản
-`rag/.env` vừa chép từ file mẫu sẽ đi đường Gemini với khoá rỗng và hỏng ngay
-câu đầu. Chọn một trong hai:
+**The default in `config.py` is Gemini, not Ollama.** So a `rag/.env` freshly
+copied from the template takes the Gemini path with an empty key and fails on
+the first question. Pick one:
 
-- **Ollama** — đặt `RAG_LLM_BACKEND=ollama` trong `rag/.env`. Riêng tư, không
-  tốn tiền, khoảng 50–70 giây một câu trả lời.
-- **Gemini** — đặt `GEMINI_API_KEY`, để `RAG_LLM_BACKEND` nguyên như file mẫu.
-  Vài giây một câu, nhưng xem cảnh báo dưới đây.
+- **Ollama** — set `RAG_LLM_BACKEND=ollama` in `rag/.env`. Private, free, about
+  50–70 seconds per answer.
+- **Gemini** — set `GEMINI_API_KEY` and leave `RAG_LLM_BACKEND` as the template
+  has it. A few seconds per answer, but see the warning below.
 
-**Giữ phần nhúng ở Ollama** — index dựng bằng mô hình nào thì phải truy vấn bằng
-đúng mô hình đó, và `retrieve.py` sẽ dừng hẳn nếu phát hiện lệch.
+**Keep embedding on Ollama** — an index built with one model has to be queried
+with that same model, and `retrieve.py` stops outright if it detects a
+mismatch.
 
-> ⚠️ **Free tier của Gemini không gánh nổi bộ đánh giá chatbot.** 25 case tốn
-> 44 lượt gọi mô hình (mỗi case triage tốn 4), và hạn mức miễn phí cạn sau
-> khoảng 15–20 lượt. Đã thử hai khoá khác nhau, cả hai đều dừng giữa chừng —
-> bằng chứng ở [`rag/eval/results/chatbot-gemini-quota-hit.json`](rag/eval/results/chatbot-gemini-quota-hit.json).
-> Chạy `evaluate_chatbot.py` thì dùng Ollama. Gemini để cho lúc demo, khi chỉ
-> cần vài câu và cần nhanh.
+> ⚠️ **Gemini's free tier cannot carry the chatbot evaluation.** The 25 cases
+> cost 44 model calls (each triage case costs 4), and the free quota runs out
+> after roughly 15–20. Two different keys were tried and both died mid-run —
+> the evidence is in
+> [`rag/eval/results/chatbot-gemini-quota-hit.json`](rag/eval/results/chatbot-gemini-quota-hit.json).
+> Run `evaluate_chatbot.py` on Ollama. Keep Gemini for demos, where only a few
+> questions are asked and speed matters.
 
 ### 4. Frontend
 
@@ -124,80 +136,89 @@ copy .env.example .env.local
 npm run dev
 ```
 
-Mở <http://localhost:5173>. Vite đã cấu hình proxy sẵn: `/api/chat/**` đi sang
-cổng 8000, còn `/api/**` đi sang 8080 — trình duyệt luôn ở một origin nên không
-cần cấu hình CORS.
+Open <http://localhost:5173>. Vite is already configured to proxy
+`/api/chat/**` to port 8000 and `/api/**` to 8080 — the browser stays on a
+single origin, so no CORS configuration is needed.
 
-### Thứ tự bật
+### Start-up order
 
 SQL Server → Ollama → backend → `ingest.py` → RAG service → frontend.
 
-Trợ lý cần backend chạy sẵn vì ba công cụ của nó gọi ngược về `/api/booking/**`.
+The assistant needs the backend already running, because its three tools call
+back into `/api/booking/**`.
 
 ---
 
-## Biến môi trường
+## Environment variables
 
-Ba file mẫu dưới đây **đã nằm trong repo và không chứa giá trị thật**. File thật
-(`.env`, `.env.local`) bị `.gitignore` chặn.
+The three template files below **are in the repository and contain no real
+values**. The real files (`.env`, `.env.local`) are blocked by `.gitignore`.
 
-| File mẫu | Chép thành | Dùng cho |
+| Template | Copy to | Used for |
 |---|---|---|
 | [`backend/.env.example`](backend/.env.example) | `backend/.env` | database, JWT, mail, Google, telemetry |
-| [`rag/.env.example`](rag/.env.example) | `rag/.env` | khoá Gemini, chọn LLM backend, telemetry |
-| [`frontend/.env.example`](frontend/.env.example) | `frontend/.env.local` | đích proxy, Google Client ID |
+| [`rag/.env.example`](rag/.env.example) | `rag/.env` | Gemini key, LLM backend choice, telemetry |
+| [`frontend/.env.example`](frontend/.env.example) | `frontend/.env.local` | proxy target, Google Client ID |
 
-Các biến, **không kèm giá trị**:
+The variables, **without values**:
 
-| Biến | Ở đâu | Bắt buộc | Để làm gì |
+| Variable | Where | Required | Purpose |
 |---|---|---|---|
-| `DB_URL` | backend | — | chuỗi JDBC; bỏ trống thì dùng mặc định trong `application.properties` |
-| `DB_USERNAME`, `DB_PASSWORD` | backend | ✅ | login của SQL Server |
-| `JWT_SECRET` | backend | ✅ | khoá ký HS256 |
-| `SERVER_PORT` | backend | — | chỉ đổi khi 8080 đã bị chiếm |
-| `MAIL_USERNAME`, `MAIL_PASSWORD` | backend | ✅ | gửi link kích hoạt và đặt lại mật khẩu |
-| `GOOGLE_CLIENT_ID` | backend | — | bỏ trống thì nút "Continue with Google" tự ẩn |
-| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | backend | — | tạo tài khoản admin lúc khởi động, xem mục dưới |
-| `AI_TELEMETRY_SECRET` | backend | — | phải trùng `RAG_TELEMETRY_SECRET` |
-| `GOOGLE_CLOUD_PROJECT_ID`, `GOOGLE_APPLICATION_CREDENTIALS` | backend | — | trang thống kê mức dùng AI |
-| `GEMINI_API_KEY` | rag | — | chỉ cần khi `RAG_LLM_BACKEND=gemini` |
-| `RAG_LLM_BACKEND`, `RAG_EMBED_BACKEND` | rag | — | `ollama` hoặc `gemini` |
-| `RAG_APP_BACKEND_URL` | rag | — | Spring Boot mà ba công cụ gọi tới |
-| `RAG_TELEMETRY_SECRET` | rag | — | phải trùng `AI_TELEMETRY_SECRET` |
-| `RAG_EVAL_TOKEN` | rag | — | JWT của một bệnh nhân, chỉ dùng khi chạy đánh giá |
-| `API_PROXY_TARGET` | frontend | — | chỉ đổi khi backend không ở 8080 |
-| `VITE_GOOGLE_CLIENT_ID` | frontend | — | cùng Client ID với backend |
+| `DB_URL` | backend | — | JDBC string; leave empty to use the default in `application.properties` |
+| `DB_USERNAME`, `DB_PASSWORD` | backend | ✅ | the SQL Server login |
+| `JWT_SECRET` | backend | ✅ | HS256 signing key |
+| `SERVER_PORT` | backend | — | change only if 8080 is already taken |
+| `MAIL_USERNAME`, `MAIL_PASSWORD` | backend | ✅ | activation and password-reset emails |
+| `GOOGLE_CLIENT_ID` | backend | — | leave empty and the "Continue with Google" button hides itself |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | backend | — | creates an admin account at start-up, see below |
+| `SPRING_PROFILES_ACTIVE` | backend | — | set to `demo` to create three throwaway local accounts, see below |
+| `AI_TELEMETRY_SECRET` | backend | — | must match `RAG_TELEMETRY_SECRET` |
+| `GOOGLE_CLOUD_PROJECT_ID`, `GOOGLE_APPLICATION_CREDENTIALS` | backend | — | the AI usage statistics page |
+| `GEMINI_API_KEY` | rag | — | only needed when `RAG_LLM_BACKEND=gemini` |
+| `RAG_LLM_BACKEND`, `RAG_EMBED_BACKEND` | rag | — | `ollama` or `gemini` |
+| `RAG_APP_BACKEND_URL` | rag | — | the Spring Boot instance the three tools call |
+| `RAG_TELEMETRY_SECRET` | rag | — | must match `AI_TELEMETRY_SECRET` |
+| `RAG_EVAL_TOKEN` | rag | — | a patient's JWT, used only when running the evaluation |
+| `API_PROXY_TARGET` | frontend | — | change only if the backend is not on 8080 |
+| `VITE_GOOGLE_CLIENT_ID` | frontend | — | the same Client ID as the backend |
 
 ---
 
-## Tài khoản test
+## Test accounts
 
-> ⚠️ **Chưa điền.** Nhóm phải tạo tài khoản rồi ghi vào bảng dưới trước buổi bảo vệ.
+**Admin** is created at backend start-up, not by a migration. Set `ADMIN_EMAIL`
+and `ADMIN_PASSWORD` in `backend/.env` (at least 8 characters) and restart the
+backend; `AdminAccountBootstrap` creates the account if it is missing. This
+avoids baking a BCrypt hash into a migration file.
 
-**Admin** được tạo lúc khởi động backend, không phải bằng migration. Đặt
-`ADMIN_EMAIL` và `ADMIN_PASSWORD` trong `backend/.env` (mật khẩu tối thiểu 8 ký
-tự) rồi chạy lại backend; `AdminAccountBootstrap` sẽ tạo tài khoản nếu chưa có.
-Cách này tránh phải nhúng sẵn một chuỗi BCrypt vào file migration.
+**Patients** register themselves at `/register`, but have to open the
+activation link in their email before they can log in.
 
-**Bệnh nhân** thì tự đăng ký ở `/register`, nhưng phải mở link kích hoạt trong
-email thì mới đăng nhập được.
+**Doctors** cannot create themselves. An account registers with a `DOCTOR`
+request, and an admin approves it in the admin area. The five doctors in
+`V4__seed_demo_doctors.sql` **cannot log in** — they are display data and their
+passwords are placeholder values.
 
-**Bác sĩ** không tự tạo được. Một tài khoản đăng ký kèm nguyện vọng `DOCTOR`,
-rồi admin duyệt ở trang quản trị. Năm bác sĩ trong `V4__seed_demo_doctors.sql`
-**không đăng nhập được** — đó là dữ liệu hiển thị, mật khẩu là giá trị giả.
+The accounts the team uses for the demo:
 
-| Vai trò | Email | Mật khẩu |
+| Role | Email | Password |
 |---|---|---|
 | Admin | 23110010@student.hcmute.edu.vn | Bin2005@ |
-| Bác sĩ | 23110025@student.hcmute.edu.vn | 12345678 |
-| Bệnh nhân | tranquochuy26022005@gmail.com | 12345678 |
+| Doctor | 23110025@student.hcmute.edu.vn | 12345678 |
+| Patient | tranquochuy26022005@gmail.com | 12345678 |
 
-Dùng mật khẩu chỉ dành cho demo. Đừng dùng lại mật khẩu thật của ai, vì bảng này
-nằm trong Git.
+Use demo-only passwords here. Do not reuse anyone's real password, because this
+table lives in Git.
+
+There is also a throwaway set behind a Spring profile: set
+`SPRING_PROFILES_ACTIVE=demo` in `backend/.env` and `DemoAccountBootstrap`
+creates `admin.demo@`, `doctor.demo@` and `patient.demo@smarthealth.local` with
+the password `Demo123!`, logging a warning while the profile is active. Useful
+on a clean machine; **never enable it on a shared or public deployment**.
 
 ---
 
-## Chạy test
+## Running the tests
 
 ```powershell
 cd backend; .\mvnw.cmd test
@@ -211,26 +232,27 @@ cd frontend; npm run test:booking; npm run test:doctor
 cd rag; python -m unittest discover -s . -p "test_*.py"
 ```
 
-Đánh giá chất lượng trợ lý (cần các dịch vụ đang chạy thật):
+Assistant quality evaluation (needs the services actually running):
 
 ```powershell
-python rag/evaluate.py                      # truy hồi, 85 câu
-python rag/evaluate_chatbot.py --validate   # kiểm bộ case, không gọi dịch vụ nào
+python rag/evaluate.py                      # retrieval, 60 scored questions
+python rag/evaluate_chatbot.py --validate   # validate the case set, contacts nothing
 ```
 
 ---
 
-## Tài liệu
+## Documentation
 
-| File | Nội dung |
+| File | Contents |
 |---|---|
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | sơ đồ hệ thống và luồng một request AI |
-| [`docs/adr/`](docs/adr/) | các quyết định kiến trúc kèm lý do |
-| [`docs/USER_STORIES.md`](docs/USER_STORIES.md) | 14 user story kèm tiêu chí chấp nhận |
+| [`docs/BAO-CAO.pdf`](docs/BAO-CAO.pdf) | the project report |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | system diagram and the flow of one AI request |
+| [`docs/adr/`](docs/adr/) | architecture decisions with their reasoning |
+| [`docs/USER_STORIES.md`](docs/USER_STORIES.md) | user stories with acceptance criteria |
 | [`docs/TRACEABILITY.md`](docs/TRACEABILITY.md) | story → endpoint → file → test |
-| [`docs/OWNERSHIP.md`](docs/OWNERSHIP.md) | ai trả lời cho khối nào |
-| [`docs/DATABASE.md`](docs/DATABASE.md) | SQL Server, migration, những bẫy đã gặp |
-| [`docs/CHATBOT.md`](docs/CHATBOT.md) | trợ lý hoạt động thế nào ([bản tiếng Việt](docs/CHATBOT.vi.md)) |
-| [`rag/README.md`](rag/README.md) | chi tiết pipeline RAG và bộ đánh giá |
-| [`backend/docs/BOOKING_BACKEND.md`](backend/docs/BOOKING_BACKEND.md) | endpoint và phân quyền phần đặt lịch |
-| [`AI_USAGE.md`](AI_USAGE.md) | nhật ký dùng công cụ AI (mục 5.3 của đề) |
+| [`docs/OWNERSHIP.md`](docs/OWNERSHIP.md) | who answers for which area |
+| [`docs/DATABASE.md`](docs/DATABASE.md) | SQL Server, migrations, traps already hit |
+| [`docs/CHATBOT.md`](docs/CHATBOT.md) | how the assistant works ([Vietnamese version](docs/CHATBOT.vi.md)) |
+| [`rag/README.md`](rag/README.md) | RAG pipeline and evaluation harness in detail |
+| [`backend/docs/BOOKING_BACKEND.md`](backend/docs/BOOKING_BACKEND.md) | booking endpoints and authorisation |
+| [`AI_USAGE.md`](AI_USAGE.md) | log of AI tool usage (section 5.3 of the brief) |

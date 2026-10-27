@@ -1,31 +1,31 @@
-# Kiến trúc hệ thống
+# System architecture
 
-Mục 5.2 của đề yêu cầu một sơ đồ kiến trúc có **frontend, backend, database,
-vector store, LLM provider**, và **luồng dữ liệu của một request AI**. File này
-giữ cả hai.
+Section 5.2 of the brief asks for an architecture diagram containing
+**frontend, backend, database, vector store and LLM provider**, plus **the data
+flow of one AI request**. This file holds both.
 
-Sơ đồ trong [`CHATBOT.md`](CHATBOT.md) mục 3 chỉ vẽ riêng phần chat và không có
-Spring Boot lẫn SQL Server — dùng nó cho phần RAG thì được, cho mục 5.2 thì
-thiếu.
+The diagram in [`CHATBOT.md`](CHATBOT.md) section 3 covers only the chat path
+and has neither Spring Boot nor SQL Server in it — fine for explaining the RAG
+pipeline, not enough for section 5.2.
 
 ---
 
-## 1. Toàn cảnh
+## 1. The whole system
 
-Ba tiến trình do nhóm viết, ba dịch vụ bên ngoài.
+Three processes written by the team, three external services.
 
 ```mermaid
 flowchart TB
-    U([Người dùng])
+    U([User])
 
-    subgraph browser["Trình duyệt"]
+    subgraph browser["Browser"]
         R["React 19 + Vite<br/>:5173"]
         W["AIChatWidget"]
         R -.- W
     end
 
     subgraph proxy["Vite dev proxy"]
-        PX{"khớp đường dẫn"}
+        PX{"path match"}
     end
 
     subgraph jvm["Spring Boot 4.1 · Java 21 — :8080"]
@@ -39,12 +39,12 @@ flowchart TB
         GUARD["guardrails.py"]
         RET["retrieve.py"]
         GEN["generate.py"]
-        TRI["triage.py<br/>3 tool chỉ đọc + schema"]
+        TRI["triage.py<br/>3 read-only tools + schema"]
         GUARD --> RET --> GEN
         GUARD --> TRI
     end
 
-    DB[("SQL Server<br/>instance trên máy · :1433")]
+    DB[("SQL Server<br/>local instance · :1433")]
     CH[("ChromaDB<br/>rag/data/chroma")]
     OL["Ollama · :11434<br/>nomic-embed-text · qwen3"]
     GM["Google Gemini<br/>hosted"]
@@ -63,40 +63,42 @@ flowchart TB
     GEN --> OL
     GEN -.->|"RAG_LLM_BACKEND=gemini"| GM
 
-    TRI -->|"3 tool: GET departments / doctors / availability<br/>kèm JWT của người dùng"| SEC
-    py -->|"POST /api/ai/telemetry<br/>kèm X-Telemetry-Secret"| TEL
+    TRI -->|"3 tools: GET departments / doctors / availability<br/>carrying the user's own JWT"| SEC
+    py -->|"POST /api/ai/telemetry<br/>with X-Telemetry-Secret"| TEL
 ```
 
-**Ba điểm đáng nói trên sơ đồ này.**
+**Three things worth pointing out on this diagram.**
 
-**Proxy quyết định theo thứ tự.** `vite.config.ts` khai `/api/chat` **trước**
-`/api`, vì Vite khớp key theo thứ tự khai báo. Đảo lại thì mọi request chat sẽ
-đi nhầm sang Spring Boot. Nhờ proxy, trình duyệt luôn ở một origin duy nhất nên
-không cần cấu hình CORS, và ngày nào chat chuyển ra sau Spring Boot thì chỉ đổi
-đích của proxy, không đụng code React.
+**The proxy decides by order.** `vite.config.ts` declares `/api/chat`
+**before** `/api`, because Vite matches keys in declaration order. Reverse them
+and every chat request goes to Spring Boot instead. Thanks to the proxy the
+browser stays on a single origin, so no CORS configuration is needed, and the
+day chat moves behind Spring Boot only the proxy target changes, not the React
+code.
 
-**Mũi tên từ `triage.py` ngược về Spring Boot là có thật, không phải trang trí.**
-Trợ lý không đọc database trực tiếp. Nó gọi lại đúng những endpoint mà giao diện
-gọi, **mang theo JWT của chính người dùng đang hỏi**, nên nó không bao giờ thấy
-được nhiều hơn người đó được thấy.
+**The arrow from `triage.py` back to Spring Boot is real, not decoration.**
+The assistant does not read the database. It calls the same endpoints the
+interface calls, **carrying the JWT of the very user asking**, so it can never
+see more than that person is allowed to see.
 
-**Hai nhà cung cấp LLM, chọn bằng biến môi trường.** `RAG_LLM_BACKEND` chuyển
-giữa Ollama chạy local (riêng tư, khoảng 50 giây một câu trả lời) và Gemini
-(vài giây, cần API key). Phần nhúng thì nên giữ ở Ollama — index dựng bằng mô
-hình nào phải truy vấn bằng đúng mô hình đó, và `retrieve.py` dừng hẳn nếu phát
-hiện lệch.
+**Two LLM providers, selected by an environment variable.**
+`RAG_LLM_BACKEND` switches between Ollama running locally (private, around 50
+seconds per answer) and Gemini (a few seconds, needs an API key). Embedding
+should stay on Ollama — an index built with one model has to be queried with
+that same model, and `retrieve.py` stops outright if it detects a mismatch.
 
 ---
 
-## 2. Luồng dữ liệu của một request AI
+## 2. The data flow of one AI request
 
-Lấy luồng nặng nhất làm ví dụ: bệnh nhân mô tả triệu chứng và xin gợi ý khoa
-khám. Đây là luồng chạm vào **cả năm** thành phần của đề.
+Take the heaviest path as the example: a patient describes symptoms and asks
+which department to visit. This path touches **all five** of the components the
+brief asks about.
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor P as Bệnh nhân
+    actor P as Patient
     participant W as AIChatWidget
     participant G as guardrails.py
     participant R as retrieve.py
@@ -106,93 +108,101 @@ sequenceDiagram
     participant D as SQL Server
     participant L as LLM
 
-    P->>W: "Tôi bị phát ban ngứa nhẹ"
+    P->>W: "I have a mild itchy rash"
     W->>G: POST /api/chat/triage + Bearer JWT
 
     G->>G: rejection_for(question)
-    Note over G: Câu đòi đổi chỉ thị, hỏi ngoài y tế<br/>hay đòi đặt lịch thì dừng ở đây,<br/>chưa tốn một lượt gọi mô hình nào
+    Note over G: Attempts to change the instructions,<br/>questions outside healthcare, or asking<br/>to book a visit stop here, before<br/>a single model call is spent
 
-    G->>R: câu hỏi hợp lệ
-    R->>L: nhúng câu hỏi
-    R->>C: tìm 3 đoạn gần nhất (cosine)
-    C-->>R: 3 đoạn + section_id
+    G->>R: question accepted
+    R->>L: embed the question
+    R->>C: find the 3 nearest chunks (cosine)
+    C-->>R: 3 chunks + section_id
 
-    R->>T: câu hỏi + 3 đoạn
+    R->>T: question + 3 chunks
 
-    loop 3 công cụ, lần lượt
-        T->>L: "xin một công cụ, trả JSON"
+    loop 3 tools, one at a time
+        T->>L: "request one tool, return JSON"
         L-->>T: {"tool": "...", "arguments": {...}}
-        T->>T: ToolCall.model_validate — ngoài allowlist thì bỏ
+        T->>T: ToolCall.model_validate — outside the allowlist is dropped
         T->>S: GET /api/booking/... + Bearer JWT
         S->>D: SELECT
-        D-->>S: dữ liệu phòng khám thật
-        S-->>T: khoa / bác sĩ / lịch trống
+        D-->>S: real clinic data
+        S-->>T: departments / doctors / free slots
     end
 
-    T->>L: triệu chứng + đoạn tài liệu + dữ liệu vừa đọc
-    L-->>T: JSON quyết định
+    T->>L: symptoms + leaflet chunks + the data just read
+    L-->>T: decision as JSON
 
     T->>T: TriageDecision.model_validate
-    Note over T: Sáu cửa kiểm: id khoa và id bác sĩ phải<br/>có thật, nguồn trích phải nằm trong 3 đoạn,<br/>bác sĩ phải thuộc đúng khoa, emergency thì<br/>xoá mọi gợi ý, hết slot thì gỡ bác sĩ
+    Note over T: Six gates: department id and doctor id<br/>must exist, cited sources must be among<br/>the 3 chunks, the doctor must belong to<br/>that department, emergency clears every<br/>suggestion, no free slot drops the doctor
 
-    T-->>W: khoa + lý do + lời dặn an toàn + nguồn
-    W-->>P: hiện kết quả kèm section đã dùng
+    T-->>W: department + reason + safety note + sources
+    W-->>P: shows the result with the sections used
 
-    par không chặn người dùng
+    par without blocking the user
         T->>S: POST /api/ai/telemetry
-        S->>D: ghi provider, model, token, độ trễ
+        S->>D: record provider, model, tokens, latency
     end
 ```
 
-**Bốn chỗ đáng chỉ cho người chấm.**
+**Four things worth showing an examiner.**
 
-**Guardrail chặn trước khi tốn tiền.** Bước 3 xảy ra trước mọi lệnh gọi mô hình.
-Một câu "bỏ qua chỉ thị phía trên" bị trả về ngay, không sinh token nào.
+**The guardrail blocks before anything is spent.** Step 3 happens before any
+model call. A "ignore the instructions above" is rejected immediately, without
+generating a single token.
 
-**Mô hình không bao giờ chạm database.** Nó chỉ *xin* một công cụ bằng JSON.
-Việc gọi thật do `triage.py` làm, qua Spring Boot, và chỉ ba hàm trong danh sách
-cho phép — cả ba đều `GET`.
+**The model never touches the database.** It only *requests* a tool, as JSON.
+The actual call is made by `triage.py`, through Spring Boot, and only the three
+functions on the allowlist — all three of them `GET`.
 
-**Kết quả bị kiểm trước khi tới người dùng.** `TriageDecision` là schema Pydantic
-với `extra="forbid"`; sau khi parse còn sáu cửa kiểm nữa. Mô hình bịa một id khoa
-thì cả câu trả lời bị bỏ, không phải sửa lại cho vừa.
+**The result is checked before it reaches the user.** `TriageDecision` is a
+Pydantic schema with `extra="forbid"`; after parsing there are six more gates.
+If the model invents a department id the whole answer is dropped rather than
+patched to fit.
 
-**Telemetry chạy song song và được phép hỏng.** `rag/telemetry.py` nuốt mọi lỗi
-của chính nó — việc đo đạc không bao giờ được làm hỏng câu trả lời cho bệnh nhân.
+**Telemetry runs alongside and is allowed to fail.** `rag/telemetry.py`
+swallows its own errors — measuring must never break the answer a patient is
+waiting for.
 
 ---
 
-## 3. Dữ liệu nằm ở đâu
+## 3. Where the data lives
 
-| Kho | Chứa gì | Ai ghi |
+| Store | Contents | Written by |
 |---|---|---|
-| **SQL Server** | tài khoản, bác sĩ, khoa, lịch trực, lịch hẹn, sự kiện dùng AI | Spring Boot |
-| **ChromaDB** | vector của các đoạn tờ hướng dẫn bệnh nhân | `rag/ingest.py`, chạy lại khi đổi tài liệu |
-| **File tải lên** | **không lưu ở đâu cả** | — |
+| **SQL Server** | accounts, doctors, departments, schedules, appointments, AI usage events | Spring Boot |
+| **ChromaDB** | vectors of the patient-leaflet chunks | `rag/ingest.py`, rerun when documents change |
+| **Uploaded files** | **not stored anywhere** | — |
 
-Dòng cuối là một lựa chọn có chủ đích. `rag/uploaded.py` trích chữ từ PDF hoặc
-TXT, nhúng, dùng cho đúng câu hỏi đó rồi quên — không ghi xuống đĩa, không ghi
-vào database. Đổi lại, hệ thống chưa đáp ứng đủ vế *"the result is stored and
-used by the app"* ở mục 4.1 D của đề; nhóm nhận ba mục A, B, C chứ không nhận D.
+The last row is a deliberate choice. `rag/uploaded.py` extracts text from a PDF
+or TXT, embeds it, uses it for that one question and forgets it — nothing is
+written to disk or to the database. The cost is that the system does not meet
+the *"the result is stored and used by the app"* half of section 4.1 D of the
+brief; the team claims A, B and C, not D.
 
 ---
 
-## 4. Cổng và tiến trình
+## 4. Ports and processes
 
-| Thành phần | Cổng | Khởi động bằng |
+| Component | Port | Started by |
 |---|---|---|
 | Frontend (Vite) | 5173 | `npm run dev` |
 | Spring Boot | 8080 | `.\mvnw.cmd spring-boot:run` |
 | RAG service | 8000 | `python rag/server.py` |
-| SQL Server | 1433 | dịch vụ Windows |
+| SQL Server | 1433 | Windows service |
 | Ollama | 11434 | `ollama serve` |
 
-Thứ tự bật và các bước chuẩn bị nằm ở [`../README.md`](../README.md).
+Start-up order and the preparation steps are in
+[`../README.md`](../README.md).
 
 ---
 
-## 5. Xuất ảnh cho báo cáo
+## 5. Exporting the figures
 
-GitHub tự render mermaid, nhưng file PDF thì không. Để lấy ảnh nhúng vào báo
-cáo, mở file này trên GitHub rồi chụp, hoặc dán khối mermaid vào
-<https://mermaid.live> và tải PNG/SVG về.
+GitHub renders mermaid directly, but a PDF does not. The project report embeds
+both diagrams as vector graphics: `docs/report/figures/*.svg` are the rendered
+copies, and `docs/report/build_report.py` places them in the PDF. To refresh
+them after editing the mermaid above, re-render and overwrite those two files.
+For a quick one-off, paste a block into <https://mermaid.live> and download the
+PNG or SVG.

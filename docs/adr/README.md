@@ -1,39 +1,44 @@
-# Architecture Decision Record
+# Architecture decision records
 
-Mục 5.2 của đề yêu cầu **tối thiểu 3 ADR**, trong đó **ít nhất một cái về thiết
-kế AI**. ADR là ghi chép ngắn về một quyết định: bối cảnh buộc phải chọn, các
-phương án đã cân nhắc, cái được chọn, và cái phải chịu khi chọn nó.
+Section 5.2 of the brief asks for **at least 3 ADRs**, **at least one of them
+about AI design**. An ADR is a short record of one decision: the context that
+forced a choice, the alternatives considered, what was chosen, and what has to
+be lived with as a result.
 
-Ba ADR dưới đây không phải viết lại cho đẹp hồ sơ. Cả ba đều là quyết định đã
-xảy ra thật trong lịch sử Git, có ngày tháng và có commit đứng sau, và cả ba đều
-từng có một phương án khác trông hợp lý hơn lúc đầu.
+The three below are not written up after the fact to pad a submission. All
+three are decisions that actually happened in the Git history, each with a date
+and a commit behind it, and in all three cases another option looked more
+sensible at the start.
 
-| Mã | Quyết định | Ngày | Về AI? |
+| Id | Decision | Date | About AI? |
 |---|---|---|---|
-| [ADR-0001](0001-khong-dung-nguong-similarity.md) | Không dùng ngưỡng similarity để từ chối; ép từ chối bằng system prompt | 2026-09-21 | ✅ |
-| [ADR-0002](0002-sql-server-cai-tren-may.md) | SQL Server cài trên máy, xoá `docker-compose.yml` của MySQL | 2026-10-22 | |
-| [ADR-0003](0003-vai-tro-nam-trong-claim-jwt.md) | Vai trò nằm trong claim của JWT, không tra database mỗi request | 2026-09-14 | |
+| [ADR-0001](0001-use-sql-server.md) | SQL Server installed on the machine, MySQL `docker-compose.yml` deleted | 2026-10-22 | |
+| [ADR-0002](0002-role-in-jwt.md) | The role lives in a JWT claim, not in a lookup on every request | 2026-09-14 | |
+| [ADR-0003](0003-rag-refusal-without-similarity-threshold.md) | No similarity threshold for refusal; refusal is enforced by the system prompt | 2026-09-21 | ✅ |
 
-## Khuôn viết
+## Format
 
-Mỗi file theo đúng sáu mục: **Trạng thái · Bối cảnh · Các phương án · Quyết định
-· Hệ quả · Kiểm chứng ở đâu**.
+Each file follows the same six sections: **Status · Context · Alternatives
+considered · Decision · Consequences · Where this is checked**.
 
-Mục cuối là mục dễ bị bỏ nhất và cũng là mục đáng giá nhất lúc vấn đáp: nó chỉ
-thẳng tới dòng code hoặc cái test đang giữ quyết định đó đứng yên. Một ADR không
-chỉ được ra chỗ nào trong code thì chỉ là một đoạn văn.
+The last section is the one most often skipped and the one worth most in a
+viva: it points straight at the line of code or the test that holds the
+decision in place. An ADR that cannot be pointed to anywhere in the code is
+just a paragraph.
 
-## Khi nào viết thêm
+## When to write another one
 
-Viết khi một lựa chọn **có phương án khác hợp lý** và người sau sẽ hỏi "sao lại
-làm thế này". Không viết cho những thứ chỉ có một đường đi.
+Write one when a choice **had a reasonable alternative** and someone later will
+ask "why was it done this way". Do not write one for things that only had one
+path.
 
-Ứng viên tiếp theo, nếu nhóm cần thêm:
+Candidates, if the team needs more:
 
-- Ba công cụ của trợ lý đều **chỉ đọc**, và kết quả bị kiểm qua schema trước khi
-  tới người dùng (`rag/triage.py`) — ứng viên mạnh nhất, vì nó phủ luôn mục 4.1 B
-  và C của đề.
-- Chat chạy ở tiến trình Python riêng, đi qua proxy của Vite thay vì nằm sau
-  Spring Boot (xem [`../ARCHITECTURE.md`](../ARCHITECTURE.md)).
-- Chia nhỏ tài liệu theo tiêu đề thay vì theo số ký tự cố định
-  ([`../CHATBOT.md`](../CHATBOT.md) mục 9 đã có sẵn lý do và ví dụ).
+- The assistant's three tools are all **read-only**, and the result is checked
+  against a schema before it reaches the user (`rag/triage.py`) — the strongest
+  candidate, since it also covers sections 4.1 B and C of the brief.
+- Chat runs in its own Python process, reached through the Vite proxy rather
+  than sitting behind Spring Boot (see [`../ARCHITECTURE.md`](../ARCHITECTURE.md)).
+- Splitting documents by heading rather than by a fixed character count
+  ([`../CHATBOT.md`](../CHATBOT.md) section 9 already has the reasoning and
+  examples).

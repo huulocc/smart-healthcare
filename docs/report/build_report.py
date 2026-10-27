@@ -329,7 +329,7 @@ def sec2(w):
           "origin duy nhất nhờ Vite proxy, nên hệ thống "
           "không cần cấu hình CORS."),
         NextPageTemplate("figure"), PageBreak(),
-        *figure("01-kien-truc.svg",
+        *figure("01-architecture.svg",
                 "Hình 1 — Toàn cảnh hệ thống.",
                 WIDE_W, 14.6 * cm),
         NextPageTemplate("body"), PageBreak(),
@@ -365,7 +365,7 @@ def sec3(w):
           "chạm vào <b>cả năm</b> thành phần: giao "
           "diện, backend, database, vector store và LLM."),
         NextPageTemplate("figure"), PageBreak(),
-        *figure("02-luong-request-ai.svg",
+        *figure("02-ai-request-flow.svg",
                 "Hình 2 — Một request gợi ý khoa khám, "
                 "từ lúc gõ tới lúc ghi telemetry.",
                 WIDE_W, 14.6 * cm),
